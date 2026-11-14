@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 
 	"github.com/VaalaCat/frp-panel/biz/master/client"
 	masterserver "github.com/VaalaCat/frp-panel/biz/master/server"
@@ -17,6 +18,7 @@ import (
 	"github.com/VaalaCat/frp-panel/pb"
 	"github.com/VaalaCat/frp-panel/services/app"
 	"github.com/VaalaCat/frp-panel/services/dao"
+	"github.com/VaalaCat/frp-panel/services/mailer"
 	"github.com/VaalaCat/frp-panel/services/rpc"
 	"github.com/VaalaCat/frp-panel/utils/logger"
 	"google.golang.org/grpc"
@@ -147,6 +149,13 @@ func (s *server) ServerSend(sender pb.Master_ServerSendServer) error {
 
 	logger.Logger(ctx).Infof("server get a client connected")
 	var done chan bool
+	// 记录本连接注册成功的节点信息（cliType/req 仅在循环内可见，<-done 后仍需使用）
+	var (
+		registeredClientID    string
+		registeredCliType     string
+		registeredConnectTime time.Time
+		registeredOK          bool
+	)
 	for {
 		req, err := sender.Recv()
 		if err == io.EOF {
@@ -214,6 +223,10 @@ func (s *server) ServerSend(sender pb.Master_ServerSendServer) error {
 			}
 
 			s.appInstance.GetClientsManager().Set(req.GetClientId(), cliType, sender)
+			registeredClientID = req.GetClientId()
+			registeredCliType = cliType
+			registeredConnectTime, _ = s.appInstance.GetClientsManager().ConnectTime(req.GetClientId())
+			registeredOK = true
 			done = rpc.Recv(s.appInstance, req.GetClientId())
 			sender.Send(&pb.ServerMessage{
 				Event:     req.GetEvent(),
@@ -225,6 +238,10 @@ func (s *server) ServerSend(sender pb.Master_ServerSendServer) error {
 		}
 	}
 	<-done
+	if registeredOK {
+		// 连接断开后延迟确认掉线并发送提醒邮件（内部防抖：期间重连则不通知）
+		go mailer.CheckNodeOffline(ctx, registeredCliType, registeredClientID, registeredConnectTime)
+	}
 	return nil
 }
 
