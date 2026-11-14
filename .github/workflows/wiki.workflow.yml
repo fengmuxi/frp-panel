@@ -42,7 +42,7 @@ jobs:
 
       # Step 3: Install pnpm
       - name: Install pnpm
-        run: npm install -g pnpm
+        run: npm install -g pnpm@9
 
       # Step 4: Restore cache for pnpm and VitePress build
       - name: Restore cache
