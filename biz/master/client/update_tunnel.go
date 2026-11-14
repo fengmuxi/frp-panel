@@ -15,6 +15,7 @@ import (
 	"github.com/VaalaCat/frp-panel/utils"
 	"github.com/VaalaCat/frp-panel/utils/logger"
 	v1 "github.com/fatedier/frp/pkg/config/v1"
+	"github.com/fatedier/frp/pkg/config/v1/validation"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
 )
@@ -157,6 +158,23 @@ func UpdateFrpcHander(c *app.Context, req *pb.UpdateFRPCRequest) (*pb.UpdateFRPC
 		ClientCommonConfig: cliCfg.ClientCommonConfig,
 		Proxies:            lo.Map(cliCfg.Proxies, func(item v1.TypedProxyConfig, _ int) v1.ProxyConfigurer { return item.ProxyConfigurer }),
 		Visitors:           lo.Map(cliCfg.Visitors, func(item v1.TypedVisitorConfig, _ int) v1.VisitorConfigurer { return item.VisitorConfigurer }),
+	}
+
+	// 保存前校验，直接拒绝会导致 frpc 启动失败的非法配置。
+	// 与 frpc 官方加载流程保持一致：先 Complete 补全默认值再 Validate。
+	// frp 的校验要求 proxy 的 bandwidthLimitMode 必须为 client/server，
+	// 而默认值 "client" 是由 Complete 填充的；前端提交的配置不含该字段，
+	// 若跳过 Complete 直接校验，空字符串会被误判为非法
+	// （报错形如 "proxy xxx: bandwidth limit mode should be client or server"）。
+	// Complete("") 只补默认值，不改变 proxy 名称（namePrefix 为空时无前缀）。
+	for _, proxyCfg := range newCfg.Proxies {
+		proxyCfg.Complete("")
+	}
+	if _, err := validation.ValidateAllClientConfig(&newCfg.ClientCommonConfig, newCfg.Proxies, newCfg.Visitors); err != nil {
+		logger.Logger(c).WithError(err).Errorf("invalid client config, id: [%s]", reqClientID)
+		return &pb.UpdateFRPCResponse{
+			Status: &pb.Status{Code: pb.RespCode_RESP_CODE_INVALID, Message: err.Error()},
+		}, err
 	}
 
 	rawCliConf, err := json.Marshal(newCfg)

@@ -2,6 +2,7 @@ package clientrpc
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"time"
 
@@ -21,7 +22,10 @@ import (
 // 	}
 // }
 
-func registClientToMaster(appInstance app.Application, recvStream pb.Master_ServerSendClient, event pb.Event, clientID, clientSecret string) {
+// registClientToMaster 在当前 stream 上向 Master 发起注册。
+// gRPC stream 一旦出错便不可复用，因此任何错误都直接返回，
+// 由外层 startClientRpcHandler 重建 stream 后重试，避免卡死或 Fatal 退出。
+func registClientToMaster(appInstance app.Application, recvStream pb.Master_ServerSendClient, event pb.Event, clientID, clientSecret string) error {
 	ctx := context.Background()
 	logger.Logger(ctx).Infof("start to regist client to master")
 	for {
@@ -32,22 +36,17 @@ func registClientToMaster(appInstance app.Application, recvStream pb.Master_Serv
 			Secret:    clientSecret,
 		})
 		if err != nil {
-			logger.Logger(ctx).WithError(err).Warnf("cannot send, sleep 3s and retry")
-			time.Sleep(3 * time.Second)
-			continue
+			return fmt.Errorf("cannot send register message: %w", err)
 		}
 
 		resp, err := recvStream.Recv()
-		if err == io.EOF {
-			break
-		}
 		if err != nil {
-			logger.Logger(ctx).Fatalf("cannot receive %v", err)
+			return fmt.Errorf("cannot receive register response: %w", err)
 		}
 
 		if resp.GetEvent() == event {
 			logger.Logger(ctx).Infof("client get server register envent success, clientID: %s", resp.GetClientId())
-			break
+			return nil
 		}
 	}
 }
@@ -64,7 +63,9 @@ func runCLientRpcHandler(appInstance app.Application, recvStream pb.Master_Serve
 		default:
 			resp, err := recvStream.Recv()
 			if err == io.EOF {
-				break
+				// 注意：break 只会跳出 select，必须 return 才能让外层循环重建 stream
+				logger.Logger(c).Infof("server closed stream, return to recreate")
+				return
 			}
 			if err != nil {
 				logger.Logger(context.Background()).WithError(err).Errorf("cannot receive, sleep 3s and return")
@@ -105,12 +106,18 @@ func startClientRpcHandler(appInstance app.Application, client app.MasterClient,
 		default:
 			recvStream, err := client.Call().ServerSend(context.Background())
 			if err != nil {
-				logger.Logger(context.Background()).WithError(err).Errorf("cannot recv, sleep 3s and retry")
+				logger.Logger(context.Background()).WithError(err).Errorf("cannot create stream, sleep 3s and retry")
 				time.Sleep(3 * time.Second)
 				continue
 			}
 
-			registClientToMaster(appInstance, recvStream, event, clientID, clientSecret)
+			if err := registClientToMaster(appInstance, recvStream, event, clientID, clientSecret); err != nil {
+				logger.Logger(context.Background()).WithError(err).Errorf("cannot register to master, sleep 3s and recreate stream")
+				recvStream.CloseSend()
+				time.Sleep(3 * time.Second)
+				continue
+			}
+
 			runCLientRpcHandler(appInstance, recvStream, done, clientID, clientHandleServerSend)
 		}
 	}

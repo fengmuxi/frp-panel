@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -30,7 +31,7 @@ type clientImpl struct {
 
 func NewClientHandler(commonCfg *v1.ClientCommonConfig,
 	proxyCfgs []v1.ProxyConfigurer,
-	visitorCfgs []v1.VisitorConfigurer) app.ClientHandler {
+	visitorCfgs []v1.VisitorConfigurer) (app.ClientHandler, error) {
 	ctx := context.Background()
 
 	if len(commonCfg.FeatureGates) > 0 {
@@ -44,7 +45,8 @@ func NewClientHandler(commonCfg *v1.ClientCommonConfig,
 		logger.Logger(ctx).WithError(err).Warnf("validate client config warning: %+v", warning)
 	}
 	if err != nil {
-		logger.Logger(ctx).Panic(err)
+		logger.Logger(ctx).WithError(err).Errorf("invalid client config")
+		return nil, fmt.Errorf("validate client config: %w", err)
 	}
 
 	cli, err := client.NewService(client.ServiceOptions{
@@ -53,7 +55,8 @@ func NewClientHandler(commonCfg *v1.ClientCommonConfig,
 		VisitorCfgs: visitorCfgs,
 	})
 	if err != nil {
-		logger.Logger(ctx).Panic(err)
+		logger.Logger(ctx).WithError(err).Errorf("cannot create client service")
+		return nil, fmt.Errorf("create client service: %w", err)
 	}
 
 	return &clientImpl{
@@ -61,7 +64,7 @@ func NewClientHandler(commonCfg *v1.ClientCommonConfig,
 		Common:      commonCfg,
 		ProxyCfgs:   lo.SliceToMap(proxyCfgs, utils.TransformProxyConfigurerToMap),
 		VisitorCfgs: lo.SliceToMap(visitorCfgs, utils.TransformVisitorConfigurerToMap),
-	}
+	}, nil
 }
 
 func (c *clientImpl) Run() {

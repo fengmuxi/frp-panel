@@ -74,19 +74,23 @@ func PullConfig(appInstance app.Application, clientID, clientSecret string) erro
 
 	serverID := resp.GetClient().GetServerId()
 
+	// 先构造新实例，成功后再替换旧实例，坏配置不会中断当前运行的客户端
+	newHandler, err := client.NewClientHandler(c, p, v)
+	if err != nil {
+		logger.Logger(ctx).WithError(err).Errorf("cannot create client handler, keep current running, clientID: [%s], serverID: [%s]", clientID, serverID)
+		return err
+	}
+
 	if t := ctrl.Get(clientID, serverID); t == nil {
 		logger.Logger(ctx).Infof("client [%s] for server [%s] not exists, create it", clientID, serverID)
-		ctrl.Add(clientID, serverID, client.NewClientHandler(c, p, v))
+		ctrl.Add(clientID, serverID, newHandler)
 		ctrl.Run(clientID, serverID)
 	} else {
 		if !reflect.DeepEqual(t.GetCommonCfg(), c) {
 			logger.Logger(ctx).Infof("client [%s] for server [%s] config changed, will recreate it", clientID, serverID)
-			tcli := ctrl.Get(clientID, serverID)
-			if tcli != nil {
-				tcli.Stop()
-				ctrl.Delete(clientID, serverID)
-			}
-			ctrl.Add(clientID, serverID, client.NewClientHandler(c, p, v))
+			t.Stop()
+			ctrl.Delete(clientID, serverID)
+			ctrl.Add(clientID, serverID, newHandler)
 			ctrl.Run(clientID, serverID)
 		} else {
 			logger.Logger(ctx).Infof("client [%s] for server [%s] already exists, update if need", clientID, serverID)
@@ -96,7 +100,7 @@ func PullConfig(appInstance app.Application, clientID, clientSecret string) erro
 					tcli.Stop()
 					ctrl.Delete(clientID, serverID)
 				}
-				ctrl.Add(clientID, serverID, client.NewClientHandler(c, p, v))
+				ctrl.Add(clientID, serverID, newHandler)
 				ctrl.Run(clientID, serverID)
 			} else {
 				tcli.Update(p, v)

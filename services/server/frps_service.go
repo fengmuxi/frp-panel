@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/VaalaCat/frp-panel/services/app"
@@ -19,7 +20,7 @@ type serverImpl struct {
 	firstSync sync.Once
 }
 
-func NewServerHandler(svrCfg *v1.ServerConfig) app.ServerHandler {
+func NewServerHandler(svrCfg *v1.ServerConfig) (app.ServerHandler, error) {
 	svrCfg.Complete()
 	ctx := context.Background()
 
@@ -28,13 +29,15 @@ func NewServerHandler(svrCfg *v1.ServerConfig) app.ServerHandler {
 		logger.Logger(ctx).WithError(err).Warnf("validate server config warning: %+v", warning)
 	}
 	if err != nil {
-		logger.Logger(ctx).Panic(err)
+		logger.Logger(ctx).WithError(err).Errorf("invalid server config")
+		return nil, fmt.Errorf("validate server config: %w", err)
 	}
 
 	var svr *server.Service
 
 	if svr, err = server.NewService(svrCfg); err != nil {
-		logger.Logger(ctx).WithError(err).Panic("cannot create server, exit and restart")
+		logger.Logger(ctx).WithError(err).Errorf("cannot create server service")
+		return nil, fmt.Errorf("create server service: %w", err)
 	}
 
 	logger.Logger(ctx).Debugf("create server, config is: [ %+v ]", svrCfg)
@@ -43,7 +46,7 @@ func NewServerHandler(svrCfg *v1.ServerConfig) app.ServerHandler {
 		srv:       svr,
 		Common:    svrCfg,
 		firstSync: sync.Once{},
-	}
+	}, nil
 }
 
 func (s *serverImpl) Run() {

@@ -14,6 +14,7 @@ import (
 	"github.com/VaalaCat/frp-panel/utils"
 	"github.com/VaalaCat/frp-panel/utils/logger"
 	v1 "github.com/fatedier/frp/pkg/config/v1"
+	"github.com/fatedier/frp/pkg/config/v1/validation"
 	"github.com/samber/lo"
 )
 
@@ -40,6 +41,14 @@ func UpdateFrpsHander(c *app.Context, req *pb.UpdateFRPSRequest) (*pb.UpdateFRPS
 	if srvCfg == nil || err != nil {
 		logger.Logger(context.Background()).WithError(err).Errorf("cannot load server config")
 		return nil, err
+	}
+
+	// 保存前校验，直接拒绝会导致 frps 启动失败的非法配置
+	if _, err := validation.ValidateServerConfig(srvCfg); err != nil {
+		logger.Logger(context.Background()).WithError(err).Errorf("invalid server config, id: [%s]", serverID)
+		return &pb.UpdateFRPSResponse{
+			Status: &pb.Status{Code: pb.RespCode_RESP_CODE_INVALID, Message: err.Error()},
+		}, err
 	}
 
 	lo.Filter(srvCfg.HTTPPlugins, func(item v1.HTTPPluginOptions, _ int) bool {

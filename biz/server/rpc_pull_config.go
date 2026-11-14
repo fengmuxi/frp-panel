@@ -48,17 +48,26 @@ func PullConfig(appInstance app.Application, serverID, serverSecret string) erro
 	InjectAuthPlugin(ctx, s)
 
 	if t := ctrl.Get(serverID); t != nil {
-		if !reflect.DeepEqual(t.GetCommonCfg(), s) {
-			t.Stop()
-			ctrl.Delete(serverID)
-			logger.Logger(ctx).Infof("server %s config changed, will recreate it", serverID)
-		} else {
+		if reflect.DeepEqual(t.GetCommonCfg(), s) {
 			logger.Logger(ctx).Infof("server %s config not changed", serverID)
 			return nil
 		}
 	}
 
-	ctrl.Add(serverID, server.NewServerHandler(s))
+	// 先构造新实例，成功后再替换旧实例，保证坏配置不会中断已有服务
+	newHandler, err := server.NewServerHandler(s)
+	if err != nil {
+		logger.Logger(ctx).WithError(err).Errorf("cannot create server handler, keep current running, serverID: [%s]", serverID)
+		return err
+	}
+
+	if t := ctrl.Get(serverID); t != nil {
+		t.Stop()
+		ctrl.Delete(serverID)
+		logger.Logger(ctx).Infof("server %s config changed, will recreate it", serverID)
+	}
+
+	ctrl.Add(serverID, newHandler)
 	ctrl.Run(serverID)
 
 	logger.Logger(ctx).Infof("pull server config success, serverID: [%s]", serverID)
