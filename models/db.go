@@ -18,10 +18,6 @@ func (dbm *dbManagerImpl) Init() {
 	for _, dbGroup := range dbm.DBs {
 		for _, db := range dbGroup {
 			ctx := context.Background()
-			if err := db.Migrator().DropIndex(&Endpoint{}, "idx_client_id_host_port"); err != nil {
-				logger.Logger(ctx).WithError(err).Infof("cannot drop index [%s], your db is updated", "idx_client_id_host_port")
-			}
-
 			if err := db.AutoMigrate(&Client{}); err != nil {
 				logger.Logger(ctx).WithError(err).Fatalf("cannot init db table [%s]", (&Client{}).TableName())
 			}
