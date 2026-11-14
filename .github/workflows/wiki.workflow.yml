@@ -32,13 +32,11 @@ jobs:
         with:
           version: 10
 
-      # Step 2: Setup Node.js and pnpm
-      - name: Setup Node.js and pnpm
+      # Step 2: Setup Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20" # Use Node.js version 20
-          cache: "pnpm"      # Enable pnpm cache
-          cache-dependency-path: docs/pnpm-lock.yaml
 
       # Step 3: Install pnpm
       - name: Install pnpm
