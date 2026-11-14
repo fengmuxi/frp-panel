@@ -77,7 +77,30 @@ Detailed architecture call diagram:
 
 ![structure](../public/images/callvis.svg)
 
+### Database Schema Migrations
+
+The table schema evolves through two mechanisms (see `Init()` in `models/db.go`):
+
+1. **AutoMigrate**: on startup, adds new columns/tables/indexes for all models registered in `models/` (additive only — no changes or drops);
+2. **Versioned migrations**: executed after AutoMigrate, the steps registered in `models/migrate.go` handle what AutoMigrate cannot express — destructive changes (dropping indexes/columns, changing types) and data backfills.
+
+Applied migrations are recorded in the `schema_migrations` table (`models.MigrationRecord`); already-applied versions are skipped on startup, and each step commits atomically in the same transaction as its version record.
+
+**Adding a migration**: append one entry to the `migrationSteps` slice in `models/migrate.go`, with `version` set to the previous entry + 1 and a lowercase underscore-separated `name`, for example:
+
+```go
+{version: 2, name: "backfill_proxy_config_tenant", up: backfillProxyConfigTenant},
+```
+
+Three rules for writing a migration:
+
+- **Repeatable**: re-running after a failure or partial commit must not cause double damage (MySQL DDL commits implicitly and cannot be rolled back as a whole, so this matters even more there);
+- **Dialect-portable**: prefer the GORM Migrator API (`HasIndex`/`DropIndex`/`RenameColumn`/`HasColumn`, etc.) so sqlite/mysql/postgres behave the same; when a dialect branch is unavoidable, branch on `db.Dialector.Name()`;
+- **Columns exist first**: migrations run after AutoMigrate, so backfill migrations may use newly added model columns directly; model-owned tables are still created and extended by AutoMigrate — do not duplicate that in migrations.
+
+Migration status can be reconciled with the `data/db_migration` checker of `frpp check` (see [checker.md](/checker.md)).
+
 ### Core Configuration Explanation
 
-[settings.go](https://github.com/VaalaCat/frp-panel/blob/main/conf/settings.go)
+[settings.go](https://github.com/fengmuxi/frp-panel/blob/main/conf/settings.go)
 This file contains detailed explanations of the configuration parameters. Please refer to this file if you need to further modify the configuration.

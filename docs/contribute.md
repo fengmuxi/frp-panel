@@ -84,7 +84,30 @@
 
 ![structure](public/images/callvis.svg)
 
+### 数据库 schema 迁移
+
+表结构由两部分机制共同演进（见 `models/db.go` 的 `Init()`）：
+
+1. **AutoMigrate**：启动时对 `models/` 中注册的全部模型补齐新列/新表/新索引（只增，不改不删）；
+2. **版本化迁移**：AutoMigrate 之后执行 `models/migrate.go` 中注册的迁移步骤，负责 AutoMigrate 表达不了的操作——破坏性变更（删索引/删列/改类型）与数据回填。
+
+已应用的迁移记录在 `schema_migrations` 表（`models.MigrationRecord`），启动时按版本号跳过已应用项；每个步骤与版本记录在同一事务内原子提交。
+
+**新增迁移**：在 `models/migrate.go` 的 `migrationSteps` 切片尾部追加一条，`version` 取上一条 +1，`name` 用小写下划线命名，例如：
+
+```go
+{version: 2, name: "backfill_proxy_config_tenant", up: backfillProxyConfigTenant},
+```
+
+编写迁移的三条规则：
+
+- **可重复执行**：失败重跑或部分提交后重跑不得产生二次破坏（MySQL 的 DDL 是隐式提交、无法整体回滚，尤其需要保证）；
+- **方言可移植**：优先使用 GORM Migrator API（`HasIndex`/`DropIndex`/`RenameColumn`/`HasColumn` 等）保证 sqlite/mysql/postgres 三种方言一致；确需方言分支时按 `db.Dialector.Name()` 区分；
+- **依赖列先存在**：迁移在 AutoMigrate 之后执行，回填类迁移可以直接使用模型新加的列；模型对应的表仍由 AutoMigrate 建表与加列，迁移不要重复建。
+
+迁移状态可通过 `frpp check` 的 `data/db_migration` 检查项对账（见 [checker.md](/checker.md)）。
+
 ### 本体配置说明
 
-[settings.go](https://github.com/VaalaCat/frp-panel/blob/main/conf/settings.go)
+[settings.go](https://github.com/fengmuxi/frp-panel/blob/main/conf/settings.go)
 这里有详细的配置参数解释，需要进一步修改配置请参考该文件

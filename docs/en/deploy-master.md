@@ -60,7 +60,7 @@ Install Docker and Docker Compose, then create `docker-compose.yaml`:
 ```yaml
 services:
   frpp-master:
-    image: vaalacat/frp-panel:latest
+    image: fengmuxi/frp-panel:latest
     network_mode: host
     environment:
       APP_GLOBAL_SECRET: your_secret # Enter some random characters, do not leak
@@ -100,7 +100,7 @@ docker run -d \
   -e MASTER_RPC_HOST=0.0.0.0 \
   -e CLIENT_RPC_URL=grpc://0.0.0.0:9001 \
   -e CLIENT_API_URL=http://0.0.0.0:9000 \
-  vaalacat/frp-panel
+  fengmuxi/frp-panel
 ```
 
 If you cannot use `host` network mode, refer to the command below:
@@ -120,7 +120,7 @@ docker run -d -p 9000:9000 \ # API console port
   -e MASTER_RPC_HOST=0.0.0.0 \ # Change this to your server's external IP
   -e CLIENT_RPC_URL=grpc://0.0.0.0:9001 \
   -e CLIENT_API_URL=http://0.0.0.0:9000 \
-  vaalacat/frp-panel
+  fengmuxi/frp-panel
 ```
 
 ### Option 3: Docker + Reverse-Proxy TLS Deployment
@@ -173,7 +173,7 @@ services:
       - ./conf:/etc/traefik/conf
 
   frpp-master:
-    image: vaalacat/frp-panel:latest # Change to the version you want to use
+    image: fengmuxi/frp-panel:latest # Change to the version you want to use
     environment:
       APP_GLOBAL_SECRET: your_secret
     # Because api and rpc use different protocols

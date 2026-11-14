@@ -46,7 +46,7 @@ Create a `docker-compose.yaml`:
 version: '3'
 services:
   frp-panel-server:
-    image: vaalacat/frp-panel
+    image: fengmuxi/frp-panel
     container_name: frp-panel-server
     network_mode: host
     restart: unless-stopped

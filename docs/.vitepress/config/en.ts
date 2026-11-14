@@ -4,7 +4,7 @@ export const enConfig: LocaleSpecificConfig<DefaultTheme.Config> = {
   themeConfig: {
     nav: [
       { text: "Home", link: "/en/" },
-      { text: "Source Code", link: "https://github.com/vaalacat/frp-panel" },
+      { text: "Source Code", link: "https://github.com/fengmuxi/frp-panel" },
     ],
     sidebar: [
       {
@@ -31,6 +31,11 @@ export const enConfig: LocaleSpecificConfig<DefaultTheme.Config> = {
         link: "/en/all-configs",
       },
       {
+        text: "CI/CD & Releases",
+        collapsed: false,
+        link: "/en/ci-cd",
+      },
+      {
         text: "Contribution Guide",
         collapsed: false,
         link: "/en/contribute",
@@ -47,7 +52,7 @@ export const enConfig: LocaleSpecificConfig<DefaultTheme.Config> = {
       },
     ],
     socialLinks: [
-      { icon: "github", link: "https://github.com/vaalacat/frp-panel" },
+      { icon: "github", link: "https://github.com/fengmuxi/frp-panel" },
     ],
   },
 };

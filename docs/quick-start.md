@@ -16,7 +16,7 @@
 
 ## 文件下载说明
 
-frp-panel 可选 docker 和直接运行模式部署，直接部署请到 release 下载文件：[release](https://github.com/VaalaCat/frp-panel/releases)
+frp-panel 可选 docker 和直接运行模式部署，直接部署请到 release 下载文件：[release](https://github.com/fengmuxi/frp-panel/releases)
 
 注意：二进制有两种，一种是仅客户端，一种是全功能可执行文件，推荐使用全功能可执行文件。
 

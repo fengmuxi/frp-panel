@@ -15,7 +15,7 @@ The application loads configuration in the following order:
 
 > Documentation may be somewhat outdated…  
 >  
-> For the complete and latest configuration reference, see: [settings.go](https://github.com/VaalaCat/frp-panel/blob/main/conf/settings.go)
+> For the complete and latest configuration reference, see: [settings.go](https://github.com/fengmuxi/frp-panel/blob/main/conf/settings.go)
 
 | Type   | Environment Variable                    | Default             | Description                                                                                                    |
 |:-------|:---------------------------------------|:--------------------|:---------------------------------------------------------------------------------------------------------------|

@@ -16,7 +16,7 @@ export default defineConfig({
         },
     },
     title: "Frp-Panel WIKI",
-    description: "Wiki of vaalacat's wonderful frp-panel",
+    description: "Wiki of frp-panel",
     themeConfig: {
         // https://vitepress.dev/reference/default-theme-config
     },

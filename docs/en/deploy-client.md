@@ -26,7 +26,7 @@ Before deploying the Client, ensure the corresponding Server’s configuration i
 2. In the Master’s Web UI, click the **ID (show install command)** field for your Client. Copy the Linux install command, for example:
 
    ```bash
-   curl -fSL https://raw.githubusercontent.com/VaalaCat/frp-panel/main/install.sh \
+   curl -fSL https://raw.githubusercontent.com/fengmuxi/frp-panel/main/install.sh \
      | bash -s -- client -s abc -i user.c.client1 \
      --api-url http://frpp.example.com:9000 \
      --rpc-url grpc://frpp-rpc.example.com:9001
@@ -35,7 +35,7 @@ Before deploying the Client, ensure the corresponding Server’s configuration i
 3. If you’re in mainland China, you may want to use a GitHub proxy. For example, with `ghfast`:
 
    ```bash
-   curl -fSL https://ghfast.top/https://raw.githubusercontent.com/VaalaCat/frp-panel/main/install.sh \
+   curl -fSL https://ghfast.top/https://raw.githubusercontent.com/fengmuxi/frp-panel/main/install.sh \
      | bash -s -- --github-proxy https://ghfast.top/ client -s abc -i user.c.client1 \
      --api-url http://frpp.example.com:9000 \
      --rpc-url grpc://frpp-rpc.example.com:9001
@@ -44,7 +44,7 @@ Before deploying the Client, ensure the corresponding Server’s configuration i
 4. If you use a reverse-proxy with TLS (443 → Master 9000/API), adjust the command:
 
    ```bash
-   curl -fSL https://ghfast.top/https://raw.githubusercontent.com/VaalaCat/frp-panel/main/install.sh \
+   curl -fSL https://ghfast.top/https://raw.githubusercontent.com/fengmuxi/frp-panel/main/install.sh \
      | bash -s -- --github-proxy https://ghfast.top/ client -s abc -i user.c.client1 \
      --api-url https://frpp.example.com:443 \
      --rpc-url wss://frpp.example.com:443
@@ -74,7 +74,7 @@ Before deploying the Client, ensure the corresponding Server’s configuration i
    version: '3'
    services:
      frp-panel-client:
-       image: vaalacat/frp-panel
+       image: fengmuxi/frp-panel
        container_name: frp-panel-client
        network_mode: host
        restart: unless-stopped

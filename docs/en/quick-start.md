@@ -16,7 +16,7 @@ For `frp-panel`, **we recommend deploying all components via Docker** and **usin
 
 ## Download Instructions
 
-frp-panel supports deployment via Docker or direct execution. To deploy directly, download the release files here: [release](https://github.com/VaalaCat/frp-panel/releases)
+frp-panel supports deployment via Docker or direct execution. To deploy directly, download the release files here: [release](https://github.com/fengmuxi/frp-panel/releases)
 
 Note: There are two binary versions—one is client-only, and the other is a full-featured executable. We recommend using the full-featured executable.
 

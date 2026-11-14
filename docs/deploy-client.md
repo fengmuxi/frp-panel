@@ -27,19 +27,19 @@ Client 推荐使用 docker 部署
 点击对应客户端的 `ID (点击查看安装命令)` 一列，弹出不同系统的安装命令，粘贴到对应终端即可安装，这里以 Linux 为例
 
 ```
-curl -fSL https://raw.githubusercontent.com/VaalaCat/frp-panel/main/install.sh | bash -s --  client -s abc -i user.c.client1 --api-url http://frpp.example.com:9000 --rpc-url grpc://frpp-rpc.example.com:9001
+curl -fSL https://raw.githubusercontent.com/fengmuxi/frp-panel/main/install.sh | bash -s --  client -s abc -i user.c.client1 --api-url http://frpp.example.com:9000 --rpc-url grpc://frpp-rpc.example.com:9001
 ```
 
 如果你在国内，可以在WebUI中配置增加github加速到安装脚本前，以ghfast为例，配置后复制的内容可能类似下方：
 
 ```bash
-curl -fSL https://ghfast.top/https://raw.githubusercontent.com/VaalaCat/frp-panel/main/install.sh | bash -s -- --github-proxy https://ghfast.top/  client -s abc -i user.c.client1 --api-url http://frpp.example.com:9000 --rpc-url grpc://frpp-rpc.example.com:9001
+curl -fSL https://ghfast.top/https://raw.githubusercontent.com/fengmuxi/frp-panel/main/install.sh | bash -s -- --github-proxy https://ghfast.top/  client -s abc -i user.c.client1 --api-url http://frpp.example.com:9000 --rpc-url grpc://frpp-rpc.example.com:9001
 ```
 
 注意，如果你使用 反向代理 TLS，需要以 http 上游的形式，外部 443 端口代理 `master` 的 9000(API) 端口，且修改启动/安装命令类似如下：
 
 ```bash
-curl -fSL https://ghfast.top/https://raw.githubusercontent.com/VaalaCat/frp-panel/main/install.sh | bash -s -- --github-proxy https://ghfast.top/  client -s abc -i user.c.client1 --api-url https://frpp.example.com:443 --rpc-url wss://frpp.example.com:443
+curl -fSL https://ghfast.top/https://raw.githubusercontent.com/fengmuxi/frp-panel/main/install.sh | bash -s -- --github-proxy https://ghfast.top/  client -s abc -i user.c.client1 --api-url https://frpp.example.com:443 --rpc-url wss://frpp.example.com:443
 ```
 
 ### Docker Compose 部署
@@ -62,7 +62,7 @@ docker-compose.yaml
 version: '3'
 services:
   frp-panel-client:
-    image: vaalacat/frp-panel
+    image: fengmuxi/frp-panel
     container_name: frp-panel-client
     network_mode: host
     restart: unless-stopped

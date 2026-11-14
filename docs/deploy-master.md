@@ -63,7 +63,7 @@ RPC 端口也可以处理自签名 HTTPS 的 API 连接
 ```yaml
 services:
   frpp-master:
-    image: vaalacat/frp-panel:latest
+    image: fengmuxi/frp-panel:latest
     network_mode: host
     environment:
       APP_GLOBAL_SECRET: your_secret # 随便输入一些随机字符，不要泄露
@@ -103,7 +103,7 @@ docker run -d \
 	-e MASTER_RPC_HOST=0.0.0.0 \
 	-e CLIENT_RPC_URL=grpc://0.0.0.0:9001 \
 	-e CLIENT_API_URL=http://0.0.0.0:9000 \
-	vaalacat/frp-panel
+	fengmuxi/frp-panel
 ```
 
 如果你不想使用 host 网络模式，请参考使用下面的命令修改
@@ -123,7 +123,7 @@ docker run -d -p 9000:9000 \ # API控制台端口
 	-e MASTER_RPC_HOST=0.0.0.0 \ # 这里要改成你服务器的外部IP
 	-e CLIENT_RPC_URL=grpc://0.0.0.0:9001 \
 	-e CLIENT_API_URL=http://0.0.0.0:9000 \
-	vaalacat/frp-panel
+	fengmuxi/frp-panel
 ```
 
 ### 方式三：使用 docker 反向代理 TLS 加密部署
@@ -174,7 +174,7 @@ services:
       - ./conf:/etc/traefik/conf
 
   frpp-master:
-    image: vaalacat/frp-panel:latest # 这里换成你想使用的版本
+    image: fengmuxi/frp-panel:latest # 这里换成你想使用的版本
     environment:
       APP_GLOBAL_SECRET: your_secret
 	# 因为 api 和 rpc 使用的协议不一样

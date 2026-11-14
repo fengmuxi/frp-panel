@@ -4,7 +4,7 @@ export const zhConfig: LocaleSpecificConfig<DefaultTheme.Config> = {
   themeConfig: {
     nav: [
       { text: "首页", link: "/" },
-      { text: "源码", link: "https://github.com/vaalacat/frp-panel" },
+      { text: "源码", link: "https://github.com/fengmuxi/frp-panel" },
     ],
 
     sidebar: [
@@ -21,7 +21,7 @@ export const zhConfig: LocaleSpecificConfig<DefaultTheme.Config> = {
       {
         text: "进阶使用",
         collapsed: false,
-        link: "/advanced-usage",
+        link: "/wireguard",
         items: [
           { text: "WireGuard 多跳智能组网", link: "/wireguard" },
         ],
@@ -30,6 +30,11 @@ export const zhConfig: LocaleSpecificConfig<DefaultTheme.Config> = {
         text: "配置说明",
         collapsed: false,
         link: "/all-configs",
+      },
+      {
+        text: "CI/CD 与发布",
+        collapsed: false,
+        link: "/ci-cd",
       },
       {
         text: "贡献指南",
@@ -49,7 +54,7 @@ export const zhConfig: LocaleSpecificConfig<DefaultTheme.Config> = {
     ],
 
     socialLinks: [
-      { icon: "github", link: "https://github.com/vaalacat/frp-panel" },
+      { icon: "github", link: "https://github.com/fengmuxi/frp-panel" },
     ],
   },
 };

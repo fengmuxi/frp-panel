@@ -12,7 +12,7 @@
 
 > 文档可能有点老。。。
 > 
-> 完整的最新配置参考这个文件：[settings.go](https://github.com/VaalaCat/frp-panel/blob/main/conf/settings.go)
+> 完整的最新配置参考这个文件：[settings.go](https://github.com/fengmuxi/frp-panel/blob/main/conf/settings.go)
 
 | 类型   | 环境变量名                             | 默认值               | 描述                                                             |
 |--------|-------------------------------------|--------------------|----------------------------------------------------------------|
