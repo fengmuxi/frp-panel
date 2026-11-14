@@ -36,7 +36,7 @@ export function toTrafficRows(items: Array<{ proxyId?: number; name?: string; ty
 }
 
 interface TrafficRankingTableProps {
-  /** 与全局时段一致时共享同一 react-query 缓存 */
+  /** 面板自己的时段标签初始值（与首页全局时段相互独立） */
   defaultPeriod?: RankPeriod
 }
 
@@ -48,7 +48,11 @@ export function TrafficRankingTable({ defaultPeriod = 'today' }: TrafficRankingT
   const range = useMemo(() => getPeriodRange(period), [period])
 
   const query = useQuery({
-    queryKey: ['trafficStats', range.start, range.end, TZ_OFFSET],
+    // 注意：key 必须与首页趋势（home-traffic，withSeries:true）区分开。
+    // 两者曾共用 ['trafficStats', ...]，React Query 同 key 共享缓存、后发起的
+    // queryFn 覆盖先前的，排行表（withSeries:false）每 30s 的轮询会把趋势图
+    // 依赖的 series 从缓存里刷掉，导致趋势图时有时无。
+    queryKey: ['trafficRanking', range.start, range.end, TZ_OFFSET],
     queryFn: () =>
       getProxyTrafficStats({
         startTime: BigInt(range.start),
