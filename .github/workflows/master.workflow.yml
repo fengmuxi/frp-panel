@@ -37,11 +37,13 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Compile server
         run: bash ./build.sh
-      - uses: "marvinpinto/action-automatic-releases@latest"
+      - name: Alpha Release
+        uses: softprops/action-gh-release@v2
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          tag_name: alpha
+          name: alpha
           prerelease: true
-          automatic_release_tag: alpha
+          fail_on_unmatched_files: true
           files: |
             dist/*
       - name: Setup ko

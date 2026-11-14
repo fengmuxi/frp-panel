@@ -35,19 +35,20 @@ jobs:
       - name: Compile server
         run: bash ./build.sh
       - name: Tag Release
-        uses: "marvinpinto/action-automatic-releases@latest"
+        uses: softprops/action-gh-release@v2
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: false
-          automatic_release_tag: ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          make_latest: "false"
+          fail_on_unmatched_files: true
           files: |
             dist/*
       - name: Latest Release
-        uses: "marvinpinto/action-automatic-releases@latest"
+        uses: softprops/action-gh-release@v2
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: false
-          automatic_release_tag: latest
+          tag_name: latest
+          name: latest
+          fail_on_unmatched_files: true
           files: |
             dist/*
       - name: Setup ko
