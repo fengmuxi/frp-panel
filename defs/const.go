@@ -113,6 +113,13 @@ const (
 	DBTypePostgres = "postgres"
 )
 
+// 隧道流量限额的统计窗口类型（proxy_config.quota_type 取值，空字符串表示未启用限额）
+const (
+	QuotaTypeDay   = "day"   // 日限额：自然日 00:00 起
+	QuotaTypeWeek  = "week"  // 周限额：本周一 00:00 起
+	QuotaTypeMonth = "month" // 月限额：本月 1 日 00:00 起
+)
+
 const (
 	UserRole_Admin  = "admin"
 	UserRole_Normal = "normal"

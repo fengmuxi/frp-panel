@@ -19,6 +19,7 @@ import (
 type ProxyQuery interface {
 	GetProxyStatsByClientID(userInfo models.UserInfo, clientID string) ([]*models.ProxyStatsEntity, error)
 	GetProxyStatsByServerID(userInfo models.UserInfo, serverID string) ([]*models.ProxyStatsEntity, error)
+	GetProxyStatsByUser(userInfo models.UserInfo) ([]*models.ProxyStatsEntity, error)
 	AdminGetTenantProxyStats(tenantID int) ([]*models.ProxyStatsEntity, error)
 	AdminGetAllProxyStats(tx *gorm.DB) ([]*models.ProxyStatsEntity, error)
 	AdminGetProxyConfigByClientIDAndName(clientID string, name string) (*models.ProxyConfig, error)
@@ -26,6 +27,8 @@ type ProxyQuery interface {
 	GetProxyConfigByFilter(userInfo models.UserInfo, proxyConfig *models.ProxyConfigEntity) (*models.ProxyConfig, error)
 	ListProxyConfigsWithFilters(userInfo models.UserInfo, page, pageSize int, filters *models.ProxyConfigEntity) ([]*models.ProxyConfig, error)
 	AdminListProxyConfigsWithFilters(filters *models.ProxyConfigEntity) ([]*models.ProxyConfig, error)
+	AdminListProxyConfigsWithRules() ([]*models.ProxyConfig, error)
+	AdminGetProxyStatsByKey(userID, tenantID int, serverID, name string) (*models.ProxyStatsEntity, error)
 	ListProxyConfigsWithFiltersAndKeyword(userInfo models.UserInfo, page, pageSize int, filters *models.ProxyConfigEntity, keyword string) ([]*models.ProxyConfig, error)
 	ListProxyConfigsWithKeyword(userInfo models.UserInfo, page, pageSize int, keyword string) ([]*models.ProxyConfig, error)
 	ListProxyConfigs(userInfo models.UserInfo, page, pageSize int) ([]*models.ProxyConfig, error)
@@ -34,6 +37,7 @@ type ProxyQuery interface {
 	CountProxyConfigsWithFilters(userInfo models.UserInfo, filters *models.ProxyConfigEntity) (int64, error)
 	CountProxyConfigsWithFiltersAndKeyword(userInfo models.UserInfo, filters *models.ProxyConfigEntity, keyword string) (int64, error)
 	GetProxyConfigsByWorkerId(userInfo models.UserInfo, workerID string) ([]*models.ProxyConfig, error)
+	GetHourlySnapshotsByUser(userInfo models.UserInfo, fromTs, toTs int64) ([]*models.ProxyStatsHourly, error)
 }
 
 type ProxyMutation interface {
@@ -45,6 +49,9 @@ type ProxyMutation interface {
 	DeleteProxyConfig(userInfo models.UserInfo, clientID, name string) error
 	DeleteProxyConfigsByClientIDOrOriginClientID(userInfo models.UserInfo, clientID string) error
 	DeleteProxyConfigsByClientID(userInfo models.UserInfo, clientID string) error
+	AdminUpdateProxyConfigAutoStopped(id uint, autoStopped bool) error
+	SaveHourlySnapshots(snaps []*models.ProxyStatsHourly) error
+	DeleteHourlySnapshotsBefore(beforeTs int64) error
 }
 
 type proxyQuery struct{ *queryImpl }
@@ -104,6 +111,27 @@ func (q *proxyQuery) GetProxyStatsByServerID(userInfo models.UserInfo, serverID 
 		UserID:   0,
 		TenantID: userInfo.GetTenantID(),
 		ServerID: serverID,
+	}}).
+		Find(&list).Error
+	if err != nil {
+		return nil, err
+	}
+	return lo.Map(list, func(item *models.ProxyStats, _ int) *models.ProxyStatsEntity {
+		return item.ProxyStatsEntity
+	}), nil
+}
+
+// GetProxyStatsByUser 返回当前用户可见的全部实时统计（含 UserID=0 的全局记录），只读无锁
+func (q *proxyQuery) GetProxyStatsByUser(userInfo models.UserInfo) ([]*models.ProxyStatsEntity, error) {
+	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
+	list := []*models.ProxyStats{}
+	err := db.
+		Where(&models.ProxyStats{ProxyStatsEntity: &models.ProxyStatsEntity{
+			UserID:   userInfo.GetUserID(),
+			TenantID: userInfo.GetTenantID(),
+		}}).Or(&models.ProxyStats{ProxyStatsEntity: &models.ProxyStatsEntity{
+		UserID:   0,
+		TenantID: userInfo.GetTenantID(),
 	}}).
 		Find(&list).Error
 	if err != nil {
@@ -218,15 +246,28 @@ func (m *proxyMutation) AdminUpdateProxyStats(srv *models.ServerEntity, inputs [
 			}
 			if oldProxy, ok := oldProxyMap[name]; ok {
 				item.ProxyID = oldProxy.ProxyID
-				firstSync := inputMap[name].GetFirstSync()
-				isSameDay := utils.IsSameDay(nowTime, oldProxy.UpdatedAt)
 
-				item.HistoryTrafficIn = oldProxy.HistoryTrafficIn
-				item.HistoryTrafficOut = oldProxy.HistoryTrafficOut
-				if !isSameDay || firstSync {
-					item.HistoryTrafficIn += oldProxy.TodayTrafficIn
-					item.HistoryTrafficOut += oldProxy.TodayTrafficOut
-				}
+				// 今日/历史累计的补偿维护（跨 frps 重启连续）：
+				//   - 正常推进时按 frps 内存计数的增量累加今日值；
+				//   - 检测到上报回退（frps 重启/firstSync）时衔接今日累计，避免丢流量；
+				//   - 跨天时昨日今日累计滚入历史。
+				// 注意：firstSync（frps 重启后的首次同步）不再把旧今日值滚入历史——
+				// history 的语义是"今天 00:00 的累计"，滚入会让区间差分虚高。
+				firstSync := inputMap[name].GetFirstSync()
+				upd := computeProxyStatsDailyUpdate(
+					oldProxy.TodayTrafficIn, oldProxy.TodayTrafficOut,
+					oldProxy.HistoryTrafficIn, oldProxy.HistoryTrafficOut,
+					oldProxy.ReportedTodayIn, oldProxy.ReportedTodayOut,
+					inputMap[name].GetTodayTrafficIn(), inputMap[name].GetTodayTrafficOut(),
+					firstSync,
+					utils.IsSameDay(nowTime, oldProxy.UpdatedAt),
+				)
+				item.TodayTrafficIn = upd.TodayIn
+				item.TodayTrafficOut = upd.TodayOut
+				item.HistoryTrafficIn = upd.HistoryIn
+				item.HistoryTrafficOut = upd.HistoryOut
+				item.ReportedTodayIn = lo.ToPtr(upd.ReportedIn)
+				item.ReportedTodayOut = lo.ToPtr(upd.ReportedOut)
 			}
 			return item
 		}))
@@ -422,6 +463,47 @@ func (q *proxyQuery) AdminListProxyConfigsWithFilters(filters *models.ProxyConfi
 	return proxyConfigs, nil
 }
 
+// AdminListProxyConfigsWithRules 返回启用了自动规则（定时开关/流量限额）或曾被自动停用的隧道，
+// 供 Master 周期对账任务评估期望启停状态。
+func (q *proxyQuery) AdminListProxyConfigsWithRules() ([]*models.ProxyConfig, error) {
+	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
+
+	var proxyConfigs []*models.ProxyConfig
+	err := db.Where(
+		db.Where("schedule_enabled = ?", true).
+			Or("auto_stopped = ?", true).
+			Or(db.Where("quota_type IS NOT NULL").Where("quota_type <> ?", "")),
+	).Find(&proxyConfigs).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return proxyConfigs, nil
+}
+
+// AdminGetProxyStatsByKey 按 用户/租户/服务端/隧道名 精确查找流量统计行（内部规则计算用，无需请求级用户上下文）
+func (q *proxyQuery) AdminGetProxyStatsByKey(userID, tenantID int, serverID, name string) (*models.ProxyStatsEntity, error) {
+	if serverID == "" || name == "" {
+		return nil, nil
+	}
+	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
+
+	var list []*models.ProxyStats
+	err := db.Where(&models.ProxyStats{ProxyStatsEntity: &models.ProxyStatsEntity{
+		UserID:   userID,
+		TenantID: tenantID,
+		ServerID: serverID,
+		Name:     name,
+	}}).Find(&list).Error
+	if err != nil {
+		return nil, err
+	}
+	if len(list) == 0 {
+		return nil, nil
+	}
+	return list[0].ProxyStatsEntity, nil
+}
+
 func (q *proxyQuery) ListProxyConfigsWithFiltersAndKeyword(userInfo models.UserInfo, page, pageSize int, filters *models.ProxyConfigEntity, keyword string) ([]*models.ProxyConfig, error) {
 	if page < 1 || pageSize < 1 || len(keyword) == 0 {
 		return nil, fmt.Errorf("invalid page or page size or keyword")
@@ -476,6 +558,12 @@ func (m *proxyMutation) UpdateProxyConfig(userInfo models.UserInfo, proxyCfg *mo
 			ID: proxyCfg.ID,
 		},
 	}).Save(proxyCfg).Error
+}
+
+// AdminUpdateProxyConfigAutoStopped 仅更新 auto_stopped 标记（对账任务用，按主键直更，不做用户过滤）
+func (m *proxyMutation) AdminUpdateProxyConfigAutoStopped(id uint, autoStopped bool) error {
+	db := m.ctx.GetApp().GetDBManager().GetDefaultDB()
+	return db.Model(&models.ProxyConfig{}).Where("id = ?", id).Update("auto_stopped", autoStopped).Error
 }
 
 func (m *proxyMutation) DeleteProxyConfig(userInfo models.UserInfo, clientID, name string) error {

@@ -28,6 +28,18 @@ type ProxyConfigEntity struct {
 	OriginClientID string `json:"origin_client_id" gorm:"index"`
 	Content        []byte `json:"content"`
 	Stopped        bool   `json:"stopped" gorm:"index"`
+
+	// 自动规则：定时开关（ScheduleEnabled 时按时间窗口与周几自动启停）
+	ScheduleEnabled bool           `json:"schedule_enabled" gorm:"index"`
+	ScheduleStart   string         `json:"schedule_start"` // HH:MM 开启时间（分钟精度）
+	ScheduleEnd     string         `json:"schedule_end"`   // HH:MM 关闭时间，start > end 表示跨天（如 22:00-06:00）
+	ScheduleDays    GormArray[int] `json:"schedule_days"`  // 生效周几，0=周日 ~ 6=周六，多选；空=不生效
+	// 自动规则：流量限额（QuotaType 非空且 QuotaLimit > 0 时生效），达到限额自动停用
+	QuotaType  string `json:"quota_type" gorm:"index"` // defs.QuotaType* 取值，空=未启用
+	QuotaLimit int64  `json:"quota_limit"`             // 限额字节数
+	// 是否被自动规则（定时窗口/流量限额）停用，用于区分手动暂停：
+	// 手动停用的隧道不会被自动规则拉起，自动停用的隧道在规则允许时会被自动恢复
+	AutoStopped bool `json:"auto_stopped" gorm:"index"`
 }
 
 func (*ProxyConfig) TableName() string {

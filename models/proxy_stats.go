@@ -23,9 +23,14 @@ type ProxyStatsEntity struct {
 	TodayTrafficOut   int64  `json:"today_traffic_out"`
 	HistoryTrafficIn  int64  `json:"history_traffic_in"`
 	HistoryTrafficOut int64  `json:"history_traffic_out"`
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
-	DeletedAt         gorm.DeletedAt `gorm:"index"`
+	// ReportedTodayIn/Out 记录最近一次收到的 frps 内存当日计数（frps 重启会清零）。
+	// 用于检测上报值回退（frps 重启/计数轮转），使 master 侧的今日累计跨 frps 重启连续；
+	// nil 表示该补偿字段上线前没有记录（首次上报按旧口径衔接）。
+	ReportedTodayIn  *int64 `json:"reported_today_in,omitempty"`
+	ReportedTodayOut *int64 `json:"reported_today_out,omitempty"`
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	DeletedAt        gorm.DeletedAt `gorm:"index"`
 }
 
 func (*ProxyStats) TableName() string {

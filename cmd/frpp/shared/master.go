@@ -47,6 +47,12 @@ func runMaster(param runMasterParam) {
 	auth.InitAuth(param.AppInstance)
 
 	param.TaskManager.AddCronTask("0 0 3 * * *", proxy.CollectDailyStats, param.AppInstance)
+	// 每分钟对账一次隧道自动规则（定时开关 + 流量限额），边界时刻精确到分钟
+	param.TaskManager.AddCronTask("0 * * * * *", proxy.ReconcileTunnelRules, param.AppInstance)
+	// 每小时整点采集当日流量小时快照（首页"今日"小时粒度趋势的数据源）
+	param.TaskManager.AddCronTask("0 0 * * * *", proxy.CollectHourlyStats, param.AppInstance)
+	// master 启动时立即采集一次，保证部署后当天即可产生小时序列
+	proxy.CollectHourlyStats(param.Ctx)
 	defer param.TaskManager.Stop()
 
 	logger.Logger(param.Ctx).Infof("start to run master")

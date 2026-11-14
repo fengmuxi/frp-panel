@@ -58,3 +58,32 @@ message StartSteamLogRequest {
 message StartSteamLogResponse {
   optional common.Status status = 1;
 }
+
+message GetProxyTrafficStatsRequest {
+  optional int64 start_time = 1; // unix 秒，起始日 00:00（按前端时区，含）
+  optional int64 end_time = 2; // unix 秒，语义为"含 end 所在整天"
+  optional bool with_series = 3; // 是否返回日粒度趋势序列
+  optional int32 tz_offset_minutes = 4; // 前端时区偏移分钟 = -new Date().getTimezoneOffset()
+}
+
+message ProxyTrafficItem {
+  optional int32 proxy_id = 1;
+  optional string name = 2;
+  optional string type = 3;
+  optional int64 traffic_in = 4;
+  optional int64 traffic_out = 5;
+}
+
+message TrafficSeriesPoint {
+  optional int64 ts = 1; // 该日 00:00 的 unix 秒（按前端时区）
+  optional int64 traffic_in = 2;
+  optional int64 traffic_out = 3;
+}
+
+message GetProxyTrafficStatsResponse {
+  optional common.Status status = 1;
+  repeated ProxyTrafficItem items = 2; // 按 (traffic_in + traffic_out) 降序
+  repeated TrafficSeriesPoint series = 3; // 日粒度趋势，按天升序
+  optional int64 total_in = 4;
+  optional int64 total_out = 5;
+}

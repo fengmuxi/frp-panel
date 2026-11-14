@@ -29,6 +29,18 @@ func convertProxyStatsList(proxyList []*models.ProxyStatsEntity) []*pb.ProxyInfo
 	})
 }
 
+// fillProxyRulesInfo 填充隧道自动规则字段与当前统计窗口已用量（list/get 返回时共用）
+func fillProxyRulesInfo(ctx *app.Context, pbCfg *pb.ProxyConfig, item *models.ProxyConfig) {
+	pbCfg.ScheduleEnabled = lo.ToPtr(item.ScheduleEnabled)
+	pbCfg.ScheduleStart = lo.ToPtr(item.ScheduleStart)
+	pbCfg.ScheduleEnd = lo.ToPtr(item.ScheduleEnd)
+	pbCfg.ScheduleDays = lo.Map(item.ScheduleDays, func(day int, _ int) int32 { return int32(day) })
+	pbCfg.QuotaType = lo.ToPtr(item.QuotaType)
+	pbCfg.QuotaLimit = lo.ToPtr(item.QuotaLimit)
+	pbCfg.AutoStopped = lo.ToPtr(item.AutoStopped)
+	pbCfg.QuotaUsed = lo.ToPtr(CalcProxyQuotaUsed(ctx, item.ProxyConfigEntity))
+}
+
 // GetClientWithMakeShadow
 // 1. 检查是否有已连接该服务端的客户端
 // 2. 检查是否有Shadow客户端

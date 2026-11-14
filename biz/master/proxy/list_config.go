@@ -66,7 +66,7 @@ func ListProxyConfigs(ctx *app.Context, req *pb.ListProxyConfigsRequest) (*pb.Li
 	}
 
 	respProxyConfigs := lo.Map(proxyConfigs, func(item *models.ProxyConfig, _ int) *pb.ProxyConfig {
-		return &pb.ProxyConfig{
+		pbCfg := &pb.ProxyConfig{
 			Id:             lo.ToPtr(uint32(item.ID)),
 			Name:           lo.ToPtr(item.Name),
 			Type:           lo.ToPtr(item.Type),
@@ -76,6 +76,8 @@ func ListProxyConfigs(ctx *app.Context, req *pb.ListProxyConfigsRequest) (*pb.Li
 			OriginClientId: lo.ToPtr(item.OriginClientID),
 			Stopped:        lo.ToPtr(item.Stopped),
 		}
+		fillProxyRulesInfo(ctx, pbCfg, item)
+		return pbCfg
 	})
 
 	return &pb.ListProxyConfigsResponse{

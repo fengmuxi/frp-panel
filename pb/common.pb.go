@@ -292,6 +292,7 @@ type Client struct {
 	FrpsUrl        *string                `protobuf:"bytes,10,opt,name=frps_url,json=frpsUrl,proto3,oneof" json:"frps_url,omitempty"`             // 客户端用于连接frps的url，解决 frp 在 CDN 后的问题，格式类似 [tcp/ws/wss/quic/kcp]://example.com:7000
 	Ephemeral      *bool                  `protobuf:"varint,11,opt,name=ephemeral,proto3,oneof" json:"ephemeral,omitempty"`                       // 是否临时节点
 	LastSeenAt     *int64                 `protobuf:"varint,12,opt,name=last_seen_at,json=lastSeenAt,proto3,oneof" json:"last_seen_at,omitempty"` // 最后一次心跳时间戳
+	SortIndex      *int32                 `protobuf:"varint,13,opt,name=sort_index,json=sortIndex,proto3,oneof" json:"sort_index,omitempty"`      // 用户自定义排序序号，0 表示未设置（排在最后）
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -403,14 +404,22 @@ func (x *Client) GetLastSeenAt() int64 {
 	return 0
 }
 
+func (x *Client) GetSortIndex() int32 {
+	if x != nil && x.SortIndex != nil {
+		return *x.SortIndex
+	}
+	return 0
+}
+
 type Server struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Secret        *string                `protobuf:"bytes,2,opt,name=secret,proto3,oneof" json:"secret,omitempty"`
 	Ip            *string                `protobuf:"bytes,3,opt,name=ip,proto3,oneof" json:"ip,omitempty"`
-	Config        *string                `protobuf:"bytes,4,opt,name=config,proto3,oneof" json:"config,omitempty"`               // 在定义上，ip和port只是为了方便使用
-	Comment       *string                `protobuf:"bytes,5,opt,name=comment,proto3,oneof" json:"comment,omitempty"`             // 用户自定义的备注
-	FrpsUrls      []string               `protobuf:"bytes,6,rep,name=frps_urls,json=frpsUrls,proto3" json:"frps_urls,omitempty"` // 客户端用于连接frps的url，解决 frp 在 CDN 后的问题，格式类似 [tcp/ws/wss/quic/kcp]://example.com:7000，可以有多个
+	Config        *string                `protobuf:"bytes,4,opt,name=config,proto3,oneof" json:"config,omitempty"`                         // 在定义上，ip和port只是为了方便使用
+	Comment       *string                `protobuf:"bytes,5,opt,name=comment,proto3,oneof" json:"comment,omitempty"`                       // 用户自定义的备注
+	FrpsUrls      []string               `protobuf:"bytes,6,rep,name=frps_urls,json=frpsUrls,proto3" json:"frps_urls,omitempty"`           // 客户端用于连接frps的url，解决 frp 在 CDN 后的问题，格式类似 [tcp/ws/wss/quic/kcp]://example.com:7000，可以有多个
+	SortIndex     *int32                 `protobuf:"varint,7,opt,name=sort_index,json=sortIndex,proto3,oneof" json:"sort_index,omitempty"` // 用户自定义排序序号，0 表示未设置（排在最后）
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -485,6 +494,13 @@ func (x *Server) GetFrpsUrls() []string {
 		return x.FrpsUrls
 	}
 	return nil
+}
+
+func (x *Server) GetSortIndex() int32 {
+	if x != nil && x.SortIndex != nil {
+		return *x.SortIndex
+	}
+	return 0
 }
 
 type User struct {
@@ -705,8 +721,18 @@ type ProxyConfig struct {
 	Config         *string                `protobuf:"bytes,6,opt,name=config,proto3,oneof" json:"config,omitempty"`
 	OriginClientId *string                `protobuf:"bytes,7,opt,name=origin_client_id,json=originClientId,proto3,oneof" json:"origin_client_id,omitempty"`
 	Stopped        *bool                  `protobuf:"varint,8,opt,name=stopped,proto3,oneof" json:"stopped,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// 自动规则：定时开关
+	ScheduleEnabled *bool   `protobuf:"varint,9,opt,name=schedule_enabled,json=scheduleEnabled,proto3,oneof" json:"schedule_enabled,omitempty"` // 是否启用定时开关
+	ScheduleStart   *string `protobuf:"bytes,10,opt,name=schedule_start,json=scheduleStart,proto3,oneof" json:"schedule_start,omitempty"`       // HH:MM 开启时间（分钟精度）
+	ScheduleEnd     *string `protobuf:"bytes,11,opt,name=schedule_end,json=scheduleEnd,proto3,oneof" json:"schedule_end,omitempty"`             // HH:MM 关闭时间，start > end 表示跨天（如 22:00-06:00）
+	ScheduleDays    []int32 `protobuf:"varint,12,rep,packed,name=schedule_days,json=scheduleDays,proto3" json:"schedule_days,omitempty"`        // 生效周几，0=周日 ~ 6=周六，多选
+	// 自动规则：流量限额
+	QuotaType     *string `protobuf:"bytes,13,opt,name=quota_type,json=quotaType,proto3,oneof" json:"quota_type,omitempty"`        // day/week/month，空=未启用
+	QuotaLimit    *int64  `protobuf:"varint,14,opt,name=quota_limit,json=quotaLimit,proto3,oneof" json:"quota_limit,omitempty"`    // 限额字节数
+	QuotaUsed     *int64  `protobuf:"varint,15,opt,name=quota_used,json=quotaUsed,proto3,oneof" json:"quota_used,omitempty"`       // 当前统计窗口已用字节数（仅返回，不可修改）
+	AutoStopped   *bool   `protobuf:"varint,16,opt,name=auto_stopped,json=autoStopped,proto3,oneof" json:"auto_stopped,omitempty"` // 是否被自动规则（定时/限额）停用
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ProxyConfig) Reset() {
@@ -791,6 +817,62 @@ func (x *ProxyConfig) GetOriginClientId() string {
 func (x *ProxyConfig) GetStopped() bool {
 	if x != nil && x.Stopped != nil {
 		return *x.Stopped
+	}
+	return false
+}
+
+func (x *ProxyConfig) GetScheduleEnabled() bool {
+	if x != nil && x.ScheduleEnabled != nil {
+		return *x.ScheduleEnabled
+	}
+	return false
+}
+
+func (x *ProxyConfig) GetScheduleStart() string {
+	if x != nil && x.ScheduleStart != nil {
+		return *x.ScheduleStart
+	}
+	return ""
+}
+
+func (x *ProxyConfig) GetScheduleEnd() string {
+	if x != nil && x.ScheduleEnd != nil {
+		return *x.ScheduleEnd
+	}
+	return ""
+}
+
+func (x *ProxyConfig) GetScheduleDays() []int32 {
+	if x != nil {
+		return x.ScheduleDays
+	}
+	return nil
+}
+
+func (x *ProxyConfig) GetQuotaType() string {
+	if x != nil && x.QuotaType != nil {
+		return *x.QuotaType
+	}
+	return ""
+}
+
+func (x *ProxyConfig) GetQuotaLimit() int64 {
+	if x != nil && x.QuotaLimit != nil {
+		return *x.QuotaLimit
+	}
+	return 0
+}
+
+func (x *ProxyConfig) GetQuotaUsed() int64 {
+	if x != nil && x.QuotaUsed != nil {
+		return *x.QuotaUsed
+	}
+	return 0
+}
+
+func (x *ProxyConfig) GetAutoStopped() bool {
+	if x != nil && x.AutoStopped != nil {
+		return *x.AutoStopped
 	}
 	return false
 }
@@ -1091,7 +1173,7 @@ const file_common_proto_rawDesc = "" +
 	"\x06status\x18\x01 \x01(\v2\x0e.common.StatusH\x00R\x06status\x88\x01\x01\x12\x17\n" +
 	"\x04data\x18\x02 \x01(\tH\x01R\x04data\x88\x01\x01B\t\n" +
 	"\a_statusB\a\n" +
-	"\x05_data\"\xf3\x03\n" +
+	"\x05_data\"\xa6\x04\n" +
 	"\x06Client\x12\x13\n" +
 	"\x02id\x18\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12\x1b\n" +
 	"\x06secret\x18\x02 \x01(\tH\x01R\x06secret\x88\x01\x01\x12\x1b\n" +
@@ -1106,7 +1188,10 @@ const file_common_proto_rawDesc = "" +
 	" \x01(\tH\aR\afrpsUrl\x88\x01\x01\x12!\n" +
 	"\tephemeral\x18\v \x01(\bH\bR\tephemeral\x88\x01\x01\x12%\n" +
 	"\flast_seen_at\x18\f \x01(\x03H\tR\n" +
-	"lastSeenAt\x88\x01\x01B\x05\n" +
+	"lastSeenAt\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"sort_index\x18\r \x01(\x05H\n" +
+	"R\tsortIndex\x88\x01\x01B\x05\n" +
 	"\x03_idB\t\n" +
 	"\a_secretB\t\n" +
 	"\a_configB\n" +
@@ -1120,20 +1205,24 @@ const file_common_proto_rawDesc = "" +
 	"\t_frps_urlB\f\n" +
 	"\n" +
 	"_ephemeralB\x0f\n" +
-	"\r_last_seen_at\"\xd8\x01\n" +
+	"\r_last_seen_atB\r\n" +
+	"\v_sort_index\"\x8b\x02\n" +
 	"\x06Server\x12\x13\n" +
 	"\x02id\x18\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12\x1b\n" +
 	"\x06secret\x18\x02 \x01(\tH\x01R\x06secret\x88\x01\x01\x12\x13\n" +
 	"\x02ip\x18\x03 \x01(\tH\x02R\x02ip\x88\x01\x01\x12\x1b\n" +
 	"\x06config\x18\x04 \x01(\tH\x03R\x06config\x88\x01\x01\x12\x1d\n" +
 	"\acomment\x18\x05 \x01(\tH\x04R\acomment\x88\x01\x01\x12\x1b\n" +
-	"\tfrps_urls\x18\x06 \x03(\tR\bfrpsUrlsB\x05\n" +
+	"\tfrps_urls\x18\x06 \x03(\tR\bfrpsUrls\x12\"\n" +
+	"\n" +
+	"sort_index\x18\a \x01(\x05H\x05R\tsortIndex\x88\x01\x01B\x05\n" +
 	"\x03_idB\t\n" +
 	"\a_secretB\x05\n" +
 	"\x03_ipB\t\n" +
 	"\a_configB\n" +
 	"\n" +
-	"\b_comment\"\xd5\x02\n" +
+	"\b_commentB\r\n" +
+	"\v_sort_index\"\xd5\x02\n" +
 	"\x04User\x12\x1b\n" +
 	"\x06UserID\x18\x01 \x01(\x03H\x00R\x06UserID\x88\x01\x01\x12\x1f\n" +
 	"\bTenantID\x18\x02 \x01(\x03H\x01R\bTenantID\x88\x01\x01\x12\x1f\n" +
@@ -1172,7 +1261,7 @@ const file_common_proto_rawDesc = "" +
 	"\x12_today_traffic_outB\x15\n" +
 	"\x13_history_traffic_inB\x16\n" +
 	"\x14_history_traffic_outB\r\n" +
-	"\v_first_sync\"\xe4\x02\n" +
+	"\v_first_sync\"\x9b\x06\n" +
 	"\vProxyConfig\x12\x13\n" +
 	"\x02id\x18\x01 \x01(\rH\x00R\x02id\x88\x01\x01\x12\x17\n" +
 	"\x04name\x18\x02 \x01(\tH\x01R\x04name\x88\x01\x01\x12\x17\n" +
@@ -1181,7 +1270,20 @@ const file_common_proto_rawDesc = "" +
 	"\tserver_id\x18\x05 \x01(\tH\x04R\bserverId\x88\x01\x01\x12\x1b\n" +
 	"\x06config\x18\x06 \x01(\tH\x05R\x06config\x88\x01\x01\x12-\n" +
 	"\x10origin_client_id\x18\a \x01(\tH\x06R\x0eoriginClientId\x88\x01\x01\x12\x1d\n" +
-	"\astopped\x18\b \x01(\bH\aR\astopped\x88\x01\x01B\x05\n" +
+	"\astopped\x18\b \x01(\bH\aR\astopped\x88\x01\x01\x12.\n" +
+	"\x10schedule_enabled\x18\t \x01(\bH\bR\x0fscheduleEnabled\x88\x01\x01\x12*\n" +
+	"\x0eschedule_start\x18\n" +
+	" \x01(\tH\tR\rscheduleStart\x88\x01\x01\x12&\n" +
+	"\fschedule_end\x18\v \x01(\tH\n" +
+	"R\vscheduleEnd\x88\x01\x01\x12#\n" +
+	"\rschedule_days\x18\f \x03(\x05R\fscheduleDays\x12\"\n" +
+	"\n" +
+	"quota_type\x18\r \x01(\tH\vR\tquotaType\x88\x01\x01\x12$\n" +
+	"\vquota_limit\x18\x0e \x01(\x03H\fR\n" +
+	"quotaLimit\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"quota_used\x18\x0f \x01(\x03H\rR\tquotaUsed\x88\x01\x01\x12&\n" +
+	"\fauto_stopped\x18\x10 \x01(\bH\x0eR\vautoStopped\x88\x01\x01B\x05\n" +
 	"\x03_idB\a\n" +
 	"\x05_nameB\a\n" +
 	"\x05_typeB\f\n" +
@@ -1192,7 +1294,14 @@ const file_common_proto_rawDesc = "" +
 	"\a_configB\x13\n" +
 	"\x11_origin_client_idB\n" +
 	"\n" +
-	"\b_stopped\"\xd5\x01\n" +
+	"\b_stoppedB\x13\n" +
+	"\x11_schedule_enabledB\x11\n" +
+	"\x0f_schedule_startB\x0f\n" +
+	"\r_schedule_endB\r\n" +
+	"\v_quota_typeB\x0e\n" +
+	"\f_quota_limitB\r\n" +
+	"\v_quota_usedB\x0f\n" +
+	"\r_auto_stopped\"\xd5\x01\n" +
 	"\x12ProxyWorkingStatus\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tH\x00R\x04name\x88\x01\x01\x12\x17\n" +
 	"\x04type\x18\x02 \x01(\tH\x01R\x04type\x88\x01\x01\x12\x1b\n" +

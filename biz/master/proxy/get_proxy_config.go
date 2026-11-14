@@ -53,18 +53,21 @@ func GetProxyConfig(c *app.Context, req *pb.GetProxyConfigRequest) (*pb.GetProxy
 		}
 	}
 
+	pbCfg := &pb.ProxyConfig{
+		Id:             lo.ToPtr(uint32(proxyConfig.ID)),
+		Name:           lo.ToPtr(proxyConfig.Name),
+		Type:           lo.ToPtr(proxyConfig.Type),
+		ClientId:       lo.ToPtr(proxyConfig.ClientID),
+		ServerId:       lo.ToPtr(proxyConfig.ServerID),
+		Config:         lo.ToPtr(string(proxyConfig.Content)),
+		OriginClientId: lo.ToPtr(proxyConfig.OriginClientID),
+		Stopped:        lo.ToPtr(proxyConfig.Stopped),
+	}
+	fillProxyRulesInfo(c, pbCfg, proxyConfig)
+
 	return &pb.GetProxyConfigResponse{
-		Status: &pb.Status{Code: pb.RespCode_RESP_CODE_SUCCESS, Message: "success"},
-		ProxyConfig: &pb.ProxyConfig{
-			Id:             lo.ToPtr(uint32(proxyConfig.ID)),
-			Name:           lo.ToPtr(proxyConfig.Name),
-			Type:           lo.ToPtr(proxyConfig.Type),
-			ClientId:       lo.ToPtr(proxyConfig.ClientID),
-			ServerId:       lo.ToPtr(proxyConfig.ServerID),
-			Config:         lo.ToPtr(string(proxyConfig.Content)),
-			OriginClientId: lo.ToPtr(proxyConfig.OriginClientID),
-			Stopped:        lo.ToPtr(proxyConfig.Stopped),
-		},
+		Status:        &pb.Status{Code: pb.RespCode_RESP_CODE_SUCCESS, Message: "success"},
+		ProxyConfig:   pbCfg,
 		WorkingStatus: resp.GetWorkingStatus(),
 	}, nil
 }

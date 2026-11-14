@@ -1,6 +1,8 @@
 package proxy
 
 import (
+	"fmt"
+
 	"github.com/VaalaCat/frp-panel/biz/master/client"
 	"github.com/VaalaCat/frp-panel/common"
 	"github.com/VaalaCat/frp-panel/models"
@@ -43,8 +45,9 @@ func StartProxy(ctx *app.Context, req *pb.StartProxyRequest) (*pb.StartProxyResp
 		return nil, err
 	}
 
-	// 1. 更新proxy状态
+	// 1. 更新proxy状态（手动启动同时清除自动停用标记）
 	proxyConfig.Stopped = false
+	proxyConfig.AutoStopped = false
 	err = dao.NewMutation(ctx).UpdateProxyConfig(userInfo, proxyConfig)
 	if err != nil {
 		logger.Logger(ctx).WithError(err).Errorf("cannot update proxy config, client: [%s], server: [%s], proxy name: [%s]", clientID, serverID, proxyName)
@@ -88,7 +91,14 @@ func StartProxy(ctx *app.Context, req *pb.StartProxyRequest) (*pb.StartProxyResp
 		FrpsUrl:  &clientEntity.FrpsUrl,
 	})
 	if err != nil {
-		logger.Logger(ctx).WithError(err).Warnf("cannot update frpc, id: [%s]", clientID)
+		// 更新失败时必须把错误暴露给前端，否则 UI 显示启动成功但隧道实际未生效
+		logger.Logger(ctx).WithError(err).Errorf("cannot update frpc, id: [%s]", clientID)
+		return &pb.StartProxyResponse{
+			Status: &pb.Status{
+				Code:    pb.RespCode_RESP_CODE_INVALID,
+				Message: fmt.Sprintf("start proxy failed: %v", err),
+			},
+		}, err
 	}
 
 	return &pb.StartProxyResponse{

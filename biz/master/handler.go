@@ -85,11 +85,13 @@ func ConfigureRouter(appInstance app.Application, router *gin.Engine) {
 		}
 		proxyRouter := v1.Group("/proxy")
 		{
+			proxyRouter.POST("/traffic_stats", app.Wrapper(appInstance, proxy.GetProxyTrafficStats))
 			proxyRouter.POST("/get_by_cid", app.Wrapper(appInstance, proxy.GetProxyStatsByClientID))
 			proxyRouter.POST("/get_by_sid", app.Wrapper(appInstance, proxy.GetProxyStatsByServerID))
 			proxyRouter.POST("/list_configs", app.Wrapper(appInstance, proxy.ListProxyConfigs))
 			proxyRouter.POST("/create_config", app.Wrapper(appInstance, proxy.CreateProxyConfig))
 			proxyRouter.POST("/update_config", app.Wrapper(appInstance, proxy.UpdateProxyConfig))
+			proxyRouter.POST("/update_rules", app.Wrapper(appInstance, proxy.UpdateProxyRules))
 			proxyRouter.POST("/delete_config", app.Wrapper(appInstance, proxy.DeleteProxyConfig))
 			proxyRouter.POST("/get_config", app.Wrapper(appInstance, proxy.GetProxyConfig))
 			proxyRouter.POST("/start_proxy", app.Wrapper(appInstance, proxy.StartProxy))

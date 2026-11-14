@@ -1,7 +1,9 @@
 package dao
 
 import (
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/VaalaCat/frp-panel/models"
 	"gorm.io/gorm"
@@ -15,6 +17,8 @@ type StatsQuery interface {
 	GetHistoryStatsByProxyID(userInfo models.UserInfo, proxyID int) ([]*models.HistoryProxyStats, error)
 	GetHistoryStatsByClientID(userInfo models.UserInfo, clientID string) ([]*models.HistoryProxyStats, error)
 	GetHistoryStatsByServerID(userInfo models.UserInfo, serverID string) ([]*models.HistoryProxyStats, error)
+	GetHistoryStatsInRange(userInfo models.UserInfo, from, to time.Time) ([]*models.HistoryProxyStats, error)
+	AdminGetQuotaHistoryBaseline(proxyID int, windowStart time.Time) (int64, bool, error)
 }
 
 type StatsMutation interface {
@@ -88,4 +92,40 @@ func (q *statsQuery) GetHistoryStatsByServerID(userInfo models.UserInfo, serverI
 		return nil, err
 	}
 	return stats, nil
+}
+
+// GetHistoryStatsInRange 查询 [from, to] 时间范围内当前用户（含 UserID=0 全局记录）的全部每日快照，按 proxy_id、created_at 升序
+func (q *statsQuery) GetHistoryStatsInRange(userInfo models.UserInfo, from, to time.Time) ([]*models.HistoryProxyStats, error) {
+	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
+	var stats []*models.HistoryProxyStats
+	err := db.
+		Where("created_at >= ? AND created_at <= ?", from, to).
+		Where("user_id IN ?", []int{userInfo.GetUserID(), 0}).
+		Where("tenant_id = ?", userInfo.GetTenantID()).
+		Order("proxy_id, created_at").
+		Find(&stats).Error
+	if err != nil {
+		return nil, err
+	}
+	return stats, nil
+}
+
+// AdminGetQuotaHistoryBaseline 返回限额统计窗口内最早一次每日快照的累计流量（TrafficIn+TrafficOut）。
+// found=false 表示窗口开始后尚无快照（调用方应回退为当前 History 作为基线）。
+// 快照记录的是“截至快照时刻的历史累计值”，因此取窗口内最早的快照作为窗口起点基线最接近真实值。
+func (q *statsQuery) AdminGetQuotaHistoryBaseline(proxyID int, windowStart time.Time) (int64, bool, error) {
+	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
+
+	var snap models.HistoryProxyStats
+	err := db.Where("proxy_id = ?", proxyID).
+		Where("created_at >= ?", windowStart).
+		Order("created_at ASC").
+		First(&snap).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return 0, false, nil
+	}
+	if err != nil {
+		return 0, false, err
+	}
+	return snap.TrafficIn + snap.TrafficOut, true, nil
 }

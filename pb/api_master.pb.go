@@ -561,6 +561,286 @@ func (x *StartSteamLogResponse) GetStatus() *Status {
 	return nil
 }
 
+type GetProxyTrafficStatsRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	StartTime       *int64                 `protobuf:"varint,1,opt,name=start_time,json=startTime,proto3,oneof" json:"start_time,omitempty"`                     // unix 秒，起始日 00:00（按前端时区，含）
+	EndTime         *int64                 `protobuf:"varint,2,opt,name=end_time,json=endTime,proto3,oneof" json:"end_time,omitempty"`                           // unix 秒，语义为"含 end 所在整天"
+	WithSeries      *bool                  `protobuf:"varint,3,opt,name=with_series,json=withSeries,proto3,oneof" json:"with_series,omitempty"`                  // 是否返回日粒度趋势序列
+	TzOffsetMinutes *int32                 `protobuf:"varint,4,opt,name=tz_offset_minutes,json=tzOffsetMinutes,proto3,oneof" json:"tz_offset_minutes,omitempty"` // 前端时区偏移分钟 = -new Date().getTimezoneOffset()
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *GetProxyTrafficStatsRequest) Reset() {
+	*x = GetProxyTrafficStatsRequest{}
+	mi := &file_api_master_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetProxyTrafficStatsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetProxyTrafficStatsRequest) ProtoMessage() {}
+
+func (x *GetProxyTrafficStatsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_master_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetProxyTrafficStatsRequest.ProtoReflect.Descriptor instead.
+func (*GetProxyTrafficStatsRequest) Descriptor() ([]byte, []int) {
+	return file_api_master_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *GetProxyTrafficStatsRequest) GetStartTime() int64 {
+	if x != nil && x.StartTime != nil {
+		return *x.StartTime
+	}
+	return 0
+}
+
+func (x *GetProxyTrafficStatsRequest) GetEndTime() int64 {
+	if x != nil && x.EndTime != nil {
+		return *x.EndTime
+	}
+	return 0
+}
+
+func (x *GetProxyTrafficStatsRequest) GetWithSeries() bool {
+	if x != nil && x.WithSeries != nil {
+		return *x.WithSeries
+	}
+	return false
+}
+
+func (x *GetProxyTrafficStatsRequest) GetTzOffsetMinutes() int32 {
+	if x != nil && x.TzOffsetMinutes != nil {
+		return *x.TzOffsetMinutes
+	}
+	return 0
+}
+
+type ProxyTrafficItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProxyId       *int32                 `protobuf:"varint,1,opt,name=proxy_id,json=proxyId,proto3,oneof" json:"proxy_id,omitempty"`
+	Name          *string                `protobuf:"bytes,2,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Type          *string                `protobuf:"bytes,3,opt,name=type,proto3,oneof" json:"type,omitempty"`
+	TrafficIn     *int64                 `protobuf:"varint,4,opt,name=traffic_in,json=trafficIn,proto3,oneof" json:"traffic_in,omitempty"`
+	TrafficOut    *int64                 `protobuf:"varint,5,opt,name=traffic_out,json=trafficOut,proto3,oneof" json:"traffic_out,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProxyTrafficItem) Reset() {
+	*x = ProxyTrafficItem{}
+	mi := &file_api_master_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProxyTrafficItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProxyTrafficItem) ProtoMessage() {}
+
+func (x *ProxyTrafficItem) ProtoReflect() protoreflect.Message {
+	mi := &file_api_master_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProxyTrafficItem.ProtoReflect.Descriptor instead.
+func (*ProxyTrafficItem) Descriptor() ([]byte, []int) {
+	return file_api_master_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *ProxyTrafficItem) GetProxyId() int32 {
+	if x != nil && x.ProxyId != nil {
+		return *x.ProxyId
+	}
+	return 0
+}
+
+func (x *ProxyTrafficItem) GetName() string {
+	if x != nil && x.Name != nil {
+		return *x.Name
+	}
+	return ""
+}
+
+func (x *ProxyTrafficItem) GetType() string {
+	if x != nil && x.Type != nil {
+		return *x.Type
+	}
+	return ""
+}
+
+func (x *ProxyTrafficItem) GetTrafficIn() int64 {
+	if x != nil && x.TrafficIn != nil {
+		return *x.TrafficIn
+	}
+	return 0
+}
+
+func (x *ProxyTrafficItem) GetTrafficOut() int64 {
+	if x != nil && x.TrafficOut != nil {
+		return *x.TrafficOut
+	}
+	return 0
+}
+
+type TrafficSeriesPoint struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ts            *int64                 `protobuf:"varint,1,opt,name=ts,proto3,oneof" json:"ts,omitempty"` // 该日 00:00 的 unix 秒（按前端时区）
+	TrafficIn     *int64                 `protobuf:"varint,2,opt,name=traffic_in,json=trafficIn,proto3,oneof" json:"traffic_in,omitempty"`
+	TrafficOut    *int64                 `protobuf:"varint,3,opt,name=traffic_out,json=trafficOut,proto3,oneof" json:"traffic_out,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TrafficSeriesPoint) Reset() {
+	*x = TrafficSeriesPoint{}
+	mi := &file_api_master_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TrafficSeriesPoint) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TrafficSeriesPoint) ProtoMessage() {}
+
+func (x *TrafficSeriesPoint) ProtoReflect() protoreflect.Message {
+	mi := &file_api_master_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TrafficSeriesPoint.ProtoReflect.Descriptor instead.
+func (*TrafficSeriesPoint) Descriptor() ([]byte, []int) {
+	return file_api_master_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *TrafficSeriesPoint) GetTs() int64 {
+	if x != nil && x.Ts != nil {
+		return *x.Ts
+	}
+	return 0
+}
+
+func (x *TrafficSeriesPoint) GetTrafficIn() int64 {
+	if x != nil && x.TrafficIn != nil {
+		return *x.TrafficIn
+	}
+	return 0
+}
+
+func (x *TrafficSeriesPoint) GetTrafficOut() int64 {
+	if x != nil && x.TrafficOut != nil {
+		return *x.TrafficOut
+	}
+	return 0
+}
+
+type GetProxyTrafficStatsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	Items         []*ProxyTrafficItem    `protobuf:"bytes,2,rep,name=items,proto3" json:"items,omitempty"`   // 按 (traffic_in + traffic_out) 降序
+	Series        []*TrafficSeriesPoint  `protobuf:"bytes,3,rep,name=series,proto3" json:"series,omitempty"` // 日粒度趋势，按天升序
+	TotalIn       *int64                 `protobuf:"varint,4,opt,name=total_in,json=totalIn,proto3,oneof" json:"total_in,omitempty"`
+	TotalOut      *int64                 `protobuf:"varint,5,opt,name=total_out,json=totalOut,proto3,oneof" json:"total_out,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetProxyTrafficStatsResponse) Reset() {
+	*x = GetProxyTrafficStatsResponse{}
+	mi := &file_api_master_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetProxyTrafficStatsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetProxyTrafficStatsResponse) ProtoMessage() {}
+
+func (x *GetProxyTrafficStatsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_master_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetProxyTrafficStatsResponse.ProtoReflect.Descriptor instead.
+func (*GetProxyTrafficStatsResponse) Descriptor() ([]byte, []int) {
+	return file_api_master_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *GetProxyTrafficStatsResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+func (x *GetProxyTrafficStatsResponse) GetItems() []*ProxyTrafficItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+func (x *GetProxyTrafficStatsResponse) GetSeries() []*TrafficSeriesPoint {
+	if x != nil {
+		return x.Series
+	}
+	return nil
+}
+
+func (x *GetProxyTrafficStatsResponse) GetTotalIn() int64 {
+	if x != nil && x.TotalIn != nil {
+		return *x.TotalIn
+	}
+	return 0
+}
+
+func (x *GetProxyTrafficStatsResponse) GetTotalOut() int64 {
+	if x != nil && x.TotalOut != nil {
+		return *x.TotalOut
+	}
+	return 0
+}
+
 var File_api_master_proto protoreflect.FileDescriptor
 
 const file_api_master_proto_rawDesc = "" +
@@ -620,7 +900,50 @@ const file_api_master_proto_rawDesc = "" +
 	"\x04pkgs\x18\x01 \x03(\tR\x04pkgs\"O\n" +
 	"\x15StartSteamLogResponse\x12+\n" +
 	"\x06status\x18\x01 \x01(\v2\x0e.common.StatusH\x00R\x06status\x88\x01\x01B\t\n" +
-	"\a_statusB\aZ\x05../pbb\x06proto3"
+	"\a_status\"\xfa\x01\n" +
+	"\x1bGetProxyTrafficStatsRequest\x12\"\n" +
+	"\n" +
+	"start_time\x18\x01 \x01(\x03H\x00R\tstartTime\x88\x01\x01\x12\x1e\n" +
+	"\bend_time\x18\x02 \x01(\x03H\x01R\aendTime\x88\x01\x01\x12$\n" +
+	"\vwith_series\x18\x03 \x01(\bH\x02R\n" +
+	"withSeries\x88\x01\x01\x12/\n" +
+	"\x11tz_offset_minutes\x18\x04 \x01(\x05H\x03R\x0ftzOffsetMinutes\x88\x01\x01B\r\n" +
+	"\v_start_timeB\v\n" +
+	"\t_end_timeB\x0e\n" +
+	"\f_with_seriesB\x14\n" +
+	"\x12_tz_offset_minutes\"\xec\x01\n" +
+	"\x10ProxyTrafficItem\x12\x1e\n" +
+	"\bproxy_id\x18\x01 \x01(\x05H\x00R\aproxyId\x88\x01\x01\x12\x17\n" +
+	"\x04name\x18\x02 \x01(\tH\x01R\x04name\x88\x01\x01\x12\x17\n" +
+	"\x04type\x18\x03 \x01(\tH\x02R\x04type\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"traffic_in\x18\x04 \x01(\x03H\x03R\ttrafficIn\x88\x01\x01\x12$\n" +
+	"\vtraffic_out\x18\x05 \x01(\x03H\x04R\n" +
+	"trafficOut\x88\x01\x01B\v\n" +
+	"\t_proxy_idB\a\n" +
+	"\x05_nameB\a\n" +
+	"\x05_typeB\r\n" +
+	"\v_traffic_inB\x0e\n" +
+	"\f_traffic_out\"\x99\x01\n" +
+	"\x12TrafficSeriesPoint\x12\x13\n" +
+	"\x02ts\x18\x01 \x01(\x03H\x00R\x02ts\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"traffic_in\x18\x02 \x01(\x03H\x01R\ttrafficIn\x88\x01\x01\x12$\n" +
+	"\vtraffic_out\x18\x03 \x01(\x03H\x02R\n" +
+	"trafficOut\x88\x01\x01B\x05\n" +
+	"\x03_tsB\r\n" +
+	"\v_traffic_inB\x0e\n" +
+	"\f_traffic_out\"\x9f\x02\n" +
+	"\x1cGetProxyTrafficStatsResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x0e.common.StatusH\x00R\x06status\x88\x01\x01\x122\n" +
+	"\x05items\x18\x02 \x03(\v2\x1c.api_master.ProxyTrafficItemR\x05items\x126\n" +
+	"\x06series\x18\x03 \x03(\v2\x1e.api_master.TrafficSeriesPointR\x06series\x12\x1e\n" +
+	"\btotal_in\x18\x04 \x01(\x03H\x01R\atotalIn\x88\x01\x01\x12 \n" +
+	"\ttotal_out\x18\x05 \x01(\x03H\x02R\btotalOut\x88\x01\x01B\t\n" +
+	"\a_statusB\v\n" +
+	"\t_total_inB\f\n" +
+	"\n" +
+	"_total_outB\aZ\x05../pbb\x06proto3"
 
 var (
 	file_api_master_proto_rawDescOnce sync.Once
@@ -635,37 +958,44 @@ func file_api_master_proto_rawDescGZIP() []byte {
 }
 
 var file_api_master_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_api_master_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_api_master_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_api_master_proto_goTypes = []any{
-	(ClientStatus_Status)(0),         // 0: api_master.ClientStatus.Status
-	(*ClientStatus)(nil),             // 1: api_master.ClientStatus
-	(*ClientVersion)(nil),            // 2: api_master.ClientVersion
-	(*GetClientsStatusRequest)(nil),  // 3: api_master.GetClientsStatusRequest
-	(*GetClientsStatusResponse)(nil), // 4: api_master.GetClientsStatusResponse
-	(*GetClientCertRequest)(nil),     // 5: api_master.GetClientCertRequest
-	(*GetClientCertResponse)(nil),    // 6: api_master.GetClientCertResponse
-	(*StartSteamLogRequest)(nil),     // 7: api_master.StartSteamLogRequest
-	(*StartSteamLogResponse)(nil),    // 8: api_master.StartSteamLogResponse
-	nil,                              // 9: api_master.GetClientsStatusResponse.ClientsEntry
-	(ClientType)(0),                  // 10: common.ClientType
-	(*Status)(nil),                   // 11: common.Status
+	(ClientStatus_Status)(0),             // 0: api_master.ClientStatus.Status
+	(*ClientStatus)(nil),                 // 1: api_master.ClientStatus
+	(*ClientVersion)(nil),                // 2: api_master.ClientVersion
+	(*GetClientsStatusRequest)(nil),      // 3: api_master.GetClientsStatusRequest
+	(*GetClientsStatusResponse)(nil),     // 4: api_master.GetClientsStatusResponse
+	(*GetClientCertRequest)(nil),         // 5: api_master.GetClientCertRequest
+	(*GetClientCertResponse)(nil),        // 6: api_master.GetClientCertResponse
+	(*StartSteamLogRequest)(nil),         // 7: api_master.StartSteamLogRequest
+	(*StartSteamLogResponse)(nil),        // 8: api_master.StartSteamLogResponse
+	(*GetProxyTrafficStatsRequest)(nil),  // 9: api_master.GetProxyTrafficStatsRequest
+	(*ProxyTrafficItem)(nil),             // 10: api_master.ProxyTrafficItem
+	(*TrafficSeriesPoint)(nil),           // 11: api_master.TrafficSeriesPoint
+	(*GetProxyTrafficStatsResponse)(nil), // 12: api_master.GetProxyTrafficStatsResponse
+	nil,                                  // 13: api_master.GetClientsStatusResponse.ClientsEntry
+	(ClientType)(0),                      // 14: common.ClientType
+	(*Status)(nil),                       // 15: common.Status
 }
 var file_api_master_proto_depIdxs = []int32{
-	10, // 0: api_master.ClientStatus.client_type:type_name -> common.ClientType
+	14, // 0: api_master.ClientStatus.client_type:type_name -> common.ClientType
 	0,  // 1: api_master.ClientStatus.status:type_name -> api_master.ClientStatus.Status
 	2,  // 2: api_master.ClientStatus.version:type_name -> api_master.ClientVersion
-	10, // 3: api_master.GetClientsStatusRequest.client_type:type_name -> common.ClientType
-	11, // 4: api_master.GetClientsStatusResponse.status:type_name -> common.Status
-	9,  // 5: api_master.GetClientsStatusResponse.clients:type_name -> api_master.GetClientsStatusResponse.ClientsEntry
-	10, // 6: api_master.GetClientCertRequest.client_type:type_name -> common.ClientType
-	11, // 7: api_master.GetClientCertResponse.status:type_name -> common.Status
-	11, // 8: api_master.StartSteamLogResponse.status:type_name -> common.Status
-	1,  // 9: api_master.GetClientsStatusResponse.ClientsEntry.value:type_name -> api_master.ClientStatus
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	14, // 3: api_master.GetClientsStatusRequest.client_type:type_name -> common.ClientType
+	15, // 4: api_master.GetClientsStatusResponse.status:type_name -> common.Status
+	13, // 5: api_master.GetClientsStatusResponse.clients:type_name -> api_master.GetClientsStatusResponse.ClientsEntry
+	14, // 6: api_master.GetClientCertRequest.client_type:type_name -> common.ClientType
+	15, // 7: api_master.GetClientCertResponse.status:type_name -> common.Status
+	15, // 8: api_master.StartSteamLogResponse.status:type_name -> common.Status
+	15, // 9: api_master.GetProxyTrafficStatsResponse.status:type_name -> common.Status
+	10, // 10: api_master.GetProxyTrafficStatsResponse.items:type_name -> api_master.ProxyTrafficItem
+	11, // 11: api_master.GetProxyTrafficStatsResponse.series:type_name -> api_master.TrafficSeriesPoint
+	1,  // 12: api_master.GetClientsStatusResponse.ClientsEntry.value:type_name -> api_master.ClientStatus
+	13, // [13:13] is the sub-list for method output_type
+	13, // [13:13] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_api_master_proto_init() }
@@ -678,13 +1008,17 @@ func file_api_master_proto_init() {
 	file_api_master_proto_msgTypes[3].OneofWrappers = []any{}
 	file_api_master_proto_msgTypes[5].OneofWrappers = []any{}
 	file_api_master_proto_msgTypes[7].OneofWrappers = []any{}
+	file_api_master_proto_msgTypes[8].OneofWrappers = []any{}
+	file_api_master_proto_msgTypes[9].OneofWrappers = []any{}
+	file_api_master_proto_msgTypes[10].OneofWrappers = []any{}
+	file_api_master_proto_msgTypes[11].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_master_proto_rawDesc), len(file_api_master_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   9,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

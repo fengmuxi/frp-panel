@@ -23,7 +23,9 @@ type ReqType interface {
 		pb.GetClientCertRequest |
 		pb.StartFRPCRequest | pb.StopFRPCRequest | pb.StartFRPSRequest | pb.StopFRPSRequest |
 		pb.GetProxyStatsByClientIDRequest | pb.GetProxyStatsByServerIDRequest |
-		pb.CreateProxyConfigRequest | pb.ListProxyConfigsRequest | pb.UpdateProxyConfigRequest |
+		pb.GetProxyTrafficStatsRequest |
+		pb.CreateProxyConfigRequest | pb.ListProxyConfigsRequest |
+		pb.UpdateProxyConfigRequest | pb.UpdateProxyRulesRequest |
 		pb.DeleteProxyConfigRequest | pb.GetProxyConfigRequest | pb.SignTokenRequest |
 		pb.StartProxyRequest | pb.StopProxyRequest |
 		pb.CreateWorkerRequest | pb.RemoveWorkerRequest | pb.RunWorkerRequest | pb.StopWorkerRequest | pb.UpdateWorkerRequest | pb.GetWorkerRequest |

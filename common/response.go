@@ -24,7 +24,9 @@ type RespType interface {
 		pb.GetClientCertResponse |
 		pb.StartFRPCResponse | pb.StopFRPCResponse | pb.StartFRPSResponse | pb.StopFRPSResponse |
 		pb.GetProxyStatsByClientIDResponse | pb.GetProxyStatsByServerIDResponse |
+		pb.GetProxyTrafficStatsResponse |
 		pb.CreateProxyConfigResponse | pb.ListProxyConfigsResponse | pb.UpdateProxyConfigResponse |
+		pb.UpdateProxyRulesResponse |
 		pb.DeleteProxyConfigResponse | pb.GetProxyConfigResponse | pb.SignTokenResponse |
 		pb.StartProxyResponse | pb.StopProxyResponse |
 		pb.CreateWorkerResponse | pb.RemoveWorkerResponse | pb.RunWorkerResponse | pb.StopWorkerResponse | pb.UpdateWorkerResponse | pb.GetWorkerResponse |
