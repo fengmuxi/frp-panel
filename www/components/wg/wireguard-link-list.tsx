@@ -199,7 +199,16 @@ function WireGuardLinkActions({ link, onChanged }: { link: WireGuardLink; onChan
 	)
 }
 
-export function WireGuardLinkList({ networkId, keyword }: { networkId?: number; keyword?: string }) {
+export function WireGuardLinkList({
+	networkId,
+	keyword,
+	refreshSignal,
+}: {
+	networkId?: number
+	keyword?: string
+	// 外部刷新信号（如点击搜索按钮），进入 queryKey 以支持"关键词不变也强制刷新"
+	refreshSignal?: string
+}) {
 	const { t } = useTranslation()
 	const [sorting, setSorting] = React.useState<SortingState>([])
 	const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -208,7 +217,7 @@ export function WireGuardLinkList({ networkId, keyword }: { networkId?: number; 
 	const [openAdd, setOpenAdd] = React.useState(false)
 
 	const { data } = useQuery({
-		queryKey: ['listWireGuardLinks', networkId, keyword, pageIndex, pageSize, refreshKey],
+		queryKey: ['listWireGuardLinks', networkId, keyword, pageIndex, pageSize, refreshKey, refreshSignal],
 		queryFn: () =>
 			listWireGuardLinks(
 				ListWireGuardLinksRequest.create({

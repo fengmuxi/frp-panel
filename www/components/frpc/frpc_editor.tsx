@@ -72,7 +72,7 @@ export const FRPCEditor: React.FC<FRPCFormProps> = ({ clientID, serverID, client
 
   return (
     <div className="grid w-full gap-1.5">
-      <Label className="text-sm font-medium">{t('client.editor.comment_title', { id: clientID })}</Label>
+      <Label className="text-sm font-medium">{t('client.editor.comment_title', { id: client?.comment || t('client.name_placeholder') })}</Label>
       <Textarea
         key={client?.comment}
         placeholder={t('client.editor.comment_placeholder')}

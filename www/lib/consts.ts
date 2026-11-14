@@ -79,14 +79,6 @@ export const TypedProxyConfigValid = (typedProxyCfg: TypedProxyConfig | undefine
   return typedProxyCfg?.localPort && typedProxyCfg.localIP && typedProxyCfg.name && typedProxyCfg.type ? true : false
 }
 
-export const IsIDValid = (clientID: string | undefined): boolean => {
-  if (clientID == undefined) {
-    return false
-  }
-  const regex = /^[a-zA-Z0-9-_]+$/
-  return clientID.length > 0 && regex.test(clientID)
-}
-
 export const ClientConfigured = (client: Client | undefined): boolean => {
   if (client == undefined) {
     return false
@@ -153,7 +145,7 @@ export const WindowsInstallCommand = <T extends Client | Server>(
     `[Net.SecurityProtocolType]::Tls -bor ` +
     `[Net.SecurityProtocolType]::Tls11 -bor ` +
     `[Net.SecurityProtocolType]::Tls12;set-ExecutionPolicy RemoteSigned;` +
-    `Invoke-WebRequest ${github_proxy ? proxyUrl : ''}https://raw.githubusercontent.com/VaalaCat/frp-panel/main/install.ps1 ` +
+    `Invoke-WebRequest ${github_proxy ? proxyUrl : ''}https://raw.githubusercontent.com/fengmuxi/frp-panel/main/install.ps1 ` +
     `-OutFile C:\install.ps1;powershell.exe C:\install.ps1 ${ExecCommandStr(type, item, info, ' ', applyPref)}`
   )
 }
@@ -166,7 +158,7 @@ export const LinuxInstallCommand = <T extends Client | Server>(
   applyPref = true,
 ) => {
   const proxyUrl = getGithubProxyUrl(info, applyPref)
-  return `curl -fSL ${github_proxy ? proxyUrl : ''}https://raw.githubusercontent.com/VaalaCat/frp-panel/main/install.sh | bash -s -- ${github_proxy ? `--github-proxy ${proxyUrl}` : ''
+  return `curl -fSL ${github_proxy ? proxyUrl : ''}https://raw.githubusercontent.com/fengmuxi/frp-panel/main/install.sh | bash -s -- ${github_proxy ? `--github-proxy ${proxyUrl}` : ''
     }${ExecCommandStr(type, item, info, ' ', applyPref)}`
 }
 

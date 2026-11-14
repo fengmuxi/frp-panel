@@ -17,6 +17,7 @@ import { useQuery } from '@tanstack/react-query'
 import { getClientsStatus } from '@/api/platform'
 import { ClientType } from '@/lib/pb/common'
 import { Badge } from '@/components/ui/badge'
+import { useAgentName } from '@/hooks/use-agent-name'
 
 const TerminalComponent = dynamic(() => import('@/components/base/read-write-xterm'), {
   ssr: false,
@@ -53,6 +54,8 @@ const TerminalNodeComponent: React.FC<NodeProps<TerminalNode> & NodeOperations> 
 
   const clientStatus = clientStatusData?.clients[clientId]
   const isOnline = clientStatus?.status === ClientStatus_Status.ONLINE
+  // 界面以名称展示，ID 仅作为兜底
+  const agentName = useAgentName(clientId, data.clientType)
 
   useEffect(() => {
     if (clientId && !enabled) {
@@ -82,7 +85,7 @@ const TerminalNodeComponent: React.FC<NodeProps<TerminalNode> & NodeOperations> 
         >
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <TerminalIcon className="h-4 w-4 flex-shrink-0" />
-            <CardTitle className="text-sm font-medium truncate">{clientId || t('canvas.terminal.noClient')}</CardTitle>
+            <CardTitle className="text-sm font-medium truncate">{agentName || clientId || t('canvas.terminal.noClient')}</CardTitle>
             {clientId && (
               <Badge variant={isOnline ? 'default' : 'secondary'} className="text-[10px] h-4 px-1.5">
                 <Circle className={cn('h-2 w-2 mr-1', isOnline ? 'fill-green-500' : 'fill-gray-500')} />

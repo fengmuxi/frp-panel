@@ -118,6 +118,58 @@ export interface DeleteServerResponse {
     status?: Status;
 }
 /**
+ * 轻量更新服务端名称/备注与排序序号（不触碰 frps 配置）
+ *
+ * @generated from protobuf message api_server.UpdateServerInfoRequest
+ */
+export interface UpdateServerInfoRequest {
+    /**
+     * @generated from protobuf field: optional string server_id = 1;
+     */
+    serverId?: string;
+    /**
+     * @generated from protobuf field: optional string comment = 2;
+     */
+    comment?: string; // 名称/备注，不传则不修改
+    /**
+     * @generated from protobuf field: optional int32 sort_index = 3;
+     */
+    sortIndex?: number; // 排序序号，不传则不修改，0 表示排到最后
+}
+/**
+ * @generated from protobuf message api_server.UpdateServerInfoResponse
+ */
+export interface UpdateServerInfoResponse {
+    /**
+     * @generated from protobuf field: optional common.Status status = 1;
+     */
+    status?: Status;
+}
+/**
+ * 与相邻项交换排序位置（跨分页由服务端处理）
+ *
+ * @generated from protobuf message api_server.SwapServerSortRequest
+ */
+export interface SwapServerSortRequest {
+    /**
+     * @generated from protobuf field: optional string server_id = 1;
+     */
+    serverId?: string;
+    /**
+     * @generated from protobuf field: optional bool up = 2;
+     */
+    up?: boolean; // true=与上一项交换，false=与下一项交换
+}
+/**
+ * @generated from protobuf message api_server.SwapServerSortResponse
+ */
+export interface SwapServerSortResponse {
+    /**
+     * @generated from protobuf field: optional common.Status status = 1;
+     */
+    status?: Status;
+}
+/**
  * @generated from protobuf message api_server.UpdateFRPSRequest
  */
 export interface UpdateFRPSRequest {
@@ -652,6 +704,211 @@ class DeleteServerResponse$Type extends MessageType<DeleteServerResponse> {
  * @generated MessageType for protobuf message api_server.DeleteServerResponse
  */
 export const DeleteServerResponse = new DeleteServerResponse$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class UpdateServerInfoRequest$Type extends MessageType<UpdateServerInfoRequest> {
+    constructor() {
+        super("api_server.UpdateServerInfoRequest", [
+            { no: 1, name: "server_id", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "comment", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 3, name: "sort_index", kind: "scalar", opt: true, T: 5 /*ScalarType.INT32*/ }
+        ]);
+    }
+    create(value?: PartialMessage<UpdateServerInfoRequest>): UpdateServerInfoRequest {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<UpdateServerInfoRequest>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: UpdateServerInfoRequest): UpdateServerInfoRequest {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* optional string server_id */ 1:
+                    message.serverId = reader.string();
+                    break;
+                case /* optional string comment */ 2:
+                    message.comment = reader.string();
+                    break;
+                case /* optional int32 sort_index */ 3:
+                    message.sortIndex = reader.int32();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: UpdateServerInfoRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* optional string server_id = 1; */
+        if (message.serverId !== undefined)
+            writer.tag(1, WireType.LengthDelimited).string(message.serverId);
+        /* optional string comment = 2; */
+        if (message.comment !== undefined)
+            writer.tag(2, WireType.LengthDelimited).string(message.comment);
+        /* optional int32 sort_index = 3; */
+        if (message.sortIndex !== undefined)
+            writer.tag(3, WireType.Varint).int32(message.sortIndex);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message api_server.UpdateServerInfoRequest
+ */
+export const UpdateServerInfoRequest = new UpdateServerInfoRequest$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class UpdateServerInfoResponse$Type extends MessageType<UpdateServerInfoResponse> {
+    constructor() {
+        super("api_server.UpdateServerInfoResponse", [
+            { no: 1, name: "status", kind: "message", T: () => Status }
+        ]);
+    }
+    create(value?: PartialMessage<UpdateServerInfoResponse>): UpdateServerInfoResponse {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<UpdateServerInfoResponse>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: UpdateServerInfoResponse): UpdateServerInfoResponse {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* optional common.Status status */ 1:
+                    message.status = Status.internalBinaryRead(reader, reader.uint32(), options, message.status);
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: UpdateServerInfoResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* optional common.Status status = 1; */
+        if (message.status)
+            Status.internalBinaryWrite(message.status, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message api_server.UpdateServerInfoResponse
+ */
+export const UpdateServerInfoResponse = new UpdateServerInfoResponse$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class SwapServerSortRequest$Type extends MessageType<SwapServerSortRequest> {
+    constructor() {
+        super("api_server.SwapServerSortRequest", [
+            { no: 1, name: "server_id", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "up", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ }
+        ]);
+    }
+    create(value?: PartialMessage<SwapServerSortRequest>): SwapServerSortRequest {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<SwapServerSortRequest>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: SwapServerSortRequest): SwapServerSortRequest {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* optional string server_id */ 1:
+                    message.serverId = reader.string();
+                    break;
+                case /* optional bool up */ 2:
+                    message.up = reader.bool();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: SwapServerSortRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* optional string server_id = 1; */
+        if (message.serverId !== undefined)
+            writer.tag(1, WireType.LengthDelimited).string(message.serverId);
+        /* optional bool up = 2; */
+        if (message.up !== undefined)
+            writer.tag(2, WireType.Varint).bool(message.up);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message api_server.SwapServerSortRequest
+ */
+export const SwapServerSortRequest = new SwapServerSortRequest$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class SwapServerSortResponse$Type extends MessageType<SwapServerSortResponse> {
+    constructor() {
+        super("api_server.SwapServerSortResponse", [
+            { no: 1, name: "status", kind: "message", T: () => Status }
+        ]);
+    }
+    create(value?: PartialMessage<SwapServerSortResponse>): SwapServerSortResponse {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<SwapServerSortResponse>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: SwapServerSortResponse): SwapServerSortResponse {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* optional common.Status status */ 1:
+                    message.status = Status.internalBinaryRead(reader, reader.uint32(), options, message.status);
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: SwapServerSortResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* optional common.Status status = 1; */
+        if (message.status)
+            Status.internalBinaryWrite(message.status, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message api_server.SwapServerSortResponse
+ */
+export const SwapServerSortResponse = new SwapServerSortResponse$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class UpdateFRPSRequest$Type extends MessageType<UpdateFRPSRequest> {
     constructor() {

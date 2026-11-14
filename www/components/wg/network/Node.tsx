@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { useRouter } from 'next/router'
+import { useAgentName } from '@/hooks/use-agent-name'
 
 interface NodeComponentProps extends NodeProps<WGNode> {
   onOpenTerminal?: (clientId: string, clientType: number) => void
@@ -47,6 +48,8 @@ const WGNodeComponent: React.FC<NodeComponentProps> = ({
   const { t } = useTranslation()
 
   const clientId = data.config?.clientId
+  // 界面以名称展示，ID 仅作为兜底
+  const agentName = useAgentName(clientId, ClientType.FRPC)
 
   // 获取客户端状态
   const { data: clientStatusData } = useQuery({
@@ -191,7 +194,7 @@ const WGNodeComponent: React.FC<NodeComponentProps> = ({
                   <WifiOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 )}
                 <span className="font-semibold text-xs truncate" title={clientId}>
-                  {clientId || `Node ${id}`}
+                  {agentName || clientId || `Node ${id}`}
                 </span>
               </div>
               {getStatusBadge()}

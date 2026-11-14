@@ -1,9 +1,8 @@
 "use client"
 
-import i18n from '@/lib/i18n'
 import { useState } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { initClient, listClient } from '@/api/client'
+import { useMutation } from '@tanstack/react-query'
+import { initClient } from '@/api/client'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -19,11 +18,11 @@ import {
 } from '@/components/ui/dialog'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { IsIDValid } from '@/lib/consts'
 
 export const CreateClientDialog = ({refetchTrigger}: {refetchTrigger?: (randStr: string) => void}) => {
   const { t } = useTranslation()
-  const [clientID, setClientID] = useState<string | undefined>()
+  const [clientName, setClientName] = useState<string | undefined>()
+  const [dialogOpen, setDialogOpen] = useState(false)
   const newClient = useMutation({
     mutationFn: initClient,
   })
@@ -31,7 +30,8 @@ export const CreateClientDialog = ({refetchTrigger}: {refetchTrigger?: (randStr:
   const handleNewClient = async () => {
     toast(t('client.create.submitting'))
     try {
-      let resp = await newClient.mutateAsync({ clientId: clientID })
+      // ID 由后端自动生成，这里只提交名称（必填，不允许重复）
+      let resp = await newClient.mutateAsync({ comment: clientName })
       if (resp.status?.code !== RespCode.SUCCESS) {
         toast(t('client.create.error'),{
           description: resp.status?.message
@@ -40,6 +40,9 @@ export const CreateClientDialog = ({refetchTrigger}: {refetchTrigger?: (randStr:
       }
       toast(t('client.create.success'))
       refetchTrigger && refetchTrigger(JSON.stringify(Math.random()))
+      // 创建成功后关闭弹窗并清空输入
+      setDialogOpen(false)
+      setClientName(undefined)
     } catch (error) {
       toast(t('client.create.error'), {
         description: JSON.stringify(error)
@@ -48,7 +51,7 @@ export const CreateClientDialog = ({refetchTrigger}: {refetchTrigger?: (randStr:
   }
 
   return (
-    <Dialog>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
         <Button variant="outline">
           {t('client.create.button')}
@@ -60,11 +63,15 @@ export const CreateClientDialog = ({refetchTrigger}: {refetchTrigger?: (randStr:
           <DialogDescription>{t('client.create.description')}</DialogDescription>
         </DialogHeader>
 
-        <Label>{t('client.create.id')}</Label>
-        <Input value={clientID} onChange={(e) => setClientID(e.target.value)} />
+        <Label>{t('client.create.name')}</Label>
+        <Input
+          value={clientName}
+          placeholder={t('client.create.name_placeholder')}
+          onChange={(e) => setClientName(e.target.value)}
+        />
         <DialogFooter>
           <Button onClick={handleNewClient}
-          disabled={!IsIDValid(clientID)}
+          disabled={!clientName || clientName.trim().length === 0}
           className='w-full'>{t('client.create.submit')}</Button>
         </DialogFooter>
       </DialogContent>

@@ -23,7 +23,7 @@ export default function EndpointsPage() {
 						</h1>
 						<IdInput keyword={keyword} setKeyword={setKeyword} refetchTrigger={setTrigger} />
 					</div>
-					<EndpointList keyword={keyword} />
+					<EndpointList keyword={keyword} refreshSignal={trigger} />
 				</div>
 			</RootLayout>
 		</Providers>

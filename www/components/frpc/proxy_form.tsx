@@ -55,6 +55,12 @@ export interface ProxyFormProps {
   defaultProxyConfig?: TypedProxyConfig
   clientProxyConfigs: TypedProxyConfig[]
   setClientProxyConfigs: React.Dispatch<React.SetStateAction<TypedProxyConfig[]>>
+  // 表单元素 id：外部按钮可通过 HTML form 属性远程触发提交
+  formId?: string
+  // 表单校验通过并写回配置后的回调（快速创建弹窗用它立即提交）
+  onSaved?: (cfg: TypedProxyConfig) => void
+  // 隐藏表单内部的"暂存修改"按钮（外部接管提交时使用）
+  hideActions?: boolean
 }
 
 export const TypedProxyForm: React.FC<ProxyFormProps> = ({
@@ -65,6 +71,9 @@ export const TypedProxyForm: React.FC<ProxyFormProps> = ({
   clientProxyConfigs,
   setClientProxyConfigs,
   enablePreview,
+  formId,
+  onSaved,
+  hideActions,
 }) => {
   if (!defaultProxyConfig) {
     return <></>
@@ -81,6 +90,9 @@ export const TypedProxyForm: React.FC<ProxyFormProps> = ({
           clientProxyConfigs={clientProxyConfigs}
           setClientProxyConfigs={setClientProxyConfigs}
           enablePreview={enablePreview}
+          formId={formId}
+          onSaved={onSaved}
+          hideActions={hideActions}
         />
       )}
       {defaultProxyConfig.type === 'udp' && serverID && clientID && (
@@ -92,6 +104,9 @@ export const TypedProxyForm: React.FC<ProxyFormProps> = ({
           clientProxyConfigs={clientProxyConfigs}
           setClientProxyConfigs={setClientProxyConfigs}
           enablePreview={enablePreview}
+          formId={formId}
+          onSaved={onSaved}
+          hideActions={hideActions}
         />
       )}
       {defaultProxyConfig.type === 'http' && serverID && clientID && (
@@ -103,6 +118,9 @@ export const TypedProxyForm: React.FC<ProxyFormProps> = ({
           clientProxyConfigs={clientProxyConfigs}
           setClientProxyConfigs={setClientProxyConfigs}
           enablePreview={enablePreview}
+          formId={formId}
+          onSaved={onSaved}
+          hideActions={hideActions}
         />
       )}
       {defaultProxyConfig.type === 'stcp' && serverID && clientID && (
@@ -114,6 +132,9 @@ export const TypedProxyForm: React.FC<ProxyFormProps> = ({
           clientProxyConfigs={clientProxyConfigs}
           setClientProxyConfigs={setClientProxyConfigs}
           enablePreview={enablePreview}
+          formId={formId}
+          onSaved={onSaved}
+          hideActions={hideActions}
         />
       )}
     </>
@@ -128,6 +149,9 @@ export const TCPProxyForm: React.FC<ProxyFormProps> = ({
   clientProxyConfigs,
   setClientProxyConfigs,
   enablePreview,
+  formId,
+  onSaved,
+  hideActions,
 }) => {
   const defaultConfig = defaultProxyConfig as TCPProxyConfig
   const [timeoutID, setTimeoutID] = useState<NodeJS.Timeout | undefined>()
@@ -165,6 +189,8 @@ export const TCPProxyForm: React.FC<ProxyFormProps> = ({
       return proxyCfg
     })
     setClientProxyConfigs(newProxiyConfigs)
+    // 供外部（如快速创建弹窗）在表单校验通过并写回后立即接管提交
+    onSaved?.(cfgToSubmit as TypedProxyConfig)
   }
 
   const [isSaveDisabled, setSaveDisabled] = useState(false)
@@ -192,7 +218,7 @@ export const TCPProxyForm: React.FC<ProxyFormProps> = ({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-0.5">
+      <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-0.5">
         {server?.server?.ip &&
           defaultConfig.remotePort &&
           defaultConfig.localIP &&
@@ -227,10 +253,13 @@ export const TCPProxyForm: React.FC<ProxyFormProps> = ({
         {usePlugin ? (
           <PluginConfigForm defaultPluginConfig={pluginConfig} setPluginConfig={setPluginConfig} />
         ) : null}
-        <Button type="submit" disabled={isSaveDisabled} variant={'outline'} className="w-full">
-          <YesIcon className={`mr-2 h-4 w-4 ${isSaveDisabled ? '' : 'hidden'}`}></YesIcon>
-          {t('proxy.form.save_changes')}
-        </Button>
+        {/* hideActions：外部（如创建弹窗）通过 formId 接管提交时隐藏内部暂存按钮 */}
+        {!hideActions && (
+          <Button type="submit" disabled={isSaveDisabled} variant={'outline'} className="w-full">
+            <YesIcon className={`mr-2 h-4 w-4 ${isSaveDisabled ? '' : 'hidden'}`}></YesIcon>
+            {t('proxy.form.save_changes')}
+          </Button>
+        )}
       </form>
     </Form>
   )
@@ -244,6 +273,9 @@ export const STCPProxyForm: React.FC<ProxyFormProps> = ({
   clientProxyConfigs,
   setClientProxyConfigs,
   enablePreview,
+  formId,
+  onSaved,
+  hideActions,
 }) => {
   const defaultConfig = defaultProxyConfig as STCPProxyConfig
   const [timeoutID, setTimeoutID] = useState<NodeJS.Timeout | undefined>()
@@ -282,6 +314,8 @@ export const STCPProxyForm: React.FC<ProxyFormProps> = ({
       return proxyCfg
     })
     setClientProxyConfigs(newProxiyConfigs)
+    // 供外部（如快速创建弹窗）在表单校验通过并写回后立即接管提交
+    onSaved?.(cfgToSubmit as TypedProxyConfig)
   }
 
   const [isSaveDisabled, setSaveDisabled] = useState(false)
@@ -302,7 +336,7 @@ export const STCPProxyForm: React.FC<ProxyFormProps> = ({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-0.5">
+      <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-0.5">
         <PortField name="localPort" control={form.control} label={t('proxy.form.local_port') + '*'} />
         <HostField name="localIP" control={form.control} label={t('proxy.form.local_ip') + '*'} />
         <SwitchWithLabel
@@ -320,10 +354,13 @@ export const STCPProxyForm: React.FC<ProxyFormProps> = ({
           <PluginConfigForm defaultPluginConfig={pluginConfig} setPluginConfig={setPluginConfig} />
         ) : null}
         <SecretStringField name="secretKey" control={form.control} label={t('proxy.form.secret_key') + '*'} />
-        <Button type="submit" disabled={isSaveDisabled} variant={'outline'} className="w-full">
-          <YesIcon className={`mr-2 h-4 w-4 ${isSaveDisabled ? '' : 'hidden'}`}></YesIcon>
-          {t('proxy.form.save_changes')}
-        </Button>
+        {/* hideActions：外部（如创建弹窗）通过 formId 接管提交时隐藏内部暂存按钮 */}
+        {!hideActions && (
+          <Button type="submit" disabled={isSaveDisabled} variant={'outline'} className="w-full">
+            <YesIcon className={`mr-2 h-4 w-4 ${isSaveDisabled ? '' : 'hidden'}`}></YesIcon>
+            {t('proxy.form.save_changes')}
+          </Button>
+        )}
       </form>
     </Form>
   )
@@ -337,6 +374,9 @@ export const UDPProxyForm: React.FC<ProxyFormProps> = ({
   clientProxyConfigs,
   setClientProxyConfigs,
   enablePreview,
+  formId,
+  onSaved,
+  hideActions,
 }) => {
   const defaultConfig = defaultProxyConfig as UDPProxyConfig
   const [timeoutID, setTimeoutID] = useState<NodeJS.Timeout | undefined>()
@@ -375,6 +415,8 @@ export const UDPProxyForm: React.FC<ProxyFormProps> = ({
       return proxyCfg
     })
     setClientProxyConfigs(newProxiyConfigs)
+    // 供外部（如快速创建弹窗）在表单校验通过并写回后立即接管提交
+    onSaved?.(cfgToSubmit as TypedProxyConfig)
   }
 
   const [isSaveDisabled, setSaveDisabled] = useState(false)
@@ -402,7 +444,7 @@ export const UDPProxyForm: React.FC<ProxyFormProps> = ({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-0.5">
+      <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-0.5">
         {server?.server?.ip &&
           defaultConfig.remotePort &&
           defaultConfig.localIP &&
@@ -432,10 +474,13 @@ export const UDPProxyForm: React.FC<ProxyFormProps> = ({
         {usePlugin ? (
           <PluginConfigForm defaultPluginConfig={pluginConfig} setPluginConfig={setPluginConfig} />
         ) : null}
-        <Button type="submit" disabled={isSaveDisabled} variant={'outline'} className="w-full">
-          <YesIcon className={`mr-2 h-4 w-4 ${isSaveDisabled ? '' : 'hidden'}`}></YesIcon>
-          {t('proxy.form.save_changes')}
-        </Button>
+        {/* hideActions：外部（如创建弹窗）通过 formId 接管提交时隐藏内部暂存按钮 */}
+        {!hideActions && (
+          <Button type="submit" disabled={isSaveDisabled} variant={'outline'} className="w-full">
+            <YesIcon className={`mr-2 h-4 w-4 ${isSaveDisabled ? '' : 'hidden'}`}></YesIcon>
+            {t('proxy.form.save_changes')}
+          </Button>
+        )}
       </form>
     </Form>
   )
@@ -449,6 +494,9 @@ export const HTTPProxyForm: React.FC<ProxyFormProps> = ({
   clientProxyConfigs,
   setClientProxyConfigs,
   enablePreview,
+  formId,
+  onSaved,
+  hideActions,
 }) => {
   const defaultConfig = defaultProxyConfig as HTTPProxyConfig
   const [timeoutID, setTimeoutID] = useState<NodeJS.Timeout | undefined>()
@@ -498,6 +546,8 @@ export const HTTPProxyForm: React.FC<ProxyFormProps> = ({
       return proxyCfg
     })
     setClientProxyConfigs(newProxiyConfigs)
+    // 供外部（如快速创建弹窗）在表单校验通过并写回后立即接管提交
+    onSaved?.(cfgToSubmit as TypedProxyConfig)
   }
 
   const [isSaveDisabled, setSaveDisabled] = useState(false)
@@ -531,7 +581,7 @@ export const HTTPProxyForm: React.FC<ProxyFormProps> = ({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-0.5">
+      <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-0.5">
         {server &&
           server.server &&
           server.server.ip &&
@@ -614,10 +664,13 @@ export const HTTPProxyForm: React.FC<ProxyFormProps> = ({
             )}
           </div>
         )}
-        <Button type="submit" disabled={isSaveDisabled} variant={'outline'} className="w-full">
-          <YesIcon className={`mr-2 h-4 w-4 ${isSaveDisabled ? '' : 'hidden'}`}></YesIcon>
-          {t('proxy.form.save_changes')}
-        </Button>
+        {/* hideActions：外部（如创建弹窗）通过 formId 接管提交时隐藏内部暂存按钮 */}
+        {!hideActions && (
+          <Button type="submit" disabled={isSaveDisabled} variant={'outline'} className="w-full">
+            <YesIcon className={`mr-2 h-4 w-4 ${isSaveDisabled ? '' : 'hidden'}`}></YesIcon>
+            {t('proxy.form.save_changes')}
+          </Button>
+        )}
       </form>
     </Form>
   )

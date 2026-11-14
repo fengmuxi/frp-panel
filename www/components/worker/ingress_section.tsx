@@ -184,6 +184,32 @@ export function WorkerIngress({ workerId, refetchWorker, clients }: WorkerIngres
   }
 
   return (
+    <IngressSectionInner onIngressChanged={handleIngressCreated} workerId={workerId} clients={clients} />
+  )
+}
+
+// 创建/编辑/删除 Ingress 的弹窗需要各自持有 open 状态，
+// 抽成独立组件以保证提交成功后可以自动关闭对应弹窗。
+const IngressSectionInner = ({
+  workerId,
+  onIngressChanged,
+  clients,
+}: {
+  workerId: string
+  onIngressChanged: () => void
+  clients?: Client[]
+}) => {
+  const { t } = useTranslation()
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+
+  // 获取 Worker Ingress
+  const { data: ingresses } = useQuery({
+    queryKey: ['getWorkerIngress', workerId],
+    queryFn: () => getWorkerIngress({ workerId }),
+    enabled: !!workerId,
+  })
+
+  return (
     <Card className="shadow-sm">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
@@ -191,7 +217,7 @@ export function WorkerIngress({ workerId, refetchWorker, clients }: WorkerIngres
             <Network className="h-5 w-5 mr-2 text-muted-foreground" />
             {t('worker.ingress.title')}
           </CardTitle>
-          <Dialog>
+          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm" variant="outline" className="h-8 text-xs">
                 {t('worker.ingress.create')}
@@ -202,7 +228,14 @@ export function WorkerIngress({ workerId, refetchWorker, clients }: WorkerIngres
                 <DialogTitle>{t('worker.ingress.create_title')}</DialogTitle>
                 <DialogDescription>{t('worker.ingress.create_description')}</DialogDescription>
               </DialogHeader>
-              <CreateWorkerIngressForm workerId={workerId} onSuccess={handleIngressCreated} clients={clients} />
+              <CreateWorkerIngressForm
+                workerId={workerId}
+                onSuccess={() => {
+                  onIngressChanged()
+                  setCreateDialogOpen(false)
+                }}
+                clients={clients}
+              />
             </DialogContent>
           </Dialog>
         </div>
@@ -275,48 +308,14 @@ export function WorkerIngress({ workerId, refetchWorker, clients }: WorkerIngres
                     </div>
                   </div>
                   <div className="bg-muted/10 px-3 py-1.5 flex items-center justify-end gap-1 border-t">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <Settings className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle>{t('worker.ingress.edit')}</DialogTitle>
-                        </DialogHeader>
-                        <ProxyConfigMutateForm
-                          disableChangeProxyName
-                          defaultProxyConfig={JSON.parse(ingress.config || '{}') as TypedProxyConfig}
-                          overwrite={true}
-                          defaultOriginalProxyConfig={ingress}
-                          onSuccess={handleIngressCreated}
-                        />
-                      </DialogContent>
-                    </Dialog>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-md">
-                        <DialogHeader>
-                          <DialogTitle>{t('worker.ingress.delete.title')}</DialogTitle>
-                          <DialogDescription>{t('worker.ingress.delete.description')}</DialogDescription>
-                        </DialogHeader>
-                        <IngressDeleteForm
-                          clientId={ingress.clientId}
-                          serverId={ingress.serverId}
-                          proxyName={ingress.name}
-                          onSuccess={handleIngressCreated}
-                        />
-                      </DialogContent>
-                    </Dialog>
+                    <IngressEditDialog
+                      ingress={ingress}
+                      onIngressChanged={onIngressChanged}
+                    />
+                    <IngressDeleteDialog
+                      ingress={ingress}
+                      onIngressChanged={onIngressChanged}
+                    />
                   </div>
                 </div>
               ))}
@@ -367,6 +366,80 @@ export const IngressDeleteForm = ({
         {t('worker.ingress.delete.button')}
       </Button>
     </DialogFooter>
+  )
+}
+
+// 编辑单个 Ingress 的弹窗：内部持有 open 状态，提交成功后自动关闭
+const IngressEditDialog = ({
+  ingress,
+  onIngressChanged,
+}: {
+  ingress: ProxyConfig
+  onIngressChanged: () => void
+}) => {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-7 w-7">
+          <Settings className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{t('worker.ingress.edit')}</DialogTitle>
+        </DialogHeader>
+        <ProxyConfigMutateForm
+          disableChangeProxyName
+          defaultProxyConfig={JSON.parse(ingress.config || '{}') as TypedProxyConfig}
+          overwrite={true}
+          defaultOriginalProxyConfig={ingress}
+          onSuccess={() => {
+            onIngressChanged()
+            setOpen(false)
+          }}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// 删除单个 Ingress 的确认弹窗：确认成功后自动关闭
+const IngressDeleteDialog = ({
+  ingress,
+  onIngressChanged,
+}: {
+  ingress: ProxyConfig
+  onIngressChanged: () => void
+}) => {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50">
+          <Trash className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t('worker.ingress.delete.title')}</DialogTitle>
+          <DialogDescription>{t('worker.ingress.delete.description')}</DialogDescription>
+        </DialogHeader>
+        <IngressDeleteForm
+          clientId={ingress.clientId}
+          serverId={ingress.serverId}
+          proxyName={ingress.name}
+          onSuccess={() => {
+            onIngressChanged()
+            setOpen(false)
+          }}
+        />
+      </DialogContent>
+    </Dialog>
   )
 }
 

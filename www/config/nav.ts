@@ -7,6 +7,7 @@ import {
   Cable,
   SquareFunction,
   Network,
+  LayoutDashboard,
 } from "lucide-react"
 import { TbBuildingTunnel } from "react-icons/tb"
 import { ROUTES } from "@/lib/routes"
@@ -21,6 +22,11 @@ export const teams = [
 ]
 
 export const getNavItems = (t: any) => [
+  {
+    title: t('nav.home'),
+    url: "/",
+    icon: LayoutDashboard,
+  },
   {
     title: t('nav.clients'),
     url: "/clients",

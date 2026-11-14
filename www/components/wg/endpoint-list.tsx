@@ -37,10 +37,13 @@ export function EndpointList({
   clientId,
   wireguardId,
   keyword,
+  refreshSignal,
 }: {
   clientId?: string
   wireguardId?: number
   keyword?: string
+  // 外部刷新信号（如点击搜索按钮），进入 queryKey 以支持"关键词不变也强制刷新"
+  refreshSignal?: string
 }) {
   const { t } = useTranslation()
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -50,7 +53,7 @@ export function EndpointList({
   const [openAdd, setOpenAdd] = React.useState(false)
 
   const { data } = useQuery({
-    queryKey: ['listEndpoints', clientId, wireguardId, keyword, pageIndex, pageSize, refreshKey],
+    queryKey: ['listEndpoints', clientId, wireguardId, keyword, pageIndex, pageSize, refreshKey, refreshSignal],
     queryFn: () =>
       listEndpoints(
         ListEndpointsRequest.create({

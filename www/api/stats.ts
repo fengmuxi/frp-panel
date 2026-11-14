@@ -2,7 +2,14 @@ import http from '@/api/http'
 import { API_PATH } from '@/lib/consts'
 import { GetProxyStatsByClientIDRequest, GetProxyStatsByClientIDResponse } from '@/lib/pb/api_client'
 import { GetProxyStatsByServerIDRequest, GetProxyStatsByServerIDResponse } from '@/lib/pb/api_server'
+import { GetProxyTrafficStatsRequest, GetProxyTrafficStatsResponse } from '@/lib/pb/api_master'
 import { BaseResponse } from '@/types/api'
+
+/** 按时间区间查询隧道流量统计（首页总览/趋势/排行），int64 字段为 bigint，展示层用 Number() 转换 */
+export const getProxyTrafficStats = async (req: GetProxyTrafficStatsRequest) => {
+  const res = await http.post(API_PATH + '/proxy/traffic_stats', GetProxyTrafficStatsRequest.toJson(req))
+  return GetProxyTrafficStatsResponse.fromJson((res.data as BaseResponse).body)
+}
 
 export const getProxyStatsByClientID = async (req: GetProxyStatsByClientIDRequest) => {
   // return {

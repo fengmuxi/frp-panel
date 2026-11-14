@@ -9,6 +9,10 @@ import {
   InitClientResponse,
   ListClientsRequest,
   ListClientsResponse,
+  SwapClientSortRequest,
+  SwapClientSortResponse,
+  UpdateClientInfoRequest,
+  UpdateClientInfoResponse,
   UpgradeFrppRequest,
   UpgradeFrppResponse,
 } from '@/lib/pb/api_client'
@@ -33,6 +37,18 @@ export const initClient = async (req: InitClientRequest) => {
   console.log('attempting init client:', InitClientRequest.toJsonString(req))
   const res = await http.post(API_PATH + '/client/init', InitClientRequest.toJson(req))
   return InitClientResponse.fromJson((res.data as BaseResponse).body)
+}
+
+// 轻量更新客户端名称（备注）与排序序号
+export const updateClientInfo = async (req: UpdateClientInfoRequest) => {
+  const res = await http.post(API_PATH + '/client/update_info', UpdateClientInfoRequest.toJson(req))
+  return UpdateClientInfoResponse.fromJson((res.data as BaseResponse).body)
+}
+
+// 与相邻项交换排序位置（跨分页由服务端处理）
+export const swapClientSort = async (req: SwapClientSortRequest) => {
+  const res = await http.post(API_PATH + '/client/swap_sort', SwapClientSortRequest.toJson(req))
+  return SwapClientSortResponse.fromJson((res.data as BaseResponse).body)
 }
 
 export const upgradeFrpp = async (req: UpgradeFrppRequest) => {

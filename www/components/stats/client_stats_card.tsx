@@ -33,6 +33,8 @@ export const ClientStatsCard: React.FC<ClientStatsCardProps> = ({ clientID: defa
     queryFn: () => {
       return getProxyStatsByClientID({ clientId: clientID! })
     },
+    // 今日流量由节点每 30s 上报，前台轮询保持准实时
+    refetchInterval: 30_000,
   })
 
   useEffect(() => {

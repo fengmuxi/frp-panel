@@ -15,6 +15,8 @@ import {
   StopProxyResponse,
   UpdateProxyConfigRequest,
   UpdateProxyConfigResponse,
+  UpdateProxyRulesRequest,
+  UpdateProxyRulesResponse,
 } from '@/lib/pb/api_client'
 import { BaseResponse } from '@/types/api'
 
@@ -31,6 +33,12 @@ export const listProxyConfig = async (req: ListProxyConfigsRequest) => {
 export const updateProxyConfig = async (req: UpdateProxyConfigRequest) => {
   const res = await http.post(API_PATH + '/proxy/update_config', UpdateProxyConfigRequest.toJson(req))
   return UpdateProxyConfigResponse.fromJson((res.data as BaseResponse).body)
+}
+
+// 更新隧道自动规则（定时开关 + 流量限额），不触碰 frp 配置
+export const updateProxyRules = async (req: UpdateProxyRulesRequest) => {
+  const res = await http.post(API_PATH + '/proxy/update_rules', UpdateProxyRulesRequest.toJson(req))
+  return UpdateProxyRulesResponse.fromJson((res.data as BaseResponse).body)
 }
 
 export const deleteProxyConfig = async (req: DeleteProxyConfigRequest) => {

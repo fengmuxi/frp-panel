@@ -14,6 +14,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { ProxyConfigMutateForm } from './mutate_proxy_config'
+import { ProxyRulesDialog } from './proxy_rules_dialog'
+import { ProxyTrafficDetailDialog } from './proxy_traffic_detail_dialog'
 import { useEffect, useMemo, useState } from 'react'
 import { Row } from '@tanstack/react-table'
 import { ProxyConfigTableSchema } from './proxy_config_item'
@@ -33,6 +35,8 @@ export function ProxyConfigActions({ serverID, clientID, name, row }: ProxyConfi
   const { t } = useTranslation()
   const [proxyMutateFormOpen, setProxyMutateFormOpen] = useState(false)
   const [deleteWarnDialogOpen, setDeleteWarnDialogOpen] = useState(false)
+  const [rulesDialogOpen, setRulesDialogOpen] = useState(false)
+  const [trafficDialogOpen, setTrafficDialogOpen] = useState(false)
   const proxyConfig = row.original
 
   const deleteProxyConfigMutation = useMutation({
@@ -104,6 +108,18 @@ export function ProxyConfigActions({ serverID, clientID, name, row }: ProxyConfi
         },
       },
       {
+        name: t('proxy.rules.menu'),
+        onClick: () => {
+          setRulesDialogOpen(true)
+        },
+      },
+      {
+        name: t('traffic.chart.title'),
+        onClick: () => {
+          setTrafficDialogOpen(true)
+        },
+      },
+      {
         name: t('proxy.action.delete'),
         onClick: () => {
           setDeleteWarnDialogOpen(true)
@@ -140,9 +156,23 @@ export function ProxyConfigActions({ serverID, clientID, name, row }: ProxyConfi
             defaultProxyConfig={JSON.parse(row.original.config || '{}') as TypedProxyConfig}
             overwrite={true}
             defaultOriginalProxyConfig={row.original.originalProxyConfig}
+            onSuccess={() => setProxyMutateFormOpen(false)}
           />
         </DialogContent>
       </Dialog>
+      <ProxyRulesDialog
+        open={rulesDialogOpen}
+        onOpenChange={setRulesDialogOpen}
+        proxy={row.original.originalProxyConfig}
+      />
+      <ProxyTrafficDetailDialog
+        open={trafficDialogOpen}
+        onOpenChange={setTrafficDialogOpen}
+        clientID={clientID}
+        serverID={serverID}
+        proxyName={name}
+        proxyType={row.original.type}
+      />
       <Dialog open={deleteWarnDialogOpen} onOpenChange={setDeleteWarnDialogOpen}>
         <DialogContent>
           <DialogHeader>

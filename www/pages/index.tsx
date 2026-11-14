@@ -2,6 +2,7 @@ import { Providers } from '@/components/providers'
 import { RootLayout } from '@/components/layout'
 import { Header } from '@/components/header'
 import PlatformInfo from '@/components/platforminfo'
+import { HomeTraffic } from '@/components/home/home-traffic'
 import { useTranslation } from 'react-i18next'
 // import Link from 'next/link'
 // import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,6 +22,7 @@ export default function Home() {
       <RootLayout mainHeader={<Header />}>
         <div className="space-y-6">
           <PlatformInfo />
+          <HomeTraffic />
           {/* <Card>
             <CardHeader>
               <CardTitle>{t('wg.dashboard.quickEntry')}</CardTitle>

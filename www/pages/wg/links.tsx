@@ -23,7 +23,7 @@ export default function WireGuardLinksPage() {
 						</h1>
 						<IdInput keyword={keyword} setKeyword={setKeyword} refetchTrigger={setTrigger} />
 					</div>
-					<WireGuardLinkList keyword={keyword} />
+					<WireGuardLinkList keyword={keyword} refreshSignal={trigger} />
 				</div>
 			</RootLayout>
 		</Providers>

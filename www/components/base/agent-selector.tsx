@@ -61,7 +61,7 @@ export const AgentSelector: React.FC<AgentSelectorProps> = ({ value, onChange, p
 	const clientAgents: Agent[] = React.useMemo(() => {
 		return (clientList?.clients || []).map((client) => ({
 			id: `client-${client.id}`,
-			label: client.id || '',
+			label: client.comment || client.id || '',
 			type: 'client' as AgentType,
 			original: client,
 		}))
@@ -70,7 +70,7 @@ export const AgentSelector: React.FC<AgentSelectorProps> = ({ value, onChange, p
 	const serverAgents: Agent[] = React.useMemo(() => {
 		return (serverList?.servers || []).map((server) => ({
 			id: `server-${server.id}`,
-			label: server.id || '',
+			label: server.comment || server.id || '',
 			type: 'server' as AgentType,
 			original: server,
 		}))

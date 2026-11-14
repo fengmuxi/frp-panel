@@ -37,6 +37,8 @@ export const ServerList: React.FC<ServerListProps> = ({ Servers, Keyword, Trigge
         status: server.config == undefined || server.config == '' ? 'invalid' : 'valid',
         secret: server.secret == undefined ? '' : server.secret,
         config: server.config,
+        comment: server.comment,
+        sortIndex: server.sortIndex ?? 0,
       }) as ServerTableSchema,
   )
 
@@ -77,6 +79,8 @@ export const ServerList: React.FC<ServerListProps> = ({ Servers, Keyword, Trigge
           secret: server.secret == undefined ? '' : server.secret,
           ip: server.ip,
           config: server.config,
+          comment: server.comment,
+          sortIndex: server.sortIndex ?? 0,
         } as ServerTableSchema
       }) ?? data,
     pageCount: Math.ceil(
@@ -84,6 +88,10 @@ export const ServerList: React.FC<ServerListProps> = ({ Servers, Keyword, Trigge
       (dataQuery.data?.total == undefined ? 0 : dataQuery.data?.total) / fetchDataOptions.pageSize ?? 0,
     ),
     columns: serverColumnsDef,
+    meta: {
+      total: dataQuery.data?.total,
+      sortEnabled: Keyword === undefined || Keyword === '',
+    },
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,

@@ -175,6 +175,94 @@ export interface StartSteamLogResponse {
      */
     status?: Status;
 }
+/**
+ * @generated from protobuf message api_master.GetProxyTrafficStatsRequest
+ */
+export interface GetProxyTrafficStatsRequest {
+    /**
+     * @generated from protobuf field: optional int64 start_time = 1;
+     */
+    startTime?: bigint; // unix 秒，起始日 00:00（按前端时区，含）
+    /**
+     * @generated from protobuf field: optional int64 end_time = 2;
+     */
+    endTime?: bigint; // unix 秒，语义为"含 end 所在整天"
+    /**
+     * @generated from protobuf field: optional bool with_series = 3;
+     */
+    withSeries?: boolean; // 是否返回日粒度趋势序列
+    /**
+     * @generated from protobuf field: optional int32 tz_offset_minutes = 4;
+     */
+    tzOffsetMinutes?: number; // 前端时区偏移分钟 = -new Date().getTimezoneOffset()
+}
+/**
+ * @generated from protobuf message api_master.ProxyTrafficItem
+ */
+export interface ProxyTrafficItem {
+    /**
+     * @generated from protobuf field: optional int32 proxy_id = 1;
+     */
+    proxyId?: number;
+    /**
+     * @generated from protobuf field: optional string name = 2;
+     */
+    name?: string;
+    /**
+     * @generated from protobuf field: optional string type = 3;
+     */
+    type?: string;
+    /**
+     * @generated from protobuf field: optional int64 traffic_in = 4;
+     */
+    trafficIn?: bigint;
+    /**
+     * @generated from protobuf field: optional int64 traffic_out = 5;
+     */
+    trafficOut?: bigint;
+}
+/**
+ * @generated from protobuf message api_master.TrafficSeriesPoint
+ */
+export interface TrafficSeriesPoint {
+    /**
+     * @generated from protobuf field: optional int64 ts = 1;
+     */
+    ts?: bigint; // 该日 00:00 的 unix 秒（按前端时区）
+    /**
+     * @generated from protobuf field: optional int64 traffic_in = 2;
+     */
+    trafficIn?: bigint;
+    /**
+     * @generated from protobuf field: optional int64 traffic_out = 3;
+     */
+    trafficOut?: bigint;
+}
+/**
+ * @generated from protobuf message api_master.GetProxyTrafficStatsResponse
+ */
+export interface GetProxyTrafficStatsResponse {
+    /**
+     * @generated from protobuf field: optional common.Status status = 1;
+     */
+    status?: Status;
+    /**
+     * @generated from protobuf field: repeated api_master.ProxyTrafficItem items = 2;
+     */
+    items: ProxyTrafficItem[]; // 按 (traffic_in + traffic_out) 降序
+    /**
+     * @generated from protobuf field: repeated api_master.TrafficSeriesPoint series = 3;
+     */
+    series: TrafficSeriesPoint[]; // 日粒度趋势，按天升序
+    /**
+     * @generated from protobuf field: optional int64 total_in = 4;
+     */
+    totalIn?: bigint;
+    /**
+     * @generated from protobuf field: optional int64 total_out = 5;
+     */
+    totalOut?: bigint;
+}
 // @generated message type with reflection information, may provide speed optimized methods
 class ClientStatus$Type extends MessageType<ClientStatus> {
     constructor() {
@@ -701,3 +789,280 @@ class StartSteamLogResponse$Type extends MessageType<StartSteamLogResponse> {
  * @generated MessageType for protobuf message api_master.StartSteamLogResponse
  */
 export const StartSteamLogResponse = new StartSteamLogResponse$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class GetProxyTrafficStatsRequest$Type extends MessageType<GetProxyTrafficStatsRequest> {
+    constructor() {
+        super("api_master.GetProxyTrafficStatsRequest", [
+            { no: 1, name: "start_time", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 2, name: "end_time", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 3, name: "with_series", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
+            { no: 4, name: "tz_offset_minutes", kind: "scalar", opt: true, T: 5 /*ScalarType.INT32*/ }
+        ]);
+    }
+    create(value?: PartialMessage<GetProxyTrafficStatsRequest>): GetProxyTrafficStatsRequest {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<GetProxyTrafficStatsRequest>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: GetProxyTrafficStatsRequest): GetProxyTrafficStatsRequest {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* optional int64 start_time */ 1:
+                    message.startTime = reader.int64().toBigInt();
+                    break;
+                case /* optional int64 end_time */ 2:
+                    message.endTime = reader.int64().toBigInt();
+                    break;
+                case /* optional bool with_series */ 3:
+                    message.withSeries = reader.bool();
+                    break;
+                case /* optional int32 tz_offset_minutes */ 4:
+                    message.tzOffsetMinutes = reader.int32();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: GetProxyTrafficStatsRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* optional int64 start_time = 1; */
+        if (message.startTime !== undefined)
+            writer.tag(1, WireType.Varint).int64(message.startTime);
+        /* optional int64 end_time = 2; */
+        if (message.endTime !== undefined)
+            writer.tag(2, WireType.Varint).int64(message.endTime);
+        /* optional bool with_series = 3; */
+        if (message.withSeries !== undefined)
+            writer.tag(3, WireType.Varint).bool(message.withSeries);
+        /* optional int32 tz_offset_minutes = 4; */
+        if (message.tzOffsetMinutes !== undefined)
+            writer.tag(4, WireType.Varint).int32(message.tzOffsetMinutes);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message api_master.GetProxyTrafficStatsRequest
+ */
+export const GetProxyTrafficStatsRequest = new GetProxyTrafficStatsRequest$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ProxyTrafficItem$Type extends MessageType<ProxyTrafficItem> {
+    constructor() {
+        super("api_master.ProxyTrafficItem", [
+            { no: 1, name: "proxy_id", kind: "scalar", opt: true, T: 5 /*ScalarType.INT32*/ },
+            { no: 2, name: "name", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 3, name: "type", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 4, name: "traffic_in", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 5, name: "traffic_out", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
+        ]);
+    }
+    create(value?: PartialMessage<ProxyTrafficItem>): ProxyTrafficItem {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<ProxyTrafficItem>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ProxyTrafficItem): ProxyTrafficItem {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* optional int32 proxy_id */ 1:
+                    message.proxyId = reader.int32();
+                    break;
+                case /* optional string name */ 2:
+                    message.name = reader.string();
+                    break;
+                case /* optional string type */ 3:
+                    message.type = reader.string();
+                    break;
+                case /* optional int64 traffic_in */ 4:
+                    message.trafficIn = reader.int64().toBigInt();
+                    break;
+                case /* optional int64 traffic_out */ 5:
+                    message.trafficOut = reader.int64().toBigInt();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ProxyTrafficItem, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* optional int32 proxy_id = 1; */
+        if (message.proxyId !== undefined)
+            writer.tag(1, WireType.Varint).int32(message.proxyId);
+        /* optional string name = 2; */
+        if (message.name !== undefined)
+            writer.tag(2, WireType.LengthDelimited).string(message.name);
+        /* optional string type = 3; */
+        if (message.type !== undefined)
+            writer.tag(3, WireType.LengthDelimited).string(message.type);
+        /* optional int64 traffic_in = 4; */
+        if (message.trafficIn !== undefined)
+            writer.tag(4, WireType.Varint).int64(message.trafficIn);
+        /* optional int64 traffic_out = 5; */
+        if (message.trafficOut !== undefined)
+            writer.tag(5, WireType.Varint).int64(message.trafficOut);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message api_master.ProxyTrafficItem
+ */
+export const ProxyTrafficItem = new ProxyTrafficItem$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class TrafficSeriesPoint$Type extends MessageType<TrafficSeriesPoint> {
+    constructor() {
+        super("api_master.TrafficSeriesPoint", [
+            { no: 1, name: "ts", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 2, name: "traffic_in", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 3, name: "traffic_out", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
+        ]);
+    }
+    create(value?: PartialMessage<TrafficSeriesPoint>): TrafficSeriesPoint {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<TrafficSeriesPoint>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TrafficSeriesPoint): TrafficSeriesPoint {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* optional int64 ts */ 1:
+                    message.ts = reader.int64().toBigInt();
+                    break;
+                case /* optional int64 traffic_in */ 2:
+                    message.trafficIn = reader.int64().toBigInt();
+                    break;
+                case /* optional int64 traffic_out */ 3:
+                    message.trafficOut = reader.int64().toBigInt();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: TrafficSeriesPoint, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* optional int64 ts = 1; */
+        if (message.ts !== undefined)
+            writer.tag(1, WireType.Varint).int64(message.ts);
+        /* optional int64 traffic_in = 2; */
+        if (message.trafficIn !== undefined)
+            writer.tag(2, WireType.Varint).int64(message.trafficIn);
+        /* optional int64 traffic_out = 3; */
+        if (message.trafficOut !== undefined)
+            writer.tag(3, WireType.Varint).int64(message.trafficOut);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message api_master.TrafficSeriesPoint
+ */
+export const TrafficSeriesPoint = new TrafficSeriesPoint$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class GetProxyTrafficStatsResponse$Type extends MessageType<GetProxyTrafficStatsResponse> {
+    constructor() {
+        super("api_master.GetProxyTrafficStatsResponse", [
+            { no: 1, name: "status", kind: "message", T: () => Status },
+            { no: 2, name: "items", kind: "message", repeat: 1 /*RepeatType.PACKED*/, T: () => ProxyTrafficItem },
+            { no: 3, name: "series", kind: "message", repeat: 1 /*RepeatType.PACKED*/, T: () => TrafficSeriesPoint },
+            { no: 4, name: "total_in", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 5, name: "total_out", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
+        ]);
+    }
+    create(value?: PartialMessage<GetProxyTrafficStatsResponse>): GetProxyTrafficStatsResponse {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.items = [];
+        message.series = [];
+        if (value !== undefined)
+            reflectionMergePartial<GetProxyTrafficStatsResponse>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: GetProxyTrafficStatsResponse): GetProxyTrafficStatsResponse {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* optional common.Status status */ 1:
+                    message.status = Status.internalBinaryRead(reader, reader.uint32(), options, message.status);
+                    break;
+                case /* repeated api_master.ProxyTrafficItem items */ 2:
+                    message.items.push(ProxyTrafficItem.internalBinaryRead(reader, reader.uint32(), options));
+                    break;
+                case /* repeated api_master.TrafficSeriesPoint series */ 3:
+                    message.series.push(TrafficSeriesPoint.internalBinaryRead(reader, reader.uint32(), options));
+                    break;
+                case /* optional int64 total_in */ 4:
+                    message.totalIn = reader.int64().toBigInt();
+                    break;
+                case /* optional int64 total_out */ 5:
+                    message.totalOut = reader.int64().toBigInt();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: GetProxyTrafficStatsResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* optional common.Status status = 1; */
+        if (message.status)
+            Status.internalBinaryWrite(message.status, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        /* repeated api_master.ProxyTrafficItem items = 2; */
+        for (let i = 0; i < message.items.length; i++)
+            ProxyTrafficItem.internalBinaryWrite(message.items[i], writer.tag(2, WireType.LengthDelimited).fork(), options).join();
+        /* repeated api_master.TrafficSeriesPoint series = 3; */
+        for (let i = 0; i < message.series.length; i++)
+            TrafficSeriesPoint.internalBinaryWrite(message.series[i], writer.tag(3, WireType.LengthDelimited).fork(), options).join();
+        /* optional int64 total_in = 4; */
+        if (message.totalIn !== undefined)
+            writer.tag(4, WireType.Varint).int64(message.totalIn);
+        /* optional int64 total_out = 5; */
+        if (message.totalOut !== undefined)
+            writer.tag(5, WireType.Varint).int64(message.totalOut);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message api_master.GetProxyTrafficStatsResponse
+ */
+export const GetProxyTrafficStatsResponse = new GetProxyTrafficStatsResponse$Type();

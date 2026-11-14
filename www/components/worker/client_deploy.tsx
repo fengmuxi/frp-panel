@@ -39,6 +39,7 @@ export function ClientDeployment({
 }: ClientDeploymentProps) {
   const { t } = useTranslation()
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [installDialogOpen, setInstallDialogOpen] = useState(false)
   const [selectedClientId, setSelectedClientId] = useState('')
   const [downloadUrl, setDownloadUrl] = useState('')
 
@@ -53,6 +54,8 @@ export function ClientDeployment({
     mutationFn: installWorkerd,
     onSuccess: () => {
       toast.success(t('worker.client_install_workerd.success'))
+      // 安装任务已下发成功，关闭安装弹窗
+      setInstallDialogOpen(false)
     },
     onError: () => {
       toast.error(t('worker.client_install_workerd.error'))
@@ -144,31 +147,18 @@ export function ClientDeployment({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <h3 className="font-semibold text-sm truncate max-w-[200px] md:max-w-[300px]">
-                              {client?.originClientId || clientId}
+                              {client?.comment || t('client.name_placeholder')}
                             </h3>
                           </TooltipTrigger>
-                          <TooltipContent>{client?.originClientId || clientId}</TooltipContent>
+                          <TooltipContent>{client?.comment || t('client.name_placeholder')}</TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                       <Badge variant={variant} className="font-normal whitespace-nowrap">
                         {text}
                       </Badge>
                     </div>
-                    <div className="px-3 py-2 flex-grow">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="flex items-center">
-                              <span className="text-xs font-medium text-muted-foreground mr-1">ID:</span>
-                              <span className="font-mono text-xs truncate max-w-[200px]">{clientId}</span>
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>{clientId}</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
                     <div className="bg-muted/10 px-3 py-1.5 flex items-center justify-end border-t">
-                      <Dialog>
+                      <Dialog open={installDialogOpen} onOpenChange={setInstallDialogOpen}>
                         <DialogTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-7 w-7">
                             <Download className="h-4 w-4" />

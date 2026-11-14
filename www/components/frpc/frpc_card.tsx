@@ -122,7 +122,7 @@ export const FRPCFormCard: React.FC<FRPCFormCardProps> = ({
           <SuggestiveInput value={frpsUrl || ''} onChange={setFrpsUrl} suggestions={selectedServer?.frpsUrls || []} />
         </div>
         {clientID && !advanceMode && <div className='flex flex-col w-full pt-2 space-y-2'>
-          <Label className="text-sm font-medium">{t('frpc.form.comment.title', { id: clientID })}</Label>
+          <Label className="text-sm font-medium">{t('frpc.form.comment.title', { id: client?.client?.comment || t('client.name_placeholder') })}</Label>
           <p className="text-sm text-muted-foreground">{t('frpc.form.comment.hint')}</p>
           <p className="text-sm border rounded p-2 my-2">
             {client?.client?.comment == undefined || client?.client?.comment === '' ? t('frpc.form.comment.empty') : client?.client?.comment}

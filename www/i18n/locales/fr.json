@@ -100,16 +100,25 @@
       "success": "Client créé avec succès",
       "button": "Créer",
       "title": "Créer un Nouveau Client",
-      "description": "Créer un nouveau client pour la connexion. L'ID du client doit être unique",
-      "id": "ID du Client",
-      "submit": "Créer"
+      "description": "Créer un nouveau client pour la connexion. Le nom doit être unique",
+      "submit": "Créer",
+      "name": "Nom",
+      "name_placeholder": "Entrez un nom"
     },
-    "id": "ID (Cliquez pour la Commande d'Installation)",
     "status": "État de la Configuration",
     "status_configured": "Configuré",
     "status_unconfigured": "Non Configuré",
     "info": "Infos d'Exécution/Version",
     "secret": "Clé Secrète (Cliquez pour la Commande de Démarrage)",
+    "name": "Nom",
+    "name_placeholder": "Sans nom",
+    "sort": "Ordre",
+    "move_up": "Monter",
+    "move_down": "Descendre",
+    "sort_success": "Ordre mis à jour",
+    "sort_failed": "Échec de la mise à jour de l'ordre",
+    "edit_success": "Nom et ordre enregistrés",
+    "edit_failed": "Échec de l'enregistrement",
     "install": {
       "title": "Commande d'Installation",
       "description": "Sélectionnez votre système d'exploitation et copiez la commande d'installation",
@@ -177,7 +186,8 @@
     },
     "status_error": "Erreur",
     "status_pause": "En Pause",
-    "status_unknown": "Inconnu"
+    "status_unknown": "Inconnu",
+    "name_install_hint": "Cliquez pour voir la commande d’installation"
   },
   "common": {
     "cancel": "Annuler",
@@ -198,7 +208,15 @@
     "failed": "Échec",
     "clientType": "Type de Client",
     "disconnect": "Déconnecter",
-    "connect": "Connecter"
+    "connect": "Connecter",
+    "edit": {
+      "title": "Modifier le nom et l'ordre",
+      "description": "Modifier le nom de ce nœud et son ordre personnalisé dans la liste",
+      "comment": "Nom",
+      "comment_placeholder": "Saisir un nom",
+      "sort_index": "Indice de tri",
+      "sort_index_hint": "Les chiffres plus petits apparaissent en premier ; 0 signifie non défini (placé à la fin de la liste)"
+    }
   },
   "table": {
     "pagination": {
@@ -702,14 +720,47 @@
     "item": {
       "proxy_name": "Nom du Tunnel",
       "proxy_type": "Type de Tunnel",
-      "client_id": "ID du Client",
-      "server_id": "ID du Serveur",
       "status": "Statut",
-      "visit_preview": "Visiter l'aperçu"
+      "visit_preview": "Visiter l'aperçu",
+      "client_name": "Client",
+      "server_name": "Serveur"
     },
     "stats": {
       "label": "Nom du Tunnel",
       "tunnel_traffic": "Tunnel : {{name}}"
+    },
+    "rules": {
+      "menu": "Règles automatiques",
+      "title": "Règles automatiques du tunnel",
+      "description": "Configurer la planification et le quota de trafic ; appliqué par le Master chaque minute, prend effet en ~1 minute",
+      "column": "Règles/Quota",
+      "auto_stopped": "Arrêt auto",
+      "schedule_section": "Planification",
+      "schedule_start": "Heure de début",
+      "schedule_end": "Heure de fin",
+      "schedule_days": "Jours actifs",
+      "schedule_hint": "Une fin avant le début indique un passage à minuit (ex. 22:00-06:00) ; la règle est inactive si aucun jour n'est sélectionné",
+      "days_required": "Sélectionnez au moins un jour pour activer la planification",
+      "quota_section": "Quota de trafic",
+      "quota_type": "Période du quota",
+      "quota_none": "Désactivé",
+      "quota_day": "Quota journalier",
+      "quota_week": "Quota hebdomadaire",
+      "quota_month": "Quota mensuel",
+      "quota_limit": "Taille du quota",
+      "quota_used": "Utilisé sur la fenêtre actuelle",
+      "quota_invalid": "Saisissez un quota supérieur à 0",
+      "exceeded": "Quota atteint ; le tunnel reste arrêté et se réinitialise à la fenêtre suivante",
+      "exceeded_short": "Quota atteint",
+      "save_success": "Règles enregistrées",
+      "save_failed": "Échec de l'enregistrement des règles",
+      "weekday_0": "Dim",
+      "weekday_1": "Lun",
+      "weekday_2": "Mar",
+      "weekday_3": "Mer",
+      "weekday_4": "Jeu",
+      "weekday_5": "Ven",
+      "weekday_6": "Sam"
     }
   },
   "server": {
@@ -760,17 +811,26 @@
       "success": "Serveur créé avec succès",
       "button": "Créer",
       "title": "Créer un Nouveau Serveur",
-      "description": "Créez un nouveau serveur pour fournir un service. L'ID du serveur doit être unique",
-      "id": "ID du Serveur",
+      "description": "Créer un nouveau serveur pour fournir le service. Le nom doit être unique",
       "ip": "Adresse IP/Domaine",
-      "submit": "Créer"
+      "submit": "Créer",
+      "name": "Nom",
+      "name_placeholder": "Entrez un nom"
     },
-    "id": "ID (Cliquez pour la commande d'installation)",
     "status": "État de la Configuration",
     "status_configured": "Configuré",
     "status_unconfigured": "Non Configuré",
     "info": "Infos d'Exécution/Version",
     "ip": "Adresse IP",
+    "name": "Nom",
+    "name_placeholder": "Sans nom",
+    "sort": "Ordre",
+    "move_up": "Monter",
+    "move_down": "Descendre",
+    "sort_success": "Ordre mis à jour",
+    "sort_failed": "Échec de la mise à jour de l'ordre",
+    "edit_success": "Nom et ordre enregistrés",
+    "edit_failed": "Échec de l'enregistrement",
     "secret": "Secret (Cliquez pour la commande de démarrage)",
     "install": {
       "title": "Commande d'Installation",
@@ -807,7 +867,8 @@
     "status_offline": "Hors Ligne",
     "status_error": "Erreur",
     "status_unknown": "Inconnu",
-    "status_pause": "En Pause"
+    "status_pause": "En Pause",
+    "name_install_hint": "Cliquez pour voir la commande d’installation"
   },
   "auth": {
     "loggingIn": "Connexion en cours, veuillez patienter",
@@ -830,6 +891,51 @@
     "login": "Connexion"
   },
   "settings": {
+    "smtp": {
+      "title": "Paramètres de notifications par e-mail",
+      "description": "Configurez le serveur SMTP et activez les notifications par e-mail selon vos besoins (toutes désactivées par défaut)",
+      "loading": "Chargement des paramètres de messagerie",
+      "form": {
+        "host": "Serveur SMTP",
+        "hostPlaceholder": "ex. smtp.example.com",
+        "port": "Port",
+        "portPlaceholder": "465",
+        "encryption": "Chiffrement",
+        "encryptionNone": "Aucun",
+        "encryptionStarttls": "STARTTLS",
+        "encryptionSsl": "SSL/TLS",
+        "username": "Nom d'utilisateur",
+        "usernamePlaceholder": "Nom d'utilisateur SMTP",
+        "password": "Mot de passe",
+        "passwordPlaceholder": "Mot de passe SMTP",
+        "passwordSaved": "Enregistré (laisser vide pour conserver)",
+        "from": "Adresse d'expédition",
+        "fromPlaceholder": "ex. noreply@example.com",
+        "serverOfflineLabel": "Alerte de décrochage serveur",
+        "serverOfflineDescription": "Envoyer un e-mail au propriétaire lorsqu'un serveur se déconnecte",
+        "clientOfflineLabel": "Alerte de décrochage client",
+        "clientOfflineDescription": "Envoyer un e-mail au propriétaire lorsqu'un client se déconnecte",
+        "proxyOfflineLabel": "Alerte de décrochage du tunnel",
+        "proxyOfflineDescription": "Envoyer un e-mail au propriétaire lorsqu'un tunnel s'arrête",
+        "loginLabel": "Notification de connexion",
+        "loginDescription": "Envoyer un e-mail à l'utilisateur après une connexion réussie"
+      },
+      "actions": {
+        "saveChanges": "Enregistrer les modifications",
+        "sendTest": "Envoyer un e-mail de test"
+      },
+      "toast": {
+        "updateSuccess": "Paramètres de notifications par e-mail mis à jour",
+        "testSending": "Envoi en cours...",
+        "testSent": "E-mail de test envoyé, veuillez vérifier votre boîte de réception"
+      },
+      "dialog": {
+        "confirmSaveTitle": "Confirmer l'enregistrement",
+        "confirmSaveDescription": "Enregistrer les paramètres de notifications par e-mail ?",
+        "cancel": "Annuler",
+        "confirm": "Confirmer"
+      }
+    },
     "header": {
       "title": "Paramètres de plateforme",
       "description": "Modifier les paramètres de la plateforme frontend",
@@ -1014,6 +1120,7 @@
     "unknown": "Inconnu"
   },
   "nav": {
+    "home": "Accueil",
     "clients": "Clients",
     "servers": "Serveurs",
     "editTunnel": "Modifier le Tunnel",
@@ -1023,6 +1130,56 @@
     "realTimeLog": "Journal en Temps Réel",
     "console": "Console",
     "workers": "Fonctions"
+  },
+  "home": {
+    "period": {
+      "today": "Aujourd'hui",
+      "yesterday": "Hier",
+      "week": "Cette semaine",
+      "month": "Ce mois",
+      "year": "Cette année",
+      "custom": "Personnalisé",
+      "apply": "Appliquer"
+    },
+    "summary": {
+      "title": "Aperçu du trafic",
+      "inbound": "Entrant",
+      "outbound": "Sortant",
+      "total": "Total",
+      "inRatio": "Part entrante",
+      "outRatio": "Part sortante"
+    },
+    "trend": {
+      "title": "Tendance du trafic (quotidienne)"
+    },
+    "top": {
+      "title": "Top 10 des tunnels par trafic",
+      "showAll": "Afficher les {{count}}",
+      "showTop10": "Top 10 uniquement"
+    },
+    "typeDist": {
+      "title": "Répartition par protocole"
+    },
+    "ranking": {
+      "title": "Classement du trafic des tunnels",
+      "rank": "Rang",
+      "name": "Nom",
+      "type": "Type",
+      "trafficIn": "Entrant",
+      "trafficOut": "Sortant",
+      "trafficTotal": "Total"
+    },
+    "loading": "Chargement...",
+    "empty": {
+      "stats": "Aucune donnée de trafic pour cette période (les instantanés s'accumulent à partir de 3h du matin après le déploiement)"
+    },
+    "errors": {
+      "loadFailed": "Échec du chargement des données de trafic"
+    },
+    "range": {
+      "invalid": "La date de début ne peut pas être postérieure à la date de fin",
+      "tooLong": "L'intervalle ne peut pas dépasser 400 jours"
+    }
   },
   "frpc_form": {
     "add": "Ajouter un Client",

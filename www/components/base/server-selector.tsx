@@ -48,7 +48,7 @@ export const ServerSelector: React.FC<ServerSelectorProps> = ({
       setValue={handleServerChange}
       dataList={serverList?.servers.map((server) => ({
         value: server.id || '',
-        label: server.id || ''
+        label: server.comment || server.id || ''
       })) || []}
       onKeyWordChange={setKeyword}
       onOpenChange={() => {

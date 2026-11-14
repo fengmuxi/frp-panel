@@ -100,16 +100,25 @@
       "success": "Client created successfully",
       "button": "Create",
       "title": "Create New Client",
-      "description": "Create a new client for connection. Client ID must be unique",
-      "id": "Client ID",
-      "submit": "Create"
+      "description": "Create a new client for connection. Name must be unique",
+      "submit": "Create",
+      "name": "Name",
+      "name_placeholder": "Enter a name"
     },
-    "id": "ID (Click for Install Command)",
     "status": "Configuration Status",
     "status_configured": "Configured",
     "status_unconfigured": "Not Configured",
     "info": "Runtime Info/Version",
     "secret": "Secret Key (Click for Start Command)",
+    "name": "Name",
+    "name_placeholder": "Unnamed",
+    "sort": "Order",
+    "move_up": "Move up",
+    "move_down": "Move down",
+    "sort_success": "Order updated",
+    "sort_failed": "Failed to update order",
+    "edit_success": "Name and order saved",
+    "edit_failed": "Save failed",
     "install": {
       "title": "Installation Command",
       "description": "Select your operating system and copy the installation command",
@@ -177,7 +186,8 @@
     },
     "status_error": "Error",
     "status_pause": "Paused",
-    "status_unknown": "Unknown"
+    "status_unknown": "Unknown",
+    "name_install_hint": "Click to view install command"
   },
   "common": {
     "cancel": "Cancel",
@@ -198,7 +208,15 @@
     "failed": "Failed",
     "clientType": "Client Type",
     "disconnect": "Disconnect",
-    "connect": "Connect"
+    "connect": "Connect",
+    "edit": {
+      "title": "Edit Name & Order",
+      "description": "Change how this node is named and its custom order in the list",
+      "comment": "Name",
+      "comment_placeholder": "Enter a name",
+      "sort_index": "Sort Index",
+      "sort_index_hint": "Lower numbers come first; 0 means unset (placed at the end of the list)"
+    }
   },
   "table": {
     "pagination": {
@@ -654,7 +672,12 @@
       "enable_http_auth": "Enable HTTP Authentication",
       "username": "Username",
       "password": "Password",
-      "subdomain_placeholder": "Input Subdomain"
+      "subdomain_placeholder": "Input Subdomain",
+      "quick_create_title": "Quick Create Tunnel",
+      "quick_create_desc": "Fill in name, type and ports, then click Create — it is pushed to the node immediately, no extra submit needed",
+      "create": "Create",
+      "create_success": "Tunnel created",
+      "create_failed": "Failed to create tunnel"
     },
     "type": {
       "http": "HTTP",
@@ -697,14 +720,51 @@
     "item": {
       "proxy_name": "Tunnel Name",
       "proxy_type": "Tunnel Type",
-      "client_id": "Client ID",
-      "server_id": "Server ID",
       "status": "Status",
-      "visit_preview": "Visit Preview"
+      "visit_preview": "Visit Preview",
+      "client_name": "Client",
+      "server_name": "Server"
     },
     "stats": {
       "label": "Tunnel Name",
       "tunnel_traffic": "Tunnel: {{name}}"
+    },
+    "rules": {
+      "menu": "Automatic Rules",
+      "title": "Tunnel Automatic Rules",
+      "description": "Set scheduled on/off and traffic quota; applied by the Master every minute, changes take effect in about 1 minute",
+      "column": "Rules/Quota",
+      "auto_stopped": "Auto-stopped",
+      "schedule_section": "Scheduled On/Off",
+      "schedule_start": "Start time",
+      "schedule_end": "End time",
+      "schedule_days": "Active days",
+      "schedule_hint": "An end earlier than the start spans midnight (e.g. 22:00-06:00); the rule has no effect if no weekday is selected",
+      "days_required": "Select at least one weekday to enable the schedule",
+      "quota_section": "Traffic Quota",
+      "quota_type": "Quota period",
+      "quota_none": "Disabled",
+      "quota_day": "Daily quota",
+      "quota_week": "Weekly quota",
+      "quota_month": "Monthly quota",
+      "quota_limit": "Quota size",
+      "quota_used": "Used in current window",
+      "quota_invalid": "Enter a quota greater than 0",
+      "exceeded": "Quota reached; the tunnel stays stopped and auto-resets when the window rolls over",
+      "exceeded_short": "Quota reached",
+      "save_success": "Rules saved",
+      "save_failed": "Failed to save rules",
+      "weekday_0": "Sun",
+      "weekday_1": "Mon",
+      "weekday_2": "Tue",
+      "weekday_3": "Wed",
+      "weekday_4": "Thu",
+      "weekday_5": "Fri",
+      "weekday_6": "Sat"
+    },
+    "traffic": {
+      "detail_hint": "Today, total and range traffic stats of this tunnel",
+      "last_n_days": "Last {{n}} days"
     }
   },
   "server": {
@@ -755,17 +815,26 @@
       "success": "Server created successfully",
       "button": "Create",
       "title": "Create New Server",
-      "description": "Create a new server for providing service. Server ID must be unique",
-      "id": "Server ID",
+      "description": "Create a new server for providing service. Name must be unique",
       "ip": "IP Address/Domain",
-      "submit": "Create"
+      "submit": "Create",
+      "name": "Name",
+      "name_placeholder": "Enter a name"
     },
-    "id": "ID (Click for install command)",
     "status": "Configuration Status",
     "status_configured": "Configured",
     "status_unconfigured": "Unconfigured",
     "info": "Running Info/Version",
     "ip": "IP Address",
+    "name": "Name",
+    "name_placeholder": "Unnamed",
+    "sort": "Order",
+    "move_up": "Move up",
+    "move_down": "Move down",
+    "sort_success": "Order updated",
+    "sort_failed": "Failed to update order",
+    "edit_success": "Name and order saved",
+    "edit_failed": "Save failed",
     "secret": "Secret (Click for start command)",
     "install": {
       "title": "Install Command",
@@ -802,7 +871,8 @@
     "status_offline": "Offline",
     "status_error": "Error",
     "status_unknown": "Unknown",
-    "status_pause": "Paused"
+    "status_pause": "Paused",
+    "name_install_hint": "Click to view install command"
   },
   "auth": {
     "loggingIn": "Logging in, please wait",
@@ -825,6 +895,56 @@
     "login": "Login"
   },
   "settings": {
+    "smtp": {
+      "title": "Email Notification Settings",
+      "description": "Configure the SMTP server and enable email notifications as needed (all disabled by default)",
+      "loading": "Loading email settings",
+      "form": {
+        "host": "SMTP Server",
+        "hostPlaceholder": "e.g. smtp.example.com",
+        "port": "Port",
+        "portPlaceholder": "465",
+        "encryption": "Encryption",
+        "encryptionNone": "None",
+        "encryptionStarttls": "STARTTLS",
+        "encryptionSsl": "SSL/TLS",
+        "username": "Username",
+        "usernamePlaceholder": "SMTP login username",
+        "password": "Password",
+        "passwordPlaceholder": "SMTP login password",
+        "passwordSaved": "Saved (leave empty to keep)",
+        "from": "From Address",
+        "fromPlaceholder": "e.g. noreply@example.com",
+        "serverOfflineLabel": "Server Offline Alert",
+        "serverOfflineDescription": "Email the owning user when a server node goes offline",
+        "clientOfflineLabel": "Client Offline Alert",
+        "clientOfflineDescription": "Email the owning user when a client node goes offline",
+        "proxyOfflineLabel": "Tunnel Offline Alert",
+        "proxyOfflineDescription": "Email the owning user when a tunnel stops running",
+        "loginLabel": "Login Notification",
+        "loginDescription": "Email the user after a successful login",
+        "encryptionHint": "SSL/TLS is implicit TLS (usually port 465); STARTTLS usually uses port 587; no encryption usually uses port 25",
+        "fromName": "Sender Name",
+        "fromNamePlaceholder": "e.g. FRP-Panel",
+        "fromNameHint": "Optional. Recipients will see \"Name <from address>\"; leave empty to show the address only. Non-ASCII names are supported."
+      },
+      "actions": {
+        "saveChanges": "Save Changes",
+        "sendTest": "Send Test Email",
+        "test": "Test"
+      },
+      "toast": {
+        "updateSuccess": "Email notification settings updated",
+        "testSending": "Sending...",
+        "testSent": "Test email sent, please check your inbox"
+      },
+      "dialog": {
+        "confirmSaveTitle": "Confirm Save",
+        "confirmSaveDescription": "Save the email notification settings?",
+        "cancel": "Cancel",
+        "confirm": "Confirm"
+      }
+    },
     "header": {
       "title": "Platform Settings",
       "description": "Modify frontend platform settings",
@@ -864,7 +984,11 @@
     "unconfiguredServers": "Unconfigured Servers",
     "unconfiguredClients": "Unconfigured Clients",
     "totalServers": "Total Servers",
-    "totalClients": "Total Clients"
+    "totalClients": "Total Clients",
+    "servers": "Servers",
+    "clients": "Clients",
+    "configured": "Configured",
+    "unconfigured": "Unconfigured"
   },
   "refresh": {
     "data": "Refresh Data"
@@ -1009,6 +1133,7 @@
     "unknown": "Unknown"
   },
   "nav": {
+    "home": "Home",
     "clients": "Clients",
     "servers": "Servers",
     "editTunnel": "Edit Tunnel",
@@ -1018,6 +1143,58 @@
     "realTimeLog": "Real-time Log",
     "console": "Console",
     "workers": "Functions"
+  },
+  "home": {
+    "period": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "week": "This Week",
+      "month": "This Month",
+      "year": "This Year",
+      "custom": "Custom",
+      "apply": "Apply"
+    },
+    "summary": {
+      "title": "Traffic Overview",
+      "inbound": "Inbound",
+      "outbound": "Outbound",
+      "total": "Total",
+      "inRatio": "Inbound Ratio",
+      "outRatio": "Outbound Ratio"
+    },
+    "trend": {
+      "title": "Traffic Trend (Daily)",
+      "title_hour": "Traffic Trend (Hourly)",
+      "title_month": "Traffic Trend (Monthly)"
+    },
+    "top": {
+      "title": "Top 10 Tunnels by Traffic",
+      "showAll": "Show all {{count}}",
+      "showTop10": "Show Top 10 only"
+    },
+    "typeDist": {
+      "title": "Traffic by Protocol"
+    },
+    "ranking": {
+      "title": "Tunnel Traffic Ranking",
+      "rank": "Rank",
+      "name": "Name",
+      "type": "Type",
+      "trafficIn": "Inbound",
+      "trafficOut": "Outbound",
+      "trafficTotal": "Total"
+    },
+    "loading": "Loading...",
+    "empty": {
+      "stats": "No traffic data for this period (daily snapshots accumulate from 3:00 AM after deployment)"
+    },
+    "errors": {
+      "loadFailed": "Failed to load traffic data"
+    },
+    "range": {
+      "invalid": "Start date cannot be later than end date",
+      "tooLong": "Time range cannot exceed 400 days"
+    }
   },
   "frpc_form": {
     "add": "Add Client",

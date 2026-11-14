@@ -18,12 +18,12 @@ import {
 } from '@/components/ui/dialog'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { IsIDValid } from '@/lib/consts'
 
 export const CreateServerDialog = ({ refetchTrigger }: { refetchTrigger?: (randStr: string) => void }) => {
   const { t } = useTranslation()
-  const [serverID, setServerID] = useState<string | undefined>()
+  const [serverName, setServerName] = useState<string | undefined>()
   const [serverIP, setServerIP] = useState<string | undefined>()
+  const [dialogOpen, setDialogOpen] = useState(false)
   const newServer = useMutation({
     mutationFn: initServer,
   })
@@ -31,7 +31,8 @@ export const CreateServerDialog = ({ refetchTrigger }: { refetchTrigger?: (randS
   const handleNewServer = async () => {
     toast(t('server.create.submitting'))
     try {
-      let resp = await newServer.mutateAsync({ serverId: serverID, serverIp: serverIP })
+      // ID 由后端自动生成，这里只提交名称（必填，不允许重复）
+      let resp = await newServer.mutateAsync({ comment: serverName, serverIp: serverIP })
       if (resp.status?.code !== RespCode.SUCCESS) {
         toast(t('server.create.error'), {
           description: resp.status?.message,
@@ -40,6 +41,10 @@ export const CreateServerDialog = ({ refetchTrigger }: { refetchTrigger?: (randS
       }
       toast(t('server.create.success'))
       refetchTrigger && refetchTrigger(JSON.stringify(Math.random()))
+      // 创建成功后关闭弹窗并清空输入
+      setDialogOpen(false)
+      setServerName(undefined)
+      setServerIP(undefined)
     } catch (error) {
       toast(t('server.create.error'), {
         description: JSON.stringify(error),
@@ -48,7 +53,7 @@ export const CreateServerDialog = ({ refetchTrigger }: { refetchTrigger?: (randS
   }
 
   return (
-    <Dialog>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
         <Button variant="outline">
           {t('server.create.button')}
@@ -60,13 +65,17 @@ export const CreateServerDialog = ({ refetchTrigger }: { refetchTrigger?: (randS
           <DialogDescription>{t('server.create.description')}</DialogDescription>
         </DialogHeader>
 
-        <Label>{t('server.create.id')}</Label>
-        <Input value={serverID} onChange={(e) => setServerID(e.target.value)} />
+        <Label>{t('server.create.name')}</Label>
+        <Input
+          value={serverName}
+          placeholder={t('server.create.name_placeholder')}
+          onChange={(e) => setServerName(e.target.value)}
+        />
         <Label>{t('server.create.ip')}</Label>
         <Input value={serverIP} onChange={(e) => setServerIP(e.target.value)} />
         <DialogFooter>
           <Button onClick={handleNewServer}
-            disabled={!IsIDValid(serverID) || !serverIP}
+            disabled={!serverName || serverName.trim().length === 0 || !serverIP}
             className='w-full'>{t('server.create.submit')}</Button>
         </DialogFooter>
       </DialogContent>

@@ -100,16 +100,25 @@
       "success": "创建客户端成功",
       "button": "新建",
       "title": "新建客户端",
-      "description": "创建新的客户端用于连接，客户端ID必须唯一",
-      "id": "客户端ID",
-      "submit": "创建"
+      "description": "创建新的客户端用于连接，名称不允许重复",
+      "submit": "创建",
+      "name": "名称",
+      "name_placeholder": "请输入名称"
     },
-    "id": "ID (点击查看安装命令)",
     "status": "配置状态",
     "status_configured": "已配置",
     "status_unconfigured": "未配置",
     "info": "运行时信息/版本",
     "secret": "密钥 (点击查看启动命令)",
+    "name": "名称",
+    "name_placeholder": "未命名",
+    "sort": "序号",
+    "move_up": "上移",
+    "move_down": "下移",
+    "sort_success": "排序已更新",
+    "sort_failed": "排序更新失败",
+    "edit_success": "名称与序号已保存",
+    "edit_failed": "保存失败",
     "install": {
       "title": "安装命令",
       "description": "请选择您的操作系统并复制相应的安装命令",
@@ -177,7 +186,8 @@
     },
     "status_error": "错误",
     "status_pause": "已暂停",
-    "status_unknown": "未知"
+    "status_unknown": "未知",
+    "name_install_hint": "点击查看安装命令"
   },
   "common": {
     "cancel": "取消",
@@ -198,7 +208,15 @@
     "failed": "失败",
     "clientType": "客户端类型",
     "disconnect": "断开连接",
-    "connect": "连接"
+    "connect": "连接",
+    "edit": {
+      "title": "编辑名称与序号",
+      "description": "修改该节点在列表中显示的名称与自定义排序序号",
+      "comment": "名称",
+      "comment_placeholder": "请输入名称",
+      "sort_index": "排序序号",
+      "sort_index_hint": "数字越小越靠前；0 表示未设置（排在列表最后）"
+    }
   },
   "table": {
     "pagination": {
@@ -649,7 +667,12 @@
       "enable_http_auth": "启用 HTTP 认证",
       "username": "用户名",
       "password": "密码",
-      "subdomain_placeholder": "请输入子域名"
+      "subdomain_placeholder": "请输入子域名",
+      "quick_create_title": "快速创建隧道",
+      "quick_create_desc": "填写名称、类型和端口后点击「创建」，立即下发生效，无需再点提交变更",
+      "create": "创建",
+      "create_success": "隧道创建成功",
+      "create_failed": "隧道创建失败"
     },
     "type": {
       "http": "HTTP",
@@ -692,14 +715,51 @@
     "item": {
       "proxy_name": "隧道名称",
       "proxy_type": "隧道类型",
-      "client_id": "客户端ID",
-      "server_id": "服务端ID",
       "status": "状态",
-      "visit_preview": "访问预览"
+      "visit_preview": "访问预览",
+      "client_name": "所属客户端",
+      "server_name": "所属服务端"
     },
     "stats": {
       "label": "隧道名称",
       "tunnel_traffic": "隧道：{{name}}"
+    },
+    "rules": {
+      "menu": "自动规则",
+      "title": "隧道自动规则",
+      "description": "配置定时开关与流量限额，由 Master 每分钟自动执行，修改约 1 分钟后生效",
+      "column": "规则/限额",
+      "auto_stopped": "自动停用",
+      "schedule_section": "定时开关",
+      "schedule_start": "开启时间",
+      "schedule_end": "关闭时间",
+      "schedule_days": "生效周几",
+      "schedule_hint": "结束时间早于开始时间表示跨天（如 22:00-06:00）；未选择周几时规则不生效",
+      "days_required": "启用定时开关需至少选择一周几",
+      "quota_section": "流量限额",
+      "quota_type": "限额周期",
+      "quota_none": "不启用",
+      "quota_day": "日限额",
+      "quota_week": "周限额",
+      "quota_month": "月限额",
+      "quota_limit": "限额大小",
+      "quota_used": "当前窗口已用",
+      "quota_invalid": "请输入大于 0 的限额",
+      "exceeded": "已达到限额，隧道保持停用，统计窗口重置后自动恢复",
+      "exceeded_short": "已超限",
+      "save_success": "规则已保存",
+      "save_failed": "规则保存失败",
+      "weekday_0": "周日",
+      "weekday_1": "周一",
+      "weekday_2": "周二",
+      "weekday_3": "周三",
+      "weekday_4": "周四",
+      "weekday_5": "周五",
+      "weekday_6": "周六"
+    },
+    "traffic": {
+      "detail_hint": "该隧道的今日、累计与区间流量统计",
+      "last_n_days": "最近 {{n}} 天"
     }
   },
   "server": {
@@ -750,17 +810,26 @@
       "success": "创建服务端成功",
       "button": "新建",
       "title": "新建服务端",
-      "description": "创建新的服务端用于提供服务，服务端ID必须唯一",
-      "id": "服务端ID",
+      "description": "创建新的服务端用于提供服务，名称不允许重复",
       "ip": "IP地址/域名",
-      "submit": "创建"
+      "submit": "创建",
+      "name": "名称",
+      "name_placeholder": "请输入名称"
     },
-    "id": "ID (点击查看安装命令)",
     "status": "配置状态",
     "status_configured": "已配置",
     "status_unconfigured": "未配置",
     "info": "运行信息/版本",
     "ip": "IP地址",
+    "name": "名称",
+    "name_placeholder": "未命名",
+    "sort": "序号",
+    "move_up": "上移",
+    "move_down": "下移",
+    "sort_success": "排序已更新",
+    "sort_failed": "排序更新失败",
+    "edit_success": "名称与序号已保存",
+    "edit_failed": "保存失败",
     "secret": "密钥 (点击查看启动命令)",
     "install": {
       "title": "安装命令",
@@ -797,7 +866,8 @@
     "status_offline": "离线",
     "status_error": "错误",
     "status_unknown": "未知",
-    "status_pause": "已暂停"
+    "status_pause": "已暂停",
+    "name_install_hint": "点击查看安装命令"
   },
   "auth": {
     "loggingIn": "登录中，请稍候",
@@ -820,6 +890,56 @@
     "login": "登录"
   },
   "settings": {
+    "smtp": {
+      "title": "邮件通知设置",
+      "description": "配置 SMTP 服务器并按需开启邮件通知（默认全部关闭）",
+      "loading": "正在加载邮件设置",
+      "form": {
+        "host": "SMTP 服务器",
+        "hostPlaceholder": "例如 smtp.example.com",
+        "port": "端口",
+        "portPlaceholder": "465",
+        "encryption": "加密方式",
+        "encryptionNone": "不加密",
+        "encryptionStarttls": "STARTTLS",
+        "encryptionSsl": "SSL/TLS",
+        "username": "账号",
+        "usernamePlaceholder": "SMTP 登录账号",
+        "password": "密码",
+        "passwordPlaceholder": "SMTP 登录密码",
+        "passwordSaved": "已保存（留空则不修改）",
+        "from": "发件人地址",
+        "fromPlaceholder": "例如 noreply@example.com",
+        "serverOfflineLabel": "服务端掉线提醒",
+        "serverOfflineDescription": "服务端节点离线时向所属用户发送邮件",
+        "clientOfflineLabel": "客户端掉线提醒",
+        "clientOfflineDescription": "客户端节点离线时向所属用户发送邮件",
+        "proxyOfflineLabel": "隧道掉线提醒",
+        "proxyOfflineDescription": "隧道停止运行时向所属用户发送邮件",
+        "loginLabel": "用户登录通知",
+        "loginDescription": "账号登录成功后向本人发送邮件",
+        "encryptionHint": "SSL/TLS 为隐式加密，通常搭配 465 端口；STARTTLS 通常搭配 587 端口；不加密通常搭配 25 端口",
+        "fromName": "发件人名称",
+        "fromNamePlaceholder": "例如 FRP-Panel",
+        "fromNameHint": "可选。收件方将显示为「名称 <发件人地址>」；留空则仅显示地址，支持中文"
+      },
+      "actions": {
+        "saveChanges": "保存更改",
+        "sendTest": "发送测试邮件",
+        "test": "测试"
+      },
+      "toast": {
+        "updateSuccess": "已更新邮件通知设置",
+        "testSending": "发送中...",
+        "testSent": "测试邮件已发送，请查收"
+      },
+      "dialog": {
+        "confirmSaveTitle": "确认保存",
+        "confirmSaveDescription": "确定保存邮件通知设置？",
+        "cancel": "取消",
+        "confirm": "确认"
+      }
+    },
     "header": {
       "title": "平台设置",
       "description": "修改前端平台设置",
@@ -859,7 +979,11 @@
     "unconfiguredServers": "未配置服务端数",
     "unconfiguredClients": "未配置客户端数",
     "totalServers": "服务端总数",
-    "totalClients": "客户端总数"
+    "totalClients": "客户端总数",
+    "servers": "服务端",
+    "clients": "客户端",
+    "configured": "已配置",
+    "unconfigured": "未配置"
   },
   "refresh": {
     "data": "刷新数据"
@@ -1004,6 +1128,7 @@
     "unknown": "未知"
   },
   "nav": {
+    "home": "首页",
     "clients": "客户端",
     "servers": "服务端",
     "editTunnel": "编辑隧道",
@@ -1013,6 +1138,58 @@
     "realTimeLog": "实时日志",
     "console": "控制台",
     "workers": "函数"
+  },
+  "home": {
+    "period": {
+      "today": "今日",
+      "yesterday": "昨日",
+      "week": "本周",
+      "month": "本月",
+      "year": "本年",
+      "custom": "自定义",
+      "apply": "应用"
+    },
+    "summary": {
+      "title": "流量总览",
+      "inbound": "入站",
+      "outbound": "出站",
+      "total": "合计",
+      "inRatio": "入站占比",
+      "outRatio": "出站占比"
+    },
+    "trend": {
+      "title": "流量趋势（日）",
+      "title_hour": "流量趋势（小时）",
+      "title_month": "流量趋势（月）"
+    },
+    "top": {
+      "title": "隧道流量 Top10",
+      "showAll": "显示全部 {{count}} 条",
+      "showTop10": "仅看 Top10"
+    },
+    "typeDist": {
+      "title": "协议类型分布"
+    },
+    "ranking": {
+      "title": "隧道流量排行",
+      "rank": "排名",
+      "name": "名称",
+      "type": "类型",
+      "trafficIn": "入站",
+      "trafficOut": "出站",
+      "trafficTotal": "合计"
+    },
+    "loading": "加载中...",
+    "empty": {
+      "stats": "该时段暂无流量数据（历史快照自部署后每日 3 点开始积累）"
+    },
+    "errors": {
+      "loadFailed": "流量数据加载失败"
+    },
+    "range": {
+      "invalid": "开始日期不能晚于结束日期",
+      "tooLong": "时间跨度不能超过 400 天"
+    }
   },
   "frpc_form": {
     "add": "新增隧道",

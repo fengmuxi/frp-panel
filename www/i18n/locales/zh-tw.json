@@ -100,16 +100,25 @@
       "success": "創建客戶端成功",
       "button": "新建",
       "title": "新建客戶端",
-      "description": "創建新的客戶端用於連接，客戶端ID必須唯一",
-      "id": "客戶端ID",
-      "submit": "創建"
+      "description": "創建新的客戶端用於連接，名稱不允許重複",
+      "submit": "創建",
+      "name": "名稱",
+      "name_placeholder": "請輸入名稱"
     },
-    "id": "ID (點擊查看安裝命令)",
     "status": "配置狀態",
     "status_configured": "已配置",
     "status_unconfigured": "未配置",
     "info": "運行時信息/版本",
     "secret": "密鑰 (點擊查看啟動命令)",
+    "name": "名稱",
+    "name_placeholder": "未命名",
+    "sort": "序號",
+    "move_up": "上移",
+    "move_down": "下移",
+    "sort_success": "排序已更新",
+    "sort_failed": "排序更新失敗",
+    "edit_success": "名稱與序號已儲存",
+    "edit_failed": "儲存失敗",
     "install": {
       "title": "安裝命令",
       "description": "請選擇您的操作系統並覆制相應的安裝命令",
@@ -177,7 +186,8 @@
     },
     "status_error": "錯誤",
     "status_pause": "已暫停",
-    "status_unknown": "未知"
+    "status_unknown": "未知",
+    "name_install_hint": "點擊查看安裝命令"
   },
   "common": {
     "cancel": "取消",
@@ -198,7 +208,15 @@
     "failed": "失敗",
     "clientType": "客戶端類型",
     "disconnect": "斷開連接",
-    "connect": "連接"
+    "connect": "連接",
+    "edit": {
+      "title": "編輯名稱與序號",
+      "description": "修改該節點在列表中顯示的名稱與自定義排序序號",
+      "comment": "名稱",
+      "comment_placeholder": "請輸入名稱",
+      "sort_index": "排序序號",
+      "sort_index_hint": "數字越小越靠前；0 表示未設定（排在列表最後）"
+    }
   },
   "table": {
     "pagination": {
@@ -692,14 +710,47 @@
     "item": {
       "proxy_name": "隧道名稱",
       "proxy_type": "隧道類型",
-      "client_id": "客戶端ID",
-      "server_id": "服務端ID",
       "status": "狀態",
-      "visit_preview": "訪問預覽"
+      "visit_preview": "訪問預覽",
+      "client_name": "所屬客戶端",
+      "server_name": "所屬服務端"
     },
     "stats": {
       "label": "隧道名稱",
       "tunnel_traffic": "隧道：{{name}}"
+    },
+    "rules": {
+      "menu": "自動規則",
+      "title": "隧道自動規則",
+      "description": "配置定時開關與流量限額，由 Master 每分鐘自動執行，修改約 1 分鐘後生效",
+      "column": "規則/限額",
+      "auto_stopped": "自動停用",
+      "schedule_section": "定時開關",
+      "schedule_start": "開啟時間",
+      "schedule_end": "關閉時間",
+      "schedule_days": "生效週幾",
+      "schedule_hint": "結束時間早於開始時間表示跨天（如 22:00-06:00）；未選擇週幾時規則不生效",
+      "days_required": "啟用定時開關需至少選擇一週幾",
+      "quota_section": "流量限額",
+      "quota_type": "限額週期",
+      "quota_none": "不啟用",
+      "quota_day": "日限額",
+      "quota_week": "週限額",
+      "quota_month": "月限額",
+      "quota_limit": "限額大小",
+      "quota_used": "當前窗口已用",
+      "quota_invalid": "請輸入大於 0 的限額",
+      "exceeded": "已達到限額，隧道保持停用，統計窗口重置後自動恢復",
+      "exceeded_short": "已超限",
+      "save_success": "規則已儲存",
+      "save_failed": "規則儲存失敗",
+      "weekday_0": "週日",
+      "weekday_1": "週一",
+      "weekday_2": "週二",
+      "weekday_3": "週三",
+      "weekday_4": "週四",
+      "weekday_5": "週五",
+      "weekday_6": "週六"
     }
   },
   "server": {
@@ -750,17 +801,26 @@
       "success": "創建服務端成功",
       "button": "新建",
       "title": "新建服務端",
-      "description": "創建新的服務端用於提供服務，服務端ID必須唯一",
-      "id": "服務端ID",
+      "description": "創建新的服務端用於提供服務，名稱不允許重複",
       "ip": "IP地址/域名",
-      "submit": "創建"
+      "submit": "創建",
+      "name": "名稱",
+      "name_placeholder": "請輸入名稱"
     },
-    "id": "ID (點擊查看安裝命令)",
     "status": "配置狀態",
     "status_configured": "已配置",
     "status_unconfigured": "未配置",
     "info": "運行信息/版本",
     "ip": "IP地址",
+    "name": "名稱",
+    "name_placeholder": "未命名",
+    "sort": "序號",
+    "move_up": "上移",
+    "move_down": "下移",
+    "sort_success": "排序已更新",
+    "sort_failed": "排序更新失敗",
+    "edit_success": "名稱與序號已儲存",
+    "edit_failed": "儲存失敗",
     "secret": "密鑰 (點擊查看啟動命令)",
     "install": {
       "title": "安裝命令",
@@ -797,7 +857,8 @@
     "status_offline": "離線",
     "status_error": "錯誤",
     "status_unknown": "未知",
-    "status_pause": "已暫停"
+    "status_pause": "已暫停",
+    "name_install_hint": "點擊查看安裝命令"
   },
   "auth": {
     "loggingIn": "登錄中，請稍候",
@@ -820,6 +881,51 @@
     "login": "登錄"
   },
   "settings": {
+    "smtp": {
+      "title": "郵件通知設定",
+      "description": "設定 SMTP 伺服器並按需開啟郵件通知（預設全部關閉）",
+      "loading": "正在載入郵件設定",
+      "form": {
+        "host": "SMTP 伺服器",
+        "hostPlaceholder": "例如 smtp.example.com",
+        "port": "連接埠",
+        "portPlaceholder": "465",
+        "encryption": "加密方式",
+        "encryptionNone": "不加密",
+        "encryptionStarttls": "STARTTLS",
+        "encryptionSsl": "SSL/TLS",
+        "username": "帳號",
+        "usernamePlaceholder": "SMTP 登入帳號",
+        "password": "密碼",
+        "passwordPlaceholder": "SMTP 登入密碼",
+        "passwordSaved": "已儲存（留空則不修改）",
+        "from": "寄件人地址",
+        "fromPlaceholder": "例如 noreply@example.com",
+        "serverOfflineLabel": "服務端離線提醒",
+        "serverOfflineDescription": "服務端節點離線時向所屬用戶發送郵件",
+        "clientOfflineLabel": "用戶端離線提醒",
+        "clientOfflineDescription": "用戶端節點離線時向所屬用戶發送郵件",
+        "proxyOfflineLabel": "通道離線提醒",
+        "proxyOfflineDescription": "通道停止運行時向所屬用戶發送郵件",
+        "loginLabel": "用戶登入通知",
+        "loginDescription": "帳號登入成功後向本人發送郵件"
+      },
+      "actions": {
+        "saveChanges": "儲存變更",
+        "sendTest": "發送測試郵件"
+      },
+      "toast": {
+        "updateSuccess": "已更新郵件通知設定",
+        "testSending": "發送中...",
+        "testSent": "測試郵件已發送，請查收"
+      },
+      "dialog": {
+        "confirmSaveTitle": "確認儲存",
+        "confirmSaveDescription": "確定儲存郵件通知設定？",
+        "cancel": "取消",
+        "confirm": "確認"
+      }
+    },
     "header": {
       "title": "平台設定",
       "description": "修改前端平台設定",
@@ -1004,6 +1110,7 @@
     "unknown": "未知"
   },
   "nav": {
+    "home": "首頁",
     "clients": "客戶端",
     "servers": "服務端",
     "editTunnel": "編輯隧道",
@@ -1013,6 +1120,56 @@
     "realTimeLog": "實時日志",
     "console": "控制台",
     "workers": "函數"
+  },
+  "home": {
+    "period": {
+      "today": "今日",
+      "yesterday": "昨日",
+      "week": "本週",
+      "month": "本月",
+      "year": "本年",
+      "custom": "自訂",
+      "apply": "套用"
+    },
+    "summary": {
+      "title": "流量總覽",
+      "inbound": "入站",
+      "outbound": "出站",
+      "total": "合計",
+      "inRatio": "入站佔比",
+      "outRatio": "出站佔比"
+    },
+    "trend": {
+      "title": "流量趨勢（日）"
+    },
+    "top": {
+      "title": "隧道流量 Top10",
+      "showAll": "顯示全部 {{count}} 條",
+      "showTop10": "僅看 Top10"
+    },
+    "typeDist": {
+      "title": "協謎類型分佈"
+    },
+    "ranking": {
+      "title": "隧道流量排行",
+      "rank": "排名",
+      "name": "名稱",
+      "type": "類型",
+      "trafficIn": "入站",
+      "trafficOut": "出站",
+      "trafficTotal": "合計"
+    },
+    "loading": "載入中...",
+    "empty": {
+      "stats": "該時段暫無流量資料（歷史快照自部署後每日 3 點開始積累）"
+    },
+    "errors": {
+      "loadFailed": "流量資料載入失敗"
+    },
+    "range": {
+      "invalid": "開始日期不能晚於結束日期",
+      "tooLong": "時間跨度不能超過 400 天"
+    }
   },
   "frpc_form": {
     "add": "新增隧道",

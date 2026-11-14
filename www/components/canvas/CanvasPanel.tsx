@@ -43,7 +43,7 @@ export default function CanvasPanel() {
         type: 'client',
         dragHandle: '.drag-handle',
         data: {
-          label: client.id || 'Client',
+          label: client.comment || client.id || 'Client',
           original: client,
         },
         position: {
@@ -59,7 +59,7 @@ export default function CanvasPanel() {
         type: 'server',
         dragHandle: '.drag-handle',
         data: {
-          label: server.id || 'Server',
+          label: server.comment || server.id || 'Server',
           original: server,
           status: 'offline',
         },

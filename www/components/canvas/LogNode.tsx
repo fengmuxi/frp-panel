@@ -19,6 +19,7 @@ import { parseStreaming } from '@/lib/stream'
 import { ClientStatus_Status } from '@/lib/pb/api_master'
 import { useQuery } from '@tanstack/react-query'
 import { getClientsStatus } from '@/api/platform'
+import { useAgentName } from '@/hooks/use-agent-name'
 
 const LogTerminalComponent = dynamic(() => import('@/components/base/readonly-xterm'), {
   ssr: false,
@@ -51,6 +52,8 @@ const LogNodeComponent: React.FC<NodeProps<LogNode> & NodeOperations> = ({ id, d
 
   const clientStatus = clientStatusData?.clients[clientId]
   const isOnline = clientStatus?.status === ClientStatus_Status.ONLINE
+  // 界面以名称展示，ID 仅作为兜底
+  const agentName = useAgentName(clientId, data.clientType)
 
   useEffect(() => {
     setClear(Math.random())
@@ -108,7 +111,7 @@ const LogNodeComponent: React.FC<NodeProps<LogNode> & NodeOperations> = ({ id, d
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <FileText className="h-4 w-4 flex-shrink-0" />
             <CardTitle className="text-sm font-medium truncate">
-              {clientId ? `${clientId}` : t('canvas.log.noClient')}
+              {agentName || clientId || t('canvas.log.noClient')}
             </CardTitle>
             {clientId && (
               <Badge variant={isOnline ? 'default' : 'secondary'} className="text-[10px] h-4 px-1.5">

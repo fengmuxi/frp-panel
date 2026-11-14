@@ -14,15 +14,19 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { HostField, PortField } from '../base/form-field'
 
+// 清空输入框时值为 ""，预处理为 undefined，使 optional 字段可通过校验，
+// 且 JSON.stringify 时省略该键，从而真正从配置中移除该字段
+const emptyToUndefined = (v: unknown) => (v === '' || v === null ? undefined : v)
+
 const ServerConfigSchema = z.object({
-  bindAddr: ZodIPSchema.default('0.0.0.0').optional(),
+  bindAddr: z.preprocess(emptyToUndefined, ZodIPSchema.default('0.0.0.0').optional()),
   bindPort: ZodPortSchema.default(7000),
-  proxyBindAddr: ZodIPSchema.optional(),
-  vhostHTTPPort: ZodPortSchema.optional(),
-  subDomainHost: ZodStringSchema.optional(),
-  publicHost: ZodStringSchema.optional(),
-  quicBindPort: ZodPortSchema.optional(),
-  kcpBindPort: ZodPortSchema.optional(),
+  proxyBindAddr: z.preprocess(emptyToUndefined, ZodIPSchema.optional()),
+  vhostHTTPPort: z.preprocess(emptyToUndefined, ZodPortSchema.optional()),
+  subDomainHost: z.preprocess(emptyToUndefined, ZodStringSchema.optional()),
+  publicHost: z.preprocess(emptyToUndefined, ZodStringSchema.optional()),
+  quicBindPort: z.preprocess(emptyToUndefined, ZodPortSchema.optional()),
+  kcpBindPort: z.preprocess(emptyToUndefined, ZodPortSchema.optional()),
 })
 
 export const ServerConfigZodSchema = ServerConfigSchema
@@ -76,7 +80,7 @@ const FRPSForm: React.FC<FRPSFormProps> = ({ serverID, server, frpsUrls }) => {
 
   return (
     <div className="flex flex-col w-full pt-2">
-      <Label className="text-sm font-medium">{t('server.form.comment_title', { id: serverID })}</Label>
+      <Label className="text-sm font-medium">{t('server.form.comment_title', { id: server?.comment || t('server.name_placeholder') })}</Label>
       <p className="text-sm text-muted-foreground">{t('server.form.comment_hint')}</p>
       <p className="text-sm border rounded p-2 my-2">
         {server?.comment == undefined || server?.comment === '' ? t('server.form.comment_empty') : server?.comment}

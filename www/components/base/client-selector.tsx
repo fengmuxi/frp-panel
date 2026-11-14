@@ -37,11 +37,11 @@ export const ClientSelector: React.FC<ClientSelectorProps> = ({ clientID, setCli
         clients !== undefined
           ? clients.map((client) => ({
               value: client.id || '',
-              label: client.id || '',
+              label: client.comment || client.id || '',
             }))
           : clientList?.clients.map((client) => ({
               value: client.id || '',
-              label: client.id || '',
+              label: client.comment || client.id || '',
             })) || []
       }
       setValue={handleClientChange}

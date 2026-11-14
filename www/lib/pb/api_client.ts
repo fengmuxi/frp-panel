@@ -23,11 +23,15 @@ export interface InitClientRequest {
     /**
      * @generated from protobuf field: optional string client_id = 1;
      */
-    clientId?: string;
+    clientId?: string; // 可不传，后端自动生成唯一 ID
     /**
      * @generated from protobuf field: optional bool ephemeral = 2;
      */
     ephemeral?: boolean;
+    /**
+     * @generated from protobuf field: optional string comment = 3;
+     */
+    comment?: string; // 名称，必填，不允许重复
 }
 /**
  * @generated from protobuf message api_client.InitClientResponse
@@ -115,6 +119,58 @@ export interface DeleteClientRequest {
  * @generated from protobuf message api_client.DeleteClientResponse
  */
 export interface DeleteClientResponse {
+    /**
+     * @generated from protobuf field: optional common.Status status = 1;
+     */
+    status?: Status;
+}
+/**
+ * 轻量更新客户端名称/备注与排序序号（不触碰 frpc 配置）
+ *
+ * @generated from protobuf message api_client.UpdateClientInfoRequest
+ */
+export interface UpdateClientInfoRequest {
+    /**
+     * @generated from protobuf field: optional string client_id = 1;
+     */
+    clientId?: string;
+    /**
+     * @generated from protobuf field: optional string comment = 2;
+     */
+    comment?: string; // 名称/备注，不传则不修改
+    /**
+     * @generated from protobuf field: optional int32 sort_index = 3;
+     */
+    sortIndex?: number; // 排序序号，不传则不修改，0 表示排到最后
+}
+/**
+ * @generated from protobuf message api_client.UpdateClientInfoResponse
+ */
+export interface UpdateClientInfoResponse {
+    /**
+     * @generated from protobuf field: optional common.Status status = 1;
+     */
+    status?: Status;
+}
+/**
+ * 与相邻项交换排序位置（跨分页由服务端处理）
+ *
+ * @generated from protobuf message api_client.SwapClientSortRequest
+ */
+export interface SwapClientSortRequest {
+    /**
+     * @generated from protobuf field: optional string client_id = 1;
+     */
+    clientId?: string;
+    /**
+     * @generated from protobuf field: optional bool up = 2;
+     */
+    up?: boolean; // true=与上一项交换，false=与下一项交换
+}
+/**
+ * @generated from protobuf message api_client.SwapClientSortResponse
+ */
+export interface SwapClientSortResponse {
     /**
      * @generated from protobuf field: optional common.Status status = 1;
      */
@@ -353,6 +409,58 @@ export interface UpdateProxyConfigRequest {
  * @generated from protobuf message api_client.UpdateProxyConfigResponse
  */
 export interface UpdateProxyConfigResponse {
+    /**
+     * @generated from protobuf field: optional common.Status status = 1;
+     */
+    status?: Status;
+}
+/**
+ * 更新隧道自动规则（定时开关 + 流量限额），只修改面板元数据，不触碰 frp 配置
+ *
+ * @generated from protobuf message api_client.UpdateProxyRulesRequest
+ */
+export interface UpdateProxyRulesRequest {
+    /**
+     * @generated from protobuf field: optional string client_id = 1;
+     */
+    clientId?: string;
+    /**
+     * @generated from protobuf field: optional string server_id = 2;
+     */
+    serverId?: string;
+    /**
+     * @generated from protobuf field: optional string name = 3;
+     */
+    name?: string;
+    /**
+     * @generated from protobuf field: optional bool schedule_enabled = 4;
+     */
+    scheduleEnabled?: boolean; // 是否启用定时开关
+    /**
+     * @generated from protobuf field: optional string schedule_start = 5;
+     */
+    scheduleStart?: string; // HH:MM 开启时间
+    /**
+     * @generated from protobuf field: optional string schedule_end = 6;
+     */
+    scheduleEnd?: string; // HH:MM 关闭时间，start > end 表示跨天
+    /**
+     * @generated from protobuf field: repeated int32 schedule_days = 7;
+     */
+    scheduleDays: number[]; // 生效周几，0=周日 ~ 6=周六，多选
+    /**
+     * @generated from protobuf field: optional string quota_type = 8;
+     */
+    quotaType?: string; // day/week/month，空=未启用
+    /**
+     * @generated from protobuf field: optional int64 quota_limit = 9;
+     */
+    quotaLimit?: bigint; // 限额字节数，0=未启用
+}
+/**
+ * @generated from protobuf message api_client.UpdateProxyRulesResponse
+ */
+export interface UpdateProxyRulesResponse {
     /**
      * @generated from protobuf field: optional common.Status status = 1;
      */
@@ -811,7 +919,8 @@ class InitClientRequest$Type extends MessageType<InitClientRequest> {
     constructor() {
         super("api_client.InitClientRequest", [
             { no: 1, name: "client_id", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
-            { no: 2, name: "ephemeral", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ }
+            { no: 2, name: "ephemeral", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
+            { no: 3, name: "comment", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<InitClientRequest>): InitClientRequest {
@@ -831,6 +940,9 @@ class InitClientRequest$Type extends MessageType<InitClientRequest> {
                 case /* optional bool ephemeral */ 2:
                     message.ephemeral = reader.bool();
                     break;
+                case /* optional string comment */ 3:
+                    message.comment = reader.string();
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -849,6 +961,9 @@ class InitClientRequest$Type extends MessageType<InitClientRequest> {
         /* optional bool ephemeral = 2; */
         if (message.ephemeral !== undefined)
             writer.tag(2, WireType.Varint).bool(message.ephemeral);
+        /* optional string comment = 3; */
+        if (message.comment !== undefined)
+            writer.tag(3, WireType.LengthDelimited).string(message.comment);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -1231,6 +1346,211 @@ class DeleteClientResponse$Type extends MessageType<DeleteClientResponse> {
  * @generated MessageType for protobuf message api_client.DeleteClientResponse
  */
 export const DeleteClientResponse = new DeleteClientResponse$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class UpdateClientInfoRequest$Type extends MessageType<UpdateClientInfoRequest> {
+    constructor() {
+        super("api_client.UpdateClientInfoRequest", [
+            { no: 1, name: "client_id", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "comment", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 3, name: "sort_index", kind: "scalar", opt: true, T: 5 /*ScalarType.INT32*/ }
+        ]);
+    }
+    create(value?: PartialMessage<UpdateClientInfoRequest>): UpdateClientInfoRequest {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<UpdateClientInfoRequest>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: UpdateClientInfoRequest): UpdateClientInfoRequest {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* optional string client_id */ 1:
+                    message.clientId = reader.string();
+                    break;
+                case /* optional string comment */ 2:
+                    message.comment = reader.string();
+                    break;
+                case /* optional int32 sort_index */ 3:
+                    message.sortIndex = reader.int32();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: UpdateClientInfoRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* optional string client_id = 1; */
+        if (message.clientId !== undefined)
+            writer.tag(1, WireType.LengthDelimited).string(message.clientId);
+        /* optional string comment = 2; */
+        if (message.comment !== undefined)
+            writer.tag(2, WireType.LengthDelimited).string(message.comment);
+        /* optional int32 sort_index = 3; */
+        if (message.sortIndex !== undefined)
+            writer.tag(3, WireType.Varint).int32(message.sortIndex);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message api_client.UpdateClientInfoRequest
+ */
+export const UpdateClientInfoRequest = new UpdateClientInfoRequest$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class UpdateClientInfoResponse$Type extends MessageType<UpdateClientInfoResponse> {
+    constructor() {
+        super("api_client.UpdateClientInfoResponse", [
+            { no: 1, name: "status", kind: "message", T: () => Status }
+        ]);
+    }
+    create(value?: PartialMessage<UpdateClientInfoResponse>): UpdateClientInfoResponse {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<UpdateClientInfoResponse>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: UpdateClientInfoResponse): UpdateClientInfoResponse {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* optional common.Status status */ 1:
+                    message.status = Status.internalBinaryRead(reader, reader.uint32(), options, message.status);
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: UpdateClientInfoResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* optional common.Status status = 1; */
+        if (message.status)
+            Status.internalBinaryWrite(message.status, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message api_client.UpdateClientInfoResponse
+ */
+export const UpdateClientInfoResponse = new UpdateClientInfoResponse$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class SwapClientSortRequest$Type extends MessageType<SwapClientSortRequest> {
+    constructor() {
+        super("api_client.SwapClientSortRequest", [
+            { no: 1, name: "client_id", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "up", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ }
+        ]);
+    }
+    create(value?: PartialMessage<SwapClientSortRequest>): SwapClientSortRequest {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<SwapClientSortRequest>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: SwapClientSortRequest): SwapClientSortRequest {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* optional string client_id */ 1:
+                    message.clientId = reader.string();
+                    break;
+                case /* optional bool up */ 2:
+                    message.up = reader.bool();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: SwapClientSortRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* optional string client_id = 1; */
+        if (message.clientId !== undefined)
+            writer.tag(1, WireType.LengthDelimited).string(message.clientId);
+        /* optional bool up = 2; */
+        if (message.up !== undefined)
+            writer.tag(2, WireType.Varint).bool(message.up);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message api_client.SwapClientSortRequest
+ */
+export const SwapClientSortRequest = new SwapClientSortRequest$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class SwapClientSortResponse$Type extends MessageType<SwapClientSortResponse> {
+    constructor() {
+        super("api_client.SwapClientSortResponse", [
+            { no: 1, name: "status", kind: "message", T: () => Status }
+        ]);
+    }
+    create(value?: PartialMessage<SwapClientSortResponse>): SwapClientSortResponse {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<SwapClientSortResponse>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: SwapClientSortResponse): SwapClientSortResponse {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* optional common.Status status */ 1:
+                    message.status = Status.internalBinaryRead(reader, reader.uint32(), options, message.status);
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: SwapClientSortResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* optional common.Status status = 1; */
+        if (message.status)
+            Status.internalBinaryWrite(message.status, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message api_client.SwapClientSortResponse
+ */
+export const SwapClientSortResponse = new SwapClientSortResponse$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class UpdateFRPCRequest$Type extends MessageType<UpdateFRPCRequest> {
     constructor() {
@@ -2194,6 +2514,163 @@ class UpdateProxyConfigResponse$Type extends MessageType<UpdateProxyConfigRespon
  * @generated MessageType for protobuf message api_client.UpdateProxyConfigResponse
  */
 export const UpdateProxyConfigResponse = new UpdateProxyConfigResponse$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class UpdateProxyRulesRequest$Type extends MessageType<UpdateProxyRulesRequest> {
+    constructor() {
+        super("api_client.UpdateProxyRulesRequest", [
+            { no: 1, name: "client_id", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "server_id", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 3, name: "name", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 4, name: "schedule_enabled", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
+            { no: 5, name: "schedule_start", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 6, name: "schedule_end", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 7, name: "schedule_days", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 5 /*ScalarType.INT32*/ },
+            { no: 8, name: "quota_type", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 9, name: "quota_limit", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
+        ]);
+    }
+    create(value?: PartialMessage<UpdateProxyRulesRequest>): UpdateProxyRulesRequest {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.scheduleDays = [];
+        if (value !== undefined)
+            reflectionMergePartial<UpdateProxyRulesRequest>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: UpdateProxyRulesRequest): UpdateProxyRulesRequest {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* optional string client_id */ 1:
+                    message.clientId = reader.string();
+                    break;
+                case /* optional string server_id */ 2:
+                    message.serverId = reader.string();
+                    break;
+                case /* optional string name */ 3:
+                    message.name = reader.string();
+                    break;
+                case /* optional bool schedule_enabled */ 4:
+                    message.scheduleEnabled = reader.bool();
+                    break;
+                case /* optional string schedule_start */ 5:
+                    message.scheduleStart = reader.string();
+                    break;
+                case /* optional string schedule_end */ 6:
+                    message.scheduleEnd = reader.string();
+                    break;
+                case /* repeated int32 schedule_days */ 7:
+                    if (wireType === WireType.LengthDelimited)
+                        for (let e = reader.int32() + reader.pos; reader.pos < e;)
+                            message.scheduleDays.push(reader.int32());
+                    else
+                        message.scheduleDays.push(reader.int32());
+                    break;
+                case /* optional string quota_type */ 8:
+                    message.quotaType = reader.string();
+                    break;
+                case /* optional int64 quota_limit */ 9:
+                    message.quotaLimit = reader.int64().toBigInt();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: UpdateProxyRulesRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* optional string client_id = 1; */
+        if (message.clientId !== undefined)
+            writer.tag(1, WireType.LengthDelimited).string(message.clientId);
+        /* optional string server_id = 2; */
+        if (message.serverId !== undefined)
+            writer.tag(2, WireType.LengthDelimited).string(message.serverId);
+        /* optional string name = 3; */
+        if (message.name !== undefined)
+            writer.tag(3, WireType.LengthDelimited).string(message.name);
+        /* optional bool schedule_enabled = 4; */
+        if (message.scheduleEnabled !== undefined)
+            writer.tag(4, WireType.Varint).bool(message.scheduleEnabled);
+        /* optional string schedule_start = 5; */
+        if (message.scheduleStart !== undefined)
+            writer.tag(5, WireType.LengthDelimited).string(message.scheduleStart);
+        /* optional string schedule_end = 6; */
+        if (message.scheduleEnd !== undefined)
+            writer.tag(6, WireType.LengthDelimited).string(message.scheduleEnd);
+        /* repeated int32 schedule_days = 7; */
+        if (message.scheduleDays.length) {
+            writer.tag(7, WireType.LengthDelimited).fork();
+            for (let i = 0; i < message.scheduleDays.length; i++)
+                writer.int32(message.scheduleDays[i]);
+            writer.join();
+        }
+        /* optional string quota_type = 8; */
+        if (message.quotaType !== undefined)
+            writer.tag(8, WireType.LengthDelimited).string(message.quotaType);
+        /* optional int64 quota_limit = 9; */
+        if (message.quotaLimit !== undefined)
+            writer.tag(9, WireType.Varint).int64(message.quotaLimit);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message api_client.UpdateProxyRulesRequest
+ */
+export const UpdateProxyRulesRequest = new UpdateProxyRulesRequest$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class UpdateProxyRulesResponse$Type extends MessageType<UpdateProxyRulesResponse> {
+    constructor() {
+        super("api_client.UpdateProxyRulesResponse", [
+            { no: 1, name: "status", kind: "message", T: () => Status }
+        ]);
+    }
+    create(value?: PartialMessage<UpdateProxyRulesResponse>): UpdateProxyRulesResponse {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<UpdateProxyRulesResponse>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: UpdateProxyRulesResponse): UpdateProxyRulesResponse {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* optional common.Status status */ 1:
+                    message.status = Status.internalBinaryRead(reader, reader.uint32(), options, message.status);
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: UpdateProxyRulesResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* optional common.Status status = 1; */
+        if (message.status)
+            Status.internalBinaryWrite(message.status, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message api_client.UpdateProxyRulesResponse
+ */
+export const UpdateProxyRulesResponse = new UpdateProxyRulesResponse$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class GetProxyConfigRequest$Type extends MessageType<GetProxyConfigRequest> {
     constructor() {

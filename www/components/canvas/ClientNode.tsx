@@ -90,7 +90,7 @@ const ClientNodeComponent: React.FC<NodeProps<ClientNode> & NodeOperations> = ({
                     <WifiOff className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
                   )}
                   <span className="font-medium truncate text-blue-600" title={clientId}>
-                    {clientId || t('canvas.client.unknown')}
+                    {data.original?.comment || clientId || t('canvas.client.unknown')}
                   </span>
                 </div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">

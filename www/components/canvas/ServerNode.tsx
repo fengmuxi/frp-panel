@@ -85,7 +85,7 @@ const ServerNodeComponent: React.FC<NodeProps<ServerNode> & NodeOperations> = ({
                 <div className="flex items-center gap-2">
                   <Server className={cn('h-3.5 w-3.5 flex-shrink-0', isOnline ? 'text-green-500' : 'text-gray-500')} />
                   <span className="font-medium truncate text-purple-600" title={serverId}>
-                    {serverId || t('canvas.server.unknown')}
+                    {data.original?.comment || serverId || t('canvas.server.unknown')}
                   </span>
                 </div>
                 {data.original?.ip && (

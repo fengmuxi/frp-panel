@@ -93,6 +93,10 @@ export interface Client {
      * @generated from protobuf field: optional int64 last_seen_at = 12;
      */
     lastSeenAt?: bigint; // 最后一次心跳时间戳
+    /**
+     * @generated from protobuf field: optional int32 sort_index = 13;
+     */
+    sortIndex?: number; // 用户自定义排序序号，0 表示未设置（排在最后）
 }
 /**
  * @generated from protobuf message common.Server
@@ -122,6 +126,10 @@ export interface Server {
      * @generated from protobuf field: repeated string frps_urls = 6;
      */
     frpsUrls: string[]; // 客户端用于连接frps的url，解决 frp 在 CDN 后的问题，格式类似 [tcp/ws/wss/quic/kcp]://example.com:7000，可以有多个
+    /**
+     * @generated from protobuf field: optional int32 sort_index = 7;
+     */
+    sortIndex?: number; // 用户自定义排序序号，0 表示未设置（排在最后）
 }
 /**
  * @generated from protobuf message common.User
@@ -237,6 +245,42 @@ export interface ProxyConfig {
      * @generated from protobuf field: optional bool stopped = 8;
      */
     stopped?: boolean;
+    /**
+     * 自动规则：定时开关
+     *
+     * @generated from protobuf field: optional bool schedule_enabled = 9;
+     */
+    scheduleEnabled?: boolean; // 是否启用定时开关
+    /**
+     * @generated from protobuf field: optional string schedule_start = 10;
+     */
+    scheduleStart?: string; // HH:MM 开启时间（分钟精度）
+    /**
+     * @generated from protobuf field: optional string schedule_end = 11;
+     */
+    scheduleEnd?: string; // HH:MM 关闭时间，start > end 表示跨天（如 22:00-06:00）
+    /**
+     * @generated from protobuf field: repeated int32 schedule_days = 12;
+     */
+    scheduleDays: number[]; // 生效周几，0=周日 ~ 6=周六，多选
+    /**
+     * 自动规则：流量限额
+     *
+     * @generated from protobuf field: optional string quota_type = 13;
+     */
+    quotaType?: string; // day/week/month，空=未启用
+    /**
+     * @generated from protobuf field: optional int64 quota_limit = 14;
+     */
+    quotaLimit?: bigint; // 限额字节数
+    /**
+     * @generated from protobuf field: optional int64 quota_used = 15;
+     */
+    quotaUsed?: bigint; // 当前统计窗口已用字节数（仅返回，不可修改）
+    /**
+     * @generated from protobuf field: optional bool auto_stopped = 16;
+     */
+    autoStopped?: boolean; // 是否被自动规则（定时/限额）停用
 }
 /**
  * @generated from protobuf message common.ProxyWorkingStatus
@@ -546,7 +590,8 @@ class Client$Type extends MessageType<Client> {
             { no: 9, name: "origin_client_id", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 10, name: "frps_url", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 11, name: "ephemeral", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
-            { no: 12, name: "last_seen_at", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
+            { no: 12, name: "last_seen_at", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 13, name: "sort_index", kind: "scalar", opt: true, T: 5 /*ScalarType.INT32*/ }
         ]);
     }
     create(value?: PartialMessage<Client>): Client {
@@ -594,6 +639,9 @@ class Client$Type extends MessageType<Client> {
                 case /* optional int64 last_seen_at */ 12:
                     message.lastSeenAt = reader.int64().toBigInt();
                     break;
+                case /* optional int32 sort_index */ 13:
+                    message.sortIndex = reader.int32();
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -639,6 +687,9 @@ class Client$Type extends MessageType<Client> {
         /* optional int64 last_seen_at = 12; */
         if (message.lastSeenAt !== undefined)
             writer.tag(12, WireType.Varint).int64(message.lastSeenAt);
+        /* optional int32 sort_index = 13; */
+        if (message.sortIndex !== undefined)
+            writer.tag(13, WireType.Varint).int32(message.sortIndex);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -658,7 +709,8 @@ class Server$Type extends MessageType<Server> {
             { no: 3, name: "ip", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 4, name: "config", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 5, name: "comment", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
-            { no: 6, name: "frps_urls", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ }
+            { no: 6, name: "frps_urls", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ },
+            { no: 7, name: "sort_index", kind: "scalar", opt: true, T: 5 /*ScalarType.INT32*/ }
         ]);
     }
     create(value?: PartialMessage<Server>): Server {
@@ -691,6 +743,9 @@ class Server$Type extends MessageType<Server> {
                 case /* repeated string frps_urls */ 6:
                     message.frpsUrls.push(reader.string());
                     break;
+                case /* optional int32 sort_index */ 7:
+                    message.sortIndex = reader.int32();
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -721,6 +776,9 @@ class Server$Type extends MessageType<Server> {
         /* repeated string frps_urls = 6; */
         for (let i = 0; i < message.frpsUrls.length; i++)
             writer.tag(6, WireType.LengthDelimited).string(message.frpsUrls[i]);
+        /* optional int32 sort_index = 7; */
+        if (message.sortIndex !== undefined)
+            writer.tag(7, WireType.Varint).int32(message.sortIndex);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -939,11 +997,20 @@ class ProxyConfig$Type extends MessageType<ProxyConfig> {
             { no: 5, name: "server_id", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 6, name: "config", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 7, name: "origin_client_id", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
-            { no: 8, name: "stopped", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ }
+            { no: 8, name: "stopped", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
+            { no: 9, name: "schedule_enabled", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
+            { no: 10, name: "schedule_start", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 11, name: "schedule_end", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 12, name: "schedule_days", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 5 /*ScalarType.INT32*/ },
+            { no: 13, name: "quota_type", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
+            { no: 14, name: "quota_limit", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 15, name: "quota_used", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 16, name: "auto_stopped", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ }
         ]);
     }
     create(value?: PartialMessage<ProxyConfig>): ProxyConfig {
         const message = globalThis.Object.create((this.messagePrototype!));
+        message.scheduleDays = [];
         if (value !== undefined)
             reflectionMergePartial<ProxyConfig>(this, message, value);
         return message;
@@ -976,6 +1043,34 @@ class ProxyConfig$Type extends MessageType<ProxyConfig> {
                     break;
                 case /* optional bool stopped */ 8:
                     message.stopped = reader.bool();
+                    break;
+                case /* optional bool schedule_enabled */ 9:
+                    message.scheduleEnabled = reader.bool();
+                    break;
+                case /* optional string schedule_start */ 10:
+                    message.scheduleStart = reader.string();
+                    break;
+                case /* optional string schedule_end */ 11:
+                    message.scheduleEnd = reader.string();
+                    break;
+                case /* repeated int32 schedule_days */ 12:
+                    if (wireType === WireType.LengthDelimited)
+                        for (let e = reader.int32() + reader.pos; reader.pos < e;)
+                            message.scheduleDays.push(reader.int32());
+                    else
+                        message.scheduleDays.push(reader.int32());
+                    break;
+                case /* optional string quota_type */ 13:
+                    message.quotaType = reader.string();
+                    break;
+                case /* optional int64 quota_limit */ 14:
+                    message.quotaLimit = reader.int64().toBigInt();
+                    break;
+                case /* optional int64 quota_used */ 15:
+                    message.quotaUsed = reader.int64().toBigInt();
+                    break;
+                case /* optional bool auto_stopped */ 16:
+                    message.autoStopped = reader.bool();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -1013,6 +1108,34 @@ class ProxyConfig$Type extends MessageType<ProxyConfig> {
         /* optional bool stopped = 8; */
         if (message.stopped !== undefined)
             writer.tag(8, WireType.Varint).bool(message.stopped);
+        /* optional bool schedule_enabled = 9; */
+        if (message.scheduleEnabled !== undefined)
+            writer.tag(9, WireType.Varint).bool(message.scheduleEnabled);
+        /* optional string schedule_start = 10; */
+        if (message.scheduleStart !== undefined)
+            writer.tag(10, WireType.LengthDelimited).string(message.scheduleStart);
+        /* optional string schedule_end = 11; */
+        if (message.scheduleEnd !== undefined)
+            writer.tag(11, WireType.LengthDelimited).string(message.scheduleEnd);
+        /* repeated int32 schedule_days = 12; */
+        if (message.scheduleDays.length) {
+            writer.tag(12, WireType.LengthDelimited).fork();
+            for (let i = 0; i < message.scheduleDays.length; i++)
+                writer.int32(message.scheduleDays[i]);
+            writer.join();
+        }
+        /* optional string quota_type = 13; */
+        if (message.quotaType !== undefined)
+            writer.tag(13, WireType.LengthDelimited).string(message.quotaType);
+        /* optional int64 quota_limit = 14; */
+        if (message.quotaLimit !== undefined)
+            writer.tag(14, WireType.Varint).int64(message.quotaLimit);
+        /* optional int64 quota_used = 15; */
+        if (message.quotaUsed !== undefined)
+            writer.tag(15, WireType.Varint).int64(message.quotaUsed);
+        /* optional bool auto_stopped = 16; */
+        if (message.autoStopped !== undefined)
+            writer.tag(16, WireType.Varint).bool(message.autoStopped);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

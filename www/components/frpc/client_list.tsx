@@ -38,6 +38,8 @@ export const ClientList: React.FC<ClientListProps> = ({ Clients, Keyword, Trigge
         status: ClientConfigured(client) ? 'valid' : 'invalid',
         secret: client.secret == undefined ? '' : client.secret,
         config: client.config,
+        comment: client.comment,
+        sortIndex: client.sortIndex ?? 0,
         originClient: client,
       }) as ClientTableSchema,
   )
@@ -78,6 +80,8 @@ export const ClientList: React.FC<ClientListProps> = ({ Clients, Keyword, Trigge
           status: ClientConfigured(client) ? 'valid' : 'invalid',
           secret: client.secret == undefined ? '' : client.secret,
           config: client.config,
+          comment: client.comment,
+          sortIndex: client.sortIndex ?? 0,
           stopped: client.stopped,
           originClient: client,
         } as ClientTableSchema
@@ -87,6 +91,10 @@ export const ClientList: React.FC<ClientListProps> = ({ Clients, Keyword, Trigge
       (dataQuery.data?.total == undefined ? 0 : dataQuery.data?.total) / fetchDataOptions.pageSize ?? 0,
     ),
     columns: clientColumnsDef,
+    meta: {
+      total: dataQuery.data?.total,
+      sortEnabled: Keyword === undefined || Keyword === '',
+    },
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,

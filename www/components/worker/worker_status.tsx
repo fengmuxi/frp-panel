@@ -112,7 +112,7 @@ export function WorkerStatus({ workerId, clients = [], compact = false }: Worker
                   <div className={`h-2.5 w-2.5 rounded-sm ${bg} cursor-pointer transition-transform hover:scale-125`} />
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p className="text-sm font-medium">{client.id}</p>
+                  <p className="text-sm font-medium">{client.comment || client.id}</p>
                   <div className="text-xs font-mono">
                     {t('worker.status.clients')}: {status}
                   </div>

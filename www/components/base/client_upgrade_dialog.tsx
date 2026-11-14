@@ -7,6 +7,8 @@ import { toast } from 'sonner'
 
 import { UpgradeFrppRequest } from '@/lib/pb/api_client'
 import { upgradeFrpp } from '@/api/client'
+import { ClientType } from '@/lib/pb/common'
+import { useAgentName } from '@/hooks/use-agent-name'
 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -35,6 +37,8 @@ export function ClientUpgradeDialog({
   onDispatched,
 }: ClientUpgradeDialogProps) {
   const { t } = useTranslation()
+  // 危险操作提示中展示节点名称而非 ID
+  const agentName = useAgentName(clientId, ClientType.FRPC)
 
   const [version, setVersion] = useState(defaultVersion)
   const [downloadUrl, setDownloadUrl] = useState('')
@@ -76,7 +80,7 @@ export function ClientUpgradeDialog({
         <DialogHeader>
           <DialogTitle>{t('client.upgrade.title')}</DialogTitle>
           <DialogDescription>
-            <p className="text-destructive">{clientId + ' ' + t('client.upgrade.warning')}</p>
+            <p className="text-destructive">{agentName || clientId + ' ' + t('client.upgrade.warning')}</p>
           </DialogDescription>
         </DialogHeader>
 

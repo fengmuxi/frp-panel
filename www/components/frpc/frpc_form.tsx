@@ -1,15 +1,13 @@
-import { ProxyType, TypedProxyConfig } from '@/types/proxy'
+import { TypedProxyConfig } from '@/types/proxy'
 import React, { useEffect } from 'react'
 import { useState } from 'react'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@radix-ui/react-label'
 import { TypedProxyForm } from './proxy_form'
+import { QuickProxyCreateDialog } from './quick_proxy_create_dialog'
 import { Button } from '@/components/ui/button'
 import { Client, RespCode } from '@/lib/pb/common'
 import { ClientConfig } from '@/types/client'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
-import { Input } from '@/components/ui/input'
 import { AccordionHeader } from '@radix-ui/react-accordion'
 import { QueryObserverResult, RefetchOptions, useMutation } from '@tanstack/react-query'
 import { updateFRPC } from '@/api/frp'
@@ -32,8 +30,6 @@ export interface FRPCFormProps {
 
 export const FRPCForm: React.FC<FRPCFormProps> = ({ clientID, serverID, clientConfig, client, refetchClient, clientProxyConfigs, setClientProxyConfigs, frpsUrl }) => {
   const { t } = useTranslation()
-  const [proxyType, setProxyType] = useState<ProxyType>('http')
-  const [proxyName, setProxyName] = useState<string | undefined>()
   const [protocol, setProtocol] = useState<string | undefined>("tcp")
 
   useEffect(() => {
@@ -41,27 +37,6 @@ export const FRPCForm: React.FC<FRPCFormProps> = ({ clientID, serverID, clientCo
       setProtocol(clientConfig.transport?.protocol)
     }
   }, [clientConfig])
-
-  const handleTypeChange = (value: string) => {
-    setProxyType(value as ProxyType)
-  }
-
-  const handleAddProxy = () => {
-    console.log('add proxy', proxyName, proxyType)
-    if (!proxyName) return
-    if (!proxyType) return
-    if (clientProxyConfigs.findIndex((proxy) => proxy.name === proxyName) !== -1) {
-      toast(t('proxy.status.create'), {
-        description: t('proxy.status.name_exists')
-      })
-      return
-    }
-    const newProxy = {
-      name: proxyName,
-      type: proxyType,
-    } as TypedProxyConfig
-    setClientProxyConfigs([...clientProxyConfigs, newProxy])
-  }
 
   const handleDeleteProxy = (proxyName: string) => {
     const newProxies = clientProxyConfigs.filter((proxy) => proxy.name !== proxyName)
@@ -101,34 +76,15 @@ export const FRPCForm: React.FC<FRPCFormProps> = ({ clientID, serverID, clientCo
 
   return (
     <div className='flex flex-col space-y-2'>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button className="my-2">{t('proxy.form.add')}</Button>
-        </PopoverTrigger>
-        <PopoverContent>
-          <Label className="text-sm font-medium">{t('proxy.form.name')}</Label>
-          <Input
-            onChange={(e) => {
-              setProxyName(e.target.value)
-            }}
-          />
-          <Select onValueChange={handleTypeChange} defaultValue={proxyType}>
-            <Label className="text-sm font-medium">{t('proxy.form.protocol')}</Label>
-            <SelectTrigger className="my-2">
-              <SelectValue placeholder={t('proxy.form.type')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="http">{t('proxy.type.http')}</SelectItem>
-              <SelectItem value="tcp">{t('proxy.type.tcp')}</SelectItem>
-              <SelectItem value="udp">{t('proxy.type.udp')}</SelectItem>
-              <SelectItem value="stcp">{t('proxy.type.stcp')}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant={'outline'} onClick={handleAddProxy}>
-            {t('proxy.form.confirm')}
-          </Button>
-        </PopoverContent>
-      </Popover>
+      <QuickProxyCreateDialog
+        clientID={clientID}
+        serverID={serverID}
+        frpsUrl={frpsUrl}
+        client={client}
+        clientConfig={clientConfig}
+        clientProxyConfigs={clientProxyConfigs}
+        refetchClient={refetchClient}
+      />
       <Label className="text-sm font-medium">{t('proxy.form.protocol')}</Label>
       <BaseSelector value={protocol} setValue={setProtocol}
         dataList={ConnectionProtocols.map((item) => { return { label: item, value: item } })}

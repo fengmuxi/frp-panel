@@ -40,9 +40,10 @@ export type ProxyConfigMutateDialogProps = {
 
 export const ProxyConfigMutateDialog = ({ ...props }: ProxyConfigMutateDialogProps) => {
   const { t } = useTranslation()
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   return (
-    <Dialog>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" className="w-fit">
           {t('proxy.config.create')}
@@ -53,7 +54,14 @@ export const ProxyConfigMutateDialog = ({ ...props }: ProxyConfigMutateDialogPro
           <DialogTitle>{t('proxy.config.create_proxy')}</DialogTitle>
           <DialogDescription>{t('proxy.config.create_proxy_description')}</DialogDescription>
         </DialogHeader>
-        <ProxyConfigMutateForm {...props} />
+        {/* 表单提交成功后关闭弹窗，再转发外部 onSuccess 回调 */}
+        <ProxyConfigMutateForm
+          {...props}
+          onSuccess={() => {
+            props.onSuccess?.()
+            setDialogOpen(false)
+          }}
+        />
       </DialogContent>
     </Dialog>
   )
@@ -71,21 +79,24 @@ export const ProxyConfigMutateForm = ({
   const [newServerID, setNewServerID] = useState<string | undefined>()
   const [proxyConfigs, setProxyConfigs] = useState<TypedProxyConfig[]>([])
   const [proxyName, setProxyName] = useState<string | undefined>('')
-  const [proxyType, setProxyType] = useState<ProxyType>('http')
+  // 与客户端编辑页的快速创建保持一致：tcp/udp/http/stcp，默认 tcp
+  const [proxyType, setProxyType] = useState<ProxyType>('tcp')
   const [selectedServer, setSelectedServer] = useState<Server | undefined>()
-  const supportedProxyTypes: ProxyType[] = ['http', 'tcp', 'udp']
+  const supportedProxyTypes: ProxyType[] = ['tcp', 'udp', 'http', 'stcp']
   // advanced mode toggle
   const [advancedMode, setAdvancedMode] = useState<boolean>(false)
   const [rawConfig, setRawConfig] = useState<string>('{}')
 
+  // mutationFn 显式接收 proxies：普通模式下表单值由 TypedProxyForm 的 onSaved 回调
+  // 直接带入，无需"暂存修改"两段式
   const createProxyConfigMutation = useMutation({
     mutationKey: ['createProxyConfig', newClientID, newServerID],
-    mutationFn: () =>
+    mutationFn: (proxies: TypedProxyConfig[]) =>
       createProxyConfig({
         clientId: newClientID!,
         serverId: newServerID!,
         config: ObjToUint8Array({
-          proxies: proxyConfigs,
+          proxies,
         } as ClientConfig),
         overwrite,
       }),
@@ -139,7 +150,7 @@ export const ProxyConfigMutateForm = ({
         <>
           <Label>{t('proxy.config.select_proxy_type')} </Label>
           <BaseSelector
-            dataList={supportedProxyTypes.map((type) => ({ value: type, label: type }))}
+            dataList={supportedProxyTypes.map((type) => ({ value: type, label: t(`proxy.type.${type}`) }))}
             value={proxyType}
             setValue={(value) => {
               setProxyType(value as ProxyType)
@@ -172,6 +183,13 @@ export const ProxyConfigMutateForm = ({
               clientProxyConfigs={proxyConfigs}
               setClientProxyConfigs={setProxyConfigs}
               enablePreview={false}
+              formId="proxy-mutate-form"
+              hideActions
+              onSaved={(cfg) => {
+                // 表单校验通过后一键提交，不再需要"暂存修改"两段式
+                setProxyConfigs([cfg])
+                createProxyConfigMutation.mutate([cfg])
+              }}
             />
           )}
         </>
@@ -199,18 +217,36 @@ export const ProxyConfigMutateForm = ({
           </Button>
         </>
       )}
-      <Button
-        disabled={advancedMode ? proxyConfigs.length === 0 : !TypedProxyConfigValid(proxyConfigs[0])}
-        onClick={() => {
-          if (!TypedProxyConfigValid(proxyConfigs[0])) {
-            toast(t('proxy.config.invalid_config'))
-            return
-          }
-          createProxyConfigMutation.mutate()
-        }}
-      >
-        {t('proxy.config.submit')}
-      </Button>
+      {!advancedMode && (
+        // 普通模式：触发 TypedProxyForm 内部提交（zod 校验）→ onSaved 一键创建
+        <Button
+          type="submit"
+          form="proxy-mutate-form"
+          disabled={!proxyName || !newClientID || !newServerID || createProxyConfigMutation.isPending}
+        >
+          {createProxyConfigMutation.isPending ? '...' : t('proxy.config.submit')}
+        </Button>
+      )}
+      {advancedMode && (
+        <Button
+          disabled={createProxyConfigMutation.isPending}
+          onClick={() => {
+            try {
+              const parsed = JSON.parse(rawConfig) as TypedProxyConfig[]
+              if (!Array.isArray(parsed) || parsed.length === 0) {
+                throw new Error('empty proxies')
+              }
+              createProxyConfigMutation.mutate(parsed)
+            } catch (e) {
+              toast(t('proxy.config.invalid_json'), {
+                description: e instanceof Error ? e.message : undefined,
+              })
+            }
+          }}
+        >
+          {t('proxy.config.submit')}
+        </Button>
+      )}
     </>
   )
 }

@@ -8,12 +8,19 @@ import { useEffect, useState } from 'react'
 import { getPlatformInfo } from '@/api/platform'
 import { useTranslation } from 'react-i18next'
 import { LanguageSwitcher } from './language-switcher'
+import { ArrowLeft } from 'lucide-react'
+import { NAV_TITLE_KEYS, PAGE_PARENTS } from '@/lib/routes'
 
 export const Header = ({ title }: { title?: string }) => {
   const router = useRouter()
   const isOnline = useStore($statusOnline)
   const token = useStore($token)
   const currentPath = router.pathname
+  const { t } = useTranslation()
+
+  // 二级页面：返回所属一级页面
+  const parentPath = PAGE_PARENTS[currentPath]
+  const parentTitleKey = parentPath ? NAV_TITLE_KEYS[parentPath] : undefined
 
   const { isPending } = useQuery({
     queryKey: ['userInfo', currentPath],
@@ -35,8 +42,21 @@ export const Header = ({ title }: { title?: string }) => {
 
   return (
     <div className="flex w-full justify-between items-center gap-2">
-      {title && <p className="font-bold">{title}</p>}
-      {!title && <p></p>}
+      <div className="flex items-center gap-2 min-w-0">
+        {parentPath && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1"
+            onClick={() => router.push(parentPath)}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {parentTitleKey ? t(parentTitleKey) : t('common.back')}
+          </Button>
+        )}
+        {title && <p className="font-bold truncate">{title}</p>}
+        {!title && !parentPath && <p></p>}
+      </div>
       <LanguageSwitcher />
     </div>
   )
