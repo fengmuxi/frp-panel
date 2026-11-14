@@ -53,11 +53,13 @@ export const ClientStatsCard: React.FC<ClientStatsCardProps> = ({ clientID: defa
     setClientID(value)
   }
 
+  // 同一隧道可能因历史数据产生多条统计行（服务端按 (server, name) 收敛前的残留），
+  // 按 节点+隧道名 合并展示；不同节点上的同名隧道是不同隧道，不合并
   const mergeProxyInfos = (proxyInfos: ProxyInfo[]): ProxyInfo[] => {
     const mergedMap: Map<string, ProxyInfo> = new Map();
 
     for (const proxyInfo of proxyInfos) {
-      const key = `${proxyInfo.clientId}:${proxyInfo.name}`;
+      const key = `${proxyInfo.serverId}:${proxyInfo.name}`;
 
       if (!mergedMap.has(key)) {
         mergedMap.set(key, { ...proxyInfo });
@@ -91,9 +93,9 @@ export const ClientStatsCard: React.FC<ClientStatsCardProps> = ({ clientID: defa
         <Label>{t('proxy.stats.label')}</Label>
         <div className="w-full grid gap-2 grid-cols-1 overflow-x-auto">
           {clientStatsList && clientStatsList.proxyInfos.length > 0 &&
-            clientStatsList.proxyInfos.map((proxyInfo) => {
+            mergeProxyInfos(clientStatsList.proxyInfos).map((proxyInfo) => {
               return (
-                <ProxyStatusCard key={proxyInfo.name} proxyInfo={proxyInfo} />
+                <ProxyStatusCard key={`${proxyInfo.serverId}:${proxyInfo.name}`} proxyInfo={proxyInfo} />
               )
             })
           }

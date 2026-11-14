@@ -20,6 +20,8 @@ func buildDataGroup(env *Env) ([]Checker, error) {
 			fixHint: "GORM 软删除记录仅供审计，数量过大时考虑归档清理以控制库体积"}},
 		&dataStatsReconcile{baseChecker{name: "stats_reconcile", group: "data", severity: LevelMinor,
 			fixHint: "history_proxy_stats 是每日 CollectDailyStats 快照（0 0 3 * * *），与 proxy_stats 的差异应等于当日增量"}},
+		&dataDuplicateProxyStats{baseChecker{name: "duplicate_proxy_stats", group: "data", severity: LevelMajor,
+			fixHint: "同名同节点的重复统计行会让不同页面显示不同隧道的流量；用当前版本重启 master 后，下次节点上报（约 30s）会自动收敛并软删除多余行"}},
 		&dataMigrationVersion{baseChecker{name: "db_migration", group: "data", severity: LevelMinor,
 			fixHint: "迁移落后于代码说明 master 未用当前版本启动过或迁移中断；用当前版本 frpp 启动一次 master 即可应用未跑完的迁移"}},
 		&dataSchemaDiff{baseChecker{name: "schema_diff", group: "data", severity: LevelMajor,
@@ -228,6 +230,46 @@ func (c *dataStatsReconcile) Run(ctx context.Context, env *Env) Result {
 		return Result{}.Fail("流量聚合出现负数（溢出）").WithDetails(details...).ConfigRefs(refs...)
 	}
 	return Result{}.Pass("今日/累计统计可对账").WithDetails(details...).ConfigRefs(refs...)
+}
+
+// ---------------- data/duplicate_proxy_stats ----------------
+
+type dataDuplicateProxyStats struct{ baseChecker }
+
+// Run 检查 proxy_stats 中 (server_id, name) 重复的统计行：
+// frps 层面 (server, 去前缀隧道名) 唯一，重复行说明发生过归属漂移
+// （历史版本按 user_id 加载旧行导致 Save 插入新行），尚未被上报收敛清理。
+func (c *dataDuplicateProxyStats) Run(ctx context.Context, env *Env) Result {
+	refs := []string{"proxy_stats", "dao.AdminUpdateProxyStats 同名收敛"}
+	db, err := env.DB(ctx)
+	if err != nil {
+		return Result{}.Skip(fmt.Sprintf("数据库不可用: %v", err))
+	}
+	if !db.Migrator().HasTable(&models.ProxyStats{}) {
+		return Result{}.Skip("proxy_stats 表不存在")
+	}
+
+	var dups []struct {
+		ServerID string
+		Name     string
+		Count    int64
+	}
+	if err := db.Model(&models.ProxyStats{}).
+		Select("server_id, name, COUNT(*) AS count").
+		Group("server_id, name").
+		Having("COUNT(*) > 1").
+		Find(&dups).Error; err != nil {
+		return Result{}.Skip(fmt.Sprintf("聚合 proxy_stats 失败: %v", err))
+	}
+	if len(dups) == 0 {
+		return Result{}.Pass("proxy_stats 无重复统计行").ConfigRefs(refs...)
+	}
+
+	details := make([]string, 0, len(dups))
+	for _, d := range dups {
+		details = append(details, fmt.Sprintf("server=%s name=%s 共 %d 行", d.ServerID, d.Name, d.Count))
+	}
+	return Result{}.Fail(fmt.Sprintf("%d 个隧道存在重复统计行", len(dups))).WithDetails(details...).ConfigRefs(refs...)
 }
 
 // ---------------- data/schema_diff ----------------

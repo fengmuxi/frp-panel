@@ -66,27 +66,12 @@ func (q *proxyQuery) GetProxyStatsByClientID(userInfo models.UserInfo, clientID 
 	}
 	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
 	list := []*models.ProxyStats{}
+	// 用户过滤必须用显式 SQL：struct Where 会把零值字段（UserID=0 的"全局记录"
+	// 分支、tenant_id=0 的单租户部署）从条件里丢掉，导致用户过滤静默失效。
 	err := db.
-		Where(&models.ProxyStats{ProxyStatsEntity: &models.ProxyStatsEntity{
-			UserID:   userInfo.GetUserID(),
-			TenantID: userInfo.GetTenantID(),
-			ClientID: clientID,
-		}}).
-		Or(&models.ProxyStats{ProxyStatsEntity: &models.ProxyStatsEntity{
-			UserID:   0,
-			TenantID: userInfo.GetTenantID(),
-			ClientID: clientID,
-		}}).
-		Or(&models.ProxyStats{ProxyStatsEntity: &models.ProxyStatsEntity{
-			UserID:         userInfo.GetUserID(),
-			TenantID:       userInfo.GetTenantID(),
-			OriginClientID: clientID,
-		}}).
-		Or(&models.ProxyStats{ProxyStatsEntity: &models.ProxyStatsEntity{
-			UserID:         0,
-			TenantID:       userInfo.GetTenantID(),
-			OriginClientID: clientID,
-		}}).
+		Where("tenant_id = ?", userInfo.GetTenantID()).
+		Where("client_id = ? OR origin_client_id = ?", clientID, clientID).
+		Where("user_id IN ?", []int{userInfo.GetUserID(), 0}).
 		Find(&list).Error
 	if err != nil {
 		return nil, err
@@ -102,16 +87,11 @@ func (q *proxyQuery) GetProxyStatsByServerID(userInfo models.UserInfo, serverID 
 	}
 	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
 	list := []*models.ProxyStats{}
+	// 同 GetProxyStatsByClientID：user/tenant 过滤用显式 SQL，避免零值字段被 GORM 丢弃
 	err := db.
-		Where(&models.ProxyStats{ProxyStatsEntity: &models.ProxyStatsEntity{
-			UserID:   userInfo.GetUserID(),
-			TenantID: userInfo.GetTenantID(),
-			ServerID: serverID,
-		}}).Or(&models.ProxyStats{ProxyStatsEntity: &models.ProxyStatsEntity{
-		UserID:   0,
-		TenantID: userInfo.GetTenantID(),
-		ServerID: serverID,
-	}}).
+		Where("tenant_id = ?", userInfo.GetTenantID()).
+		Where("server_id = ?", serverID).
+		Where("user_id IN ?", []int{userInfo.GetUserID(), 0}).
 		Find(&list).Error
 	if err != nil {
 		return nil, err
@@ -125,14 +105,10 @@ func (q *proxyQuery) GetProxyStatsByServerID(userInfo models.UserInfo, serverID 
 func (q *proxyQuery) GetProxyStatsByUser(userInfo models.UserInfo) ([]*models.ProxyStatsEntity, error) {
 	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
 	list := []*models.ProxyStats{}
+	// 同 GetProxyStatsByClientID：user/tenant 过滤用显式 SQL，避免零值字段被 GORM 丢弃
 	err := db.
-		Where(&models.ProxyStats{ProxyStatsEntity: &models.ProxyStatsEntity{
-			UserID:   userInfo.GetUserID(),
-			TenantID: userInfo.GetTenantID(),
-		}}).Or(&models.ProxyStats{ProxyStatsEntity: &models.ProxyStatsEntity{
-		UserID:   0,
-		TenantID: userInfo.GetTenantID(),
-	}}).
+		Where("tenant_id = ?", userInfo.GetTenantID()).
+		Where("user_id IN ?", []int{userInfo.GetUserID(), 0}).
 		Find(&list).Error
 	if err != nil {
 		return nil, err
@@ -183,17 +159,14 @@ func (m *proxyMutation) AdminUpdateProxyStats(srv *models.ServerEntity, inputs [
 		p.Go(
 			func() error {
 				oldProxy := []*models.ProxyStats{}
+				// 按 server_id 加载、不限 user_id：frps 层面 (server_id, 去前缀 name) 唯一，
+				// 历史版本/归属变更等原因可能留下 user_id 漂移的旧统计行，按 user_id
+				// 过滤会漏掉它们，导致 Save 时主键为空直接插入新行（同名重复统计且永不收敛）。
 				if err := tx.
-					Where(&models.ProxyStats{ProxyStatsEntity: &models.ProxyStatsEntity{
-						UserID:   srv.UserID,
-						ServerID: srv.ServerID,
-					}}).Find(&oldProxy).Error; err != nil {
+					Where("server_id = ?", srv.ServerID).Find(&oldProxy).Error; err != nil {
 					return err
 				}
-				oldProxyMap := lo.SliceToMap(oldProxy, func(p *models.ProxyStats) (string, *models.ProxyStats) {
-					return p.Name, p
-				})
-				queryResults[2] = oldProxyMap
+				queryResults[2] = oldProxy
 				return nil
 			},
 		)
@@ -203,7 +176,7 @@ func (m *proxyMutation) AdminUpdateProxyStats(srv *models.ServerEntity, inputs [
 
 		user := queryResults[0].(models.User)
 		clients := queryResults[1].([]*models.Client)
-		oldProxyMap := queryResults[2].(map[string]*models.ProxyStats)
+		oldProxyRows := queryResults[2].([]*models.ProxyStats)
 
 		inputMap := map[string]*pb.ProxyInfo{}
 		proxyMap := map[string]*models.ProxyStatsEntity{}
@@ -222,6 +195,34 @@ func (m *proxyMutation) AdminUpdateProxyStats(srv *models.ServerEntity, inputs [
 				TodayTrafficOut: proxyInfo.GetTodayTrafficOut(),
 			}
 			inputMap[proxyName] = proxyInfo
+		}
+
+		// 同 (server, name) 重复统计行收敛：只处理本次上报涉及的隧道名
+		//（frps 重启期间隧道可能暂时缺席，缺席的名字不动，避免误删）。
+		// 优先保留当前归属者的行（否则取最近更新的行），其余行的历史累计
+		// 并入保留行后软删除，让漂移产生的重复行在下次上报时自动收敛。
+		oldProxyByName := map[string][]*models.ProxyStats{}
+		for _, p := range oldProxyRows {
+			oldProxyByName[p.Name] = append(oldProxyByName[p.Name], p)
+		}
+		oldProxyMap := make(map[string]*models.ProxyStats, len(proxyMap))
+		for name := range proxyMap {
+			rows := oldProxyByName[name]
+			if len(rows) == 0 {
+				continue
+			}
+			pick := pickKeptStatsRow(rows, srv.UserID)
+			for _, r := range rows {
+				if r.ProxyID == pick.ProxyID {
+					continue
+				}
+				pick.HistoryTrafficIn += r.HistoryTrafficIn
+				pick.HistoryTrafficOut += r.HistoryTrafficOut
+				if err := tx.Delete(r).Error; err != nil {
+					return err
+				}
+			}
+			oldProxyMap[name] = pick
 		}
 
 		proxyEntityMap := map[string]*models.ProxyStatsEntity{}
@@ -277,6 +278,25 @@ func (m *proxyMutation) AdminUpdateProxyStats(srv *models.ServerEntity, inputs [
 		}
 		return nil
 	})
+}
+
+// pickKeptStatsRow 从同一 (server_id, name) 的多条统计行中选出保留行：
+// 优先保留当前节点归属者的行（归属漂移产生的孤儿行会被软删除），
+// 同为归属者/同为非归属者时取最近更新的行。
+func pickKeptStatsRow(rows []*models.ProxyStats, srvUserID int) *models.ProxyStats {
+	pick := rows[0]
+	for _, r := range rows[1:] {
+		if (r.UserID == srvUserID) != (pick.UserID == srvUserID) {
+			if r.UserID == srvUserID {
+				pick = r
+			}
+			continue
+		}
+		if r.UpdatedAt.After(pick.UpdatedAt) {
+			pick = r
+		}
+	}
+	return pick
 }
 
 func (q *proxyQuery) AdminGetTenantProxyStats(tenantID int) ([]*models.ProxyStatsEntity, error) {
