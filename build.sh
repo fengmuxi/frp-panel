@@ -107,6 +107,14 @@ build_binary() {
         exe_ext=".exe"
     fi
 
+    # Android builds pull in github.com/wlynxg/anet (via wireguard/tun), which
+    # uses go:linkname against net.zoneCache — a non-exported runtime symbol.
+    # Go 1.23+ rejects that at link time unless the check is disabled.
+    local extra_ldflags=""
+    if [[ "$platform" == "android" ]]; then
+        extra_ldflags=" -checklinkname=0"
+    fi
+
     # Special handling for ARM architectures
     local goarch="$arch"
     local goarm=""
@@ -117,7 +125,7 @@ build_binary() {
             for arm_version in 7 6; do
                 local arm_output="${output_name}-${platform}-armv${arm_version}l${exe_ext}"
                 CGO_ENABLED=0 GOOS="$platform" GOARCH="$goarch" GOARM="$arm_version" \
-                go build -o "dist/${arm_output}" -ldflags "$BUILD_LD_FLAGS" $source_path || exit 1
+                go build -o "dist/${arm_output}" -ldflags "$BUILD_LD_FLAGS$extra_ldflags" $source_path || exit 1
             done
             return 0
         fi
@@ -126,7 +134,7 @@ build_binary() {
     # Standard build
     local output="${output_name}-${platform}-${arch}${exe_ext}"
     CGO_ENABLED=0 GOOS="$platform" GOARCH="$goarch" \
-    go build -o "dist/${output}" -ldflags "$BUILD_LD_FLAGS" $source_path || exit 1
+    go build -o "dist/${output}" -ldflags "$BUILD_LD_FLAGS$extra_ldflags" $source_path || exit 1
 }
 
 # Platforms array
