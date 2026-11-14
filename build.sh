@@ -59,14 +59,26 @@ BUILD_LD_FLAGS="-X 'github.com/VaalaCat/frp-panel/conf.buildDate=${BUILD_DATE}' 
 
 if [[ "$SKIP_FRONTEND" == "true" ]]; then
     echo "Skipping frontend build"
+    # frpp embeds cmd/frpp/out at build time; it must exist unless only client binaries are built
+    if [[ "$BINTYPE" != "client" && ! -d cmd/frpp/out ]]; then
+        echo "cmd/frpp/out is missing: --skip-frontend requires a previous frontend build (go:embed in cmd/frpp/main.go)"
+        exit 1
+    fi
 else
     echo "Building frontend"
     # Prepare build environment
     mkdir -p dist
     rm -rf dist/*
 
-    # Build frontend
-    cd www && pnpm install --no-frozen-lockfile && pnpm build && cd ..
+    # Build frontend (must run before go build: cmd/frpp/main.go embeds the static assets)
+    cd www && pnpm install --no-frozen-lockfile && pnpm build && cd .. || {
+        echo "Frontend build failed"
+        exit 1
+    }
+
+    # Copy the Next.js static export to the go:embed location (same as Dockerfile.standalone)
+    rm -rf cmd/frpp/out
+    cp -r www/out cmd/frpp/out || exit 1
 fi
 
 # Build function
@@ -105,7 +117,7 @@ build_binary() {
             for arm_version in 7 6; do
                 local arm_output="${output_name}-${platform}-armv${arm_version}l${exe_ext}"
                 CGO_ENABLED=0 GOOS="$platform" GOARCH="$goarch" GOARM="$arm_version" \
-                go build -o "dist/${arm_output}" -ldflags "$BUILD_LD_FLAGS" $source_path
+                go build -o "dist/${arm_output}" -ldflags "$BUILD_LD_FLAGS" $source_path || exit 1
             done
             return 0
         fi
@@ -114,7 +126,7 @@ build_binary() {
     # Standard build
     local output="${output_name}-${platform}-${arch}${exe_ext}"
     CGO_ENABLED=0 GOOS="$platform" GOARCH="$goarch" \
-    go build -o "dist/${output}" -ldflags "$BUILD_LD_FLAGS" $source_path
+    go build -o "dist/${output}" -ldflags "$BUILD_LD_FLAGS" $source_path || exit 1
 }
 
 # Platforms array
