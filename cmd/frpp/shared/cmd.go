@@ -52,6 +52,7 @@ func BuildCommand(fs embed.FS) *cobra.Command {
 		NewMasterCmd(cfg, fs),
 		NewClientCmd(cfg),
 		NewServerCmd(cfg),
+		NewCheckCmd(cfg),
 		NewJoinCmd(),
 		NewInstallServiceCmd(),
 		NewUninstallServiceCmd(),

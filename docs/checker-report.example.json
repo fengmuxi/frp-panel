@@ -1,0 +1,423 @@
+{
+  "started_at": "2026-11-14T00:44:27.7091971+08:00",
+  "duration": 9001300,
+  "binary_version": "dev-build",
+  "detected_role": "master",
+  "groups": [
+    "env",
+    "auth",
+    "master"
+  ],
+  "results": [
+    {
+      "checker": "jwt_expired",
+      "group": "auth",
+      "severity": "critical",
+      "status": "fail",
+      "duration": 1003600,
+      "message": "请求失败: POST http://127.0.0.1:9000/api/v1/user/get: Post \"http://127.0.0.1:9000/api/v1/user/get\": dial tcp 127.0.0.1:9000: connectex: No connection could be made because the target machine actively refused it.",
+      "fix_hint": "过期 token 仍可用说明 jwt v5 的 exp 校验未生效，检查 utils.ParseToken 与中间件版本",
+      "config_refs": [
+        "APP_COOKIE_AGE",
+        "utils.ParseToken"
+      ]
+    },
+    {
+      "checker": "jwt_forged",
+      "group": "auth",
+      "severity": "critical",
+      "status": "fail",
+      "duration": 0,
+      "message": "请求失败: POST http://127.0.0.1:9000/api/v1/user/get: Post \"http://127.0.0.1:9000/api/v1/user/get\": dial tcp 127.0.0.1:9000: connectex: No connection could be made because the target machine actively refused it.",
+      "fix_hint": "若伪造 token 通过校验，说明 APP_GLOBAL_SECRET 与 JWT 派生链路异常，立即更换密钥并全员重新登录",
+      "config_refs": [
+        "APP_GLOBAL_SECRET",
+        "conf.JWTSecret"
+      ]
+    },
+    {
+      "checker": "login_invalid",
+      "group": "auth",
+      "severity": "critical",
+      "status": "fail",
+      "duration": 0,
+      "message": "登录接口不可达: POST http://127.0.0.1:9000/api/v1/auth/login: Post \"http://127.0.0.1:9000/api/v1/auth/login\": dial tcp 127.0.0.1:9000: connectex: No connection could be made because the target machine actively refused it.",
+      "fix_hint": "若错误口令能登录，检查登录处理逻辑与数据库口令哈希（utils.HashPassword/bcrypt）",
+      "config_refs": [
+        "/api/v1/auth/login",
+        "users.password(bcrypt)"
+      ]
+    },
+    {
+      "checker": "cert_reject",
+      "group": "auth",
+      "severity": "major",
+      "status": "fail",
+      "duration": 997300,
+      "message": "cert 接口不可达: POST http://127.0.0.1:9000/api/v1/auth/cert: Post \"http://127.0.0.1:9000/api/v1/auth/cert\": dial tcp 127.0.0.1:9000: connectex: No connection could be made because the target machine actively refused it.",
+      "fix_hint": "/api/v1/auth/cert 用错误 secret 必须拒绝，否则任意节点可伪造证书接入 gRPC",
+      "config_refs": [
+        "/api/v1/auth/cert",
+        "CLIENT_SECRET"
+      ]
+    },
+    {
+      "checker": "frp_plugin_reject",
+      "group": "auth",
+      "severity": "major",
+      "status": "fail",
+      "duration": 0,
+      "message": "/auth 插件端点不可达: POST http://127.0.0.1:9000/auth: Post \"http://127.0.0.1:9000/auth\": dial tcp 127.0.0.1:9000: connectex: No connection could be made because the target machine actively refused it.",
+      "fix_hint": "frps multiuser 认证插件必须拒绝非法 token；检查 /auth 端点与 freecache 初始化",
+      "config_refs": [
+        "POST /auth（frps multiuser HTTP 插件）",
+        "SERVER_API_PORT"
+      ]
+    },
+    {
+      "checker": "protected_matrix",
+      "group": "auth",
+      "severity": "major",
+      "status": "fail",
+      "duration": 4003000,
+      "message": "REST API 完全不可达，无法验证鉴权矩阵（先解决 env/port_listening）",
+      "details": [
+        "user /api/v1/user/get — 网络错误: POST http://127.0.0.1:9000/api/v1/user/get: Post \"http://127.0.0.1:9000/api/v1/user/get\": dial tcp 127.0.0.1:9000: connectex: No connection could be made because the target machine actively refused it.",
+        "platform /api/v1/platform/clientsstatus — 网络错误: POST http://127.0.0.1:9000/api/v1/platform/clientsstatus: Post \"http://127.0.0.1:9000/api/v1/platform/clientsstatus\": dial tcp 127.0.0.1:9000: connectex: No connection could be made because the target machine actively refused it.",
+        "client /api/v1/client/list — 网络错误: POST http://127.0.0.1:9000/api/v1/client/list: Post \"http://127.0.0.1:9000/api/v1/client/list\": dial tcp 127.0.0.1:9000: connectex: No connection could be made because the target machine actively refused it.",
+        "server /api/v1/server/list — 网络错误: POST http://127.0.0.1:9000/api/v1/server/list: Post \"http://127.0.0.1:9000/api/v1/server/list\": dial tcp 127.0.0.1:9000: connectex: No connection could be made because the target machine actively refused it.",
+        "frpc /api/v1/frpc/update — 网络错误: POST http://127.0.0.1:9000/api/v1/frpc/update: Post \"http://127.0.0.1:9000/api/v1/frpc/update\": dial tcp 127.0.0.1:9000: connectex: No connection could be made because the target machine actively refused it.",
+        "frps /api/v1/frps/update — 网络错误: POST http://127.0.0.1:9000/api/v1/frps/update: Post \"http://127.0.0.1:9000/api/v1/frps/update\": dial tcp 127.0.0.1:9000: connectex: No connection could be made because the target machine actively refused it.",
+        "proxy /api/v1/proxy/list_configs — 网络错误: POST http://127.0.0.1:9000/api/v1/proxy/list_configs: Post \"http://127.0.0.1:9000/api/v1/proxy/list_configs\": dial tcp 127.0.0.1:9000: connectex: No connection could be made because the target machine actively refused it.",
+        "worker /api/v1/worker/list — 网络错误: POST http://127.0.0.1:9000/api/v1/worker/list: Post \"http://127.0.0.1:9000/api/v1/worker/list\": dial tcp 127.0.0.1:9000: connectex: No connection could be made because the target machine actively refused it.",
+        "wg /api/v1/wg/list — 网络错误: POST http://127.0.0.1:9000/api/v1/wg/list: Post \"http://127.0.0.1:9000/api/v1/wg/list\": dial tcp 127.0.0.1:9000: connectex: No connection could be made because the target machine actively refused it.",
+        "streamlog /api/v1/log — 网络错误: POST http://127.0.0.1:9000/api/v1/log: Post \"http://127.0.0.1:9000/api/v1/log\": dial tcp 127.0.0.1:9000: connectex: No connection could be made because the target machine actively refused it.",
+        "pty /api/v1/pty/frpp-check-node — 网络错误: POST http://127.0.0.1:9000/api/v1/pty/frpp-check-node: Post \"http://127.0.0.1:9000/api/v1/pty/frpp-check-node\": dial tcp 127.0.0.1:9000: connectex: No connection could be made because the target machine actively refused it."
+      ],
+      "fix_hint": "受保护路由对匿名请求必须返回 401；出现 200/404 说明中间件挂载不完整",
+      "config_refs": [
+        "middleware.JWTAuth -\u003e AuthCtx -\u003e RBAC",
+        "biz/master/handler.go"
+      ]
+    },
+    {
+      "checker": "register_gate",
+      "group": "auth",
+      "severity": "major",
+      "status": "fail",
+      "duration": 2997800,
+      "message": "注册接口不可达: POST http://127.0.0.1:9000/api/v1/auth/register: Post \"http://127.0.0.1:9000/api/v1/auth/register\": dial tcp 127.0.0.1:9000: connectex: No connection could be made because the target machine actively refused it.",
+      "fix_hint": "生产环境保持 APP_ENABLE_REGISTER=false；首管理员注册完成后务必关闭",
+      "config_refs": [
+        "APP_ENABLE_REGISTER",
+        "/api/v1/auth/register"
+      ]
+    },
+    {
+      "checker": "frp_plugin_accept",
+      "group": "auth",
+      "severity": "minor",
+      "status": "skip",
+      "duration": 1996300,
+      "message": "users 表无带 token 的用户",
+      "fix_hint": "需要数据库可读；确认 users 表存在且用户 token 非空（user.token 用于 frps 认证）",
+      "config_refs": [
+        "POST /auth",
+        "users.token",
+        "MASTER_CACHE_SIZE"
+      ]
+    },
+    {
+      "checker": "login_valid",
+      "group": "auth",
+      "severity": "minor",
+      "status": "skip",
+      "duration": 0,
+      "message": "未提供登录凭证（--login-user/--login-password）",
+      "fix_hint": "使用 --login-user/--login-password 提供凭证以启用登录链路与 Cookie 属性检查",
+      "config_refs": [
+        "APP_COOKIE_NAME",
+        "APP_COOKIE_AGE",
+        "APP_COOKIE_SECURE",
+        "APP_COOKIE_HTTP_ONLY",
+        "APP_COOKIE_PATH",
+        "APP_COOKIE_DOMAIN"
+      ]
+    },
+    {
+      "checker": "db_connect",
+      "group": "env",
+      "severity": "critical",
+      "status": "fail",
+      "duration": 9001300,
+      "message": "缺少数据表: endpoints, servers, users, proxy_config, proxy_stats, workers, networks, wireguard_links, clients, history_proxy_stats, wireguards（DB 指向了错误的库或版本不匹配）",
+      "fix_hint": "检查 DB_TYPE 与 DB_DSN：sqlite 确认路径与权限；mysql/postgres 确认 DSN、网络与账号",
+      "config_refs": [
+        "DB_TYPE",
+        "DB_DSN"
+      ]
+    },
+    {
+      "checker": "global_secret",
+      "group": "env",
+      "severity": "critical",
+      "status": "fail",
+      "duration": 0,
+      "message": "APP_GLOBAL_SECRET 长度仅 6，强度不足",
+      "fix_hint": "设置强随机的 APP_GLOBAL_SECRET（\u003e=32 字符），修改后需同步重新加入所有节点",
+      "config_refs": [
+        "APP_GLOBAL_SECRET",
+        "conf.JWTSecret = SHA1(MASTER_API_HOST:MASTER_API_PORT:APP_GLOBAL_SECRET)"
+      ]
+    },
+    {
+      "checker": "config_source",
+      "group": "env",
+      "severity": "major",
+      "status": "pass",
+      "duration": 1001000,
+      "message": "发现 1 个配置文件",
+      "details": [
+        "已加载: .env (size=53, mode=-rw-rw-rw-)",
+        "不存在: /etc/frpp/.env"
+      ],
+      "fix_hint": "在 master 工作目录创建 .env（或写入 /etc/frpp/.env），至少包含 APP_GLOBAL_SECRET / MASTER_RPC_HOST"
+    },
+    {
+      "checker": "node_identity",
+      "group": "env",
+      "severity": "major",
+      "status": "pass",
+      "duration": 4001400,
+      "message": "节点身份已配置",
+      "details": [
+        "CLIENT_ID=R9000P"
+      ],
+      "fix_hint": "节点侧需要 CLIENT_ID/CLIENT_SECRET；首次接入请使用 `frpp join -j \u003ctoken\u003e` 自动写入 /etc/frpp/.env",
+      "config_refs": [
+        "CLIENT_ID",
+        "CLIENT_SECRET"
+      ]
+    },
+    {
+      "checker": "ota_status",
+      "group": "env",
+      "severity": "major",
+      "status": "pass",
+      "duration": 1001000,
+      "message": "无 OTA 升级状态记录（从未执行过 frpp upgrade）",
+      "details": [
+        "open E:\\Temp\\vaala-frp-panel-upgrade\\status.json: The system cannot find the path specified."
+      ],
+      "fix_hint": "根据状态文件提示重试 `frpp upgrade`，或回滚 .bak 备份；升级期间请勿重复触发"
+    },
+    {
+      "checker": "port_listening",
+      "group": "env",
+      "severity": "major",
+      "status": "fail",
+      "duration": 3998800,
+      "message": "3 个端口未监听",
+      "details": [
+        "master REST API :9000 (MASTER_API_PORT) — 不可达: dial 127.0.0.1:9000: dial tcp 127.0.0.1:9000: connectex: No connection could be made because the target machine actively refused it.",
+        "master RPC (gRPC/TLS mux) :9001 (MASTER_RPC_PORT) — 不可达: dial 127.0.0.1:9001: dial tcp 127.0.0.1:9001: connectex: No connection could be made because the target machine actively refused it.",
+        "server API (frps auth 插件宿主) :8999 (SERVER_API_PORT) — 不可达: dial 127.0.0.1:8999: dial tcp 127.0.0.1:8999: connectex: No connection could be made because the target machine actively refused it."
+      ],
+      "fix_hint": "确认对应进程已启动；云主机还需在防火墙/安全组放行 9000(REST)、9001(gRPC)、8999(server API)",
+      "config_refs": [
+        "MASTER_API_PORT",
+        "MASTER_RPC_PORT",
+        "SERVER_API_PORT"
+      ]
+    },
+    {
+      "checker": "profiler",
+      "group": "env",
+      "severity": "major",
+      "status": "pass",
+      "duration": 0,
+      "message": "pprof profiler 未开启",
+      "fix_hint": "如非排查需要请关闭 DEBUG_PROFILER_ENABLED；当前实现监听 0.0.0.0:DEBUG_PROFILER_PORT，务必用防火墙限制来源",
+      "config_refs": [
+        "DEBUG_PROFILER_ENABLED",
+        "DEBUG_PROFILER_PORT"
+      ]
+    },
+    {
+      "checker": "rpc_reachability",
+      "group": "env",
+      "severity": "major",
+      "status": "warn",
+      "duration": 0,
+      "message": "MASTER_RPC_HOST=127.0.0.1 为回环/私网地址，远程节点将无法接入",
+      "fix_hint": "MASTER_RPC_HOST 必须是节点可访问的公网 IP/域名；检查防火墙对 MASTER_RPC_PORT 的放行",
+      "config_refs": [
+        "MASTER_RPC_HOST",
+        "MASTER_RPC_PORT",
+        "CLIENT_RPC_URL"
+      ]
+    },
+    {
+      "checker": "url_consistency",
+      "group": "env",
+      "severity": "major",
+      "status": "pass",
+      "duration": 0,
+      "message": "URL 配置一致",
+      "fix_hint": "让 CLIENT_RPC_URL / CLIENT_API_URL 与 MASTER_API_SCHEME/MASTER_API_HOST/MASTER_API_PORT 拼接一致，或直接清空让面板自行拼接",
+      "config_refs": [
+        "CLIENT_RPC_URL",
+        "CLIENT_API_URL",
+        "MASTER_API_SCHEME",
+        "MASTER_API_HOST",
+        "MASTER_API_PORT"
+      ]
+    },
+    {
+      "checker": "cache_size",
+      "group": "env",
+      "severity": "minor",
+      "status": "pass",
+      "duration": 0,
+      "message": "MASTER_CACHE_SIZE=10MB",
+      "fix_hint": "调大 MASTER_CACHE_SIZE（MB）；/auth 插件的 token 缓存依赖它",
+      "config_refs": [
+        "MASTER_CACHE_SIZE"
+      ]
+    },
+    {
+      "checker": "deprecated_vars",
+      "group": "env",
+      "severity": "minor",
+      "status": "pass",
+      "duration": 0,
+      "message": "未发现已失效的旧版环境变量",
+      "fix_hint": "删除已失效的环境变量；最新配置以 conf/settings.go 为准（docs/all-configs.md 已注明可能过期）"
+    },
+    {
+      "checker": "logging",
+      "group": "env",
+      "severity": "minor",
+      "status": "pass",
+      "duration": 0,
+      "message": "日志配置合法",
+      "details": [
+        "LOGGER_FRP_LOGGER_LEVEL=info ✓",
+        "LOGGER_DEFAULT_LOGGER_LEVEL=info ✓"
+      ],
+      "fix_hint": "修正 LOGGER_DEFAULT_LOGGER_LEVEL / LOGGER_FRP_LOGGER_LEVEL 取值（trace|debug|info|warn|error|fatal|panic）",
+      "config_refs": [
+        "LOGGER_DEFAULT_LOGGER_LEVEL",
+        "LOGGER_FRP_LOGGER_LEVEL",
+        "IS_DEBUG"
+      ]
+    },
+    {
+      "checker": "grpc_tls",
+      "group": "master",
+      "severity": "critical",
+      "status": "fail",
+      "duration": 2002100,
+      "message": "gRPC over TLS 探测失败: PullClientConfig: rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing: dial tcp 127.0.0.1:9001: connectex: No connection could be made because the target machine actively refused it.\"",
+      "fix_hint": "检查 MASTER_RPC_PORT 是否监听、TLS 证书链（conf.GetCertTemplate 自签 CA）与 MASTER_RPC_HOST 一致性",
+      "config_refs": [
+        "MASTER_RPC_HOST",
+        "MASTER_RPC_PORT",
+        "CLIENT_TLS_RPC"
+      ]
+    },
+    {
+      "checker": "grpc_ws",
+      "group": "master",
+      "severity": "major",
+      "status": "fail",
+      "duration": 999500,
+      "message": "ws 传输探测失败: PullClientConfig: rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing: dial tcp 127.0.0.1:9001: connectex: No connection could be made because the target machine actively refused it.\\nwsgrpc dialer error\\nwsgrpc error\"",
+      "fix_hint": "ws 传输依赖 API 端口的 /wsgrpc 路由；检查反向代理是否放行该路径与升级头",
+      "config_refs": [
+        "CLIENT_RPC_URL",
+        "MASTER_API_HOST",
+        "MASTER_API_PORT",
+        "/wsgrpc"
+      ]
+    },
+    {
+      "checker": "node_status",
+      "group": "master",
+      "severity": "major",
+      "status": "skip",
+      "duration": 0,
+      "message": "未提供登录凭证，无法查询节点在线状态与 PING 延迟",
+      "fix_hint": "提供 --login-user/--login-password 后可检查节点在线状态与 EVENT_PING 延迟；掉线节点请查看节点侧日志与网络",
+      "config_refs": [
+        "/api/v1/platform/clientsstatus",
+        "EVENT_PING",
+        "defs.OfflineCheckDelay"
+      ]
+    },
+    {
+      "checker": "wsgrpc_route",
+      "group": "master",
+      "severity": "major",
+      "status": "fail",
+      "duration": 0,
+      "message": "/wsgrpc 不可达: GET http://127.0.0.1:9000/wsgrpc: Get \"http://127.0.0.1:9000/wsgrpc\": dial tcp 127.0.0.1:9000: connectex: No connection could be made because the target machine actively refused it.",
+      "fix_hint": "runMaster 中注册于 MasterRouter(GET /wsgrpc)；404 说明路由未挂载或请求打到了别的服务",
+      "config_refs": [
+        "GET /wsgrpc（无升级头）"
+      ]
+    },
+    {
+      "checker": "grpc_insecure",
+      "group": "master",
+      "severity": "minor",
+      "status": "warn",
+      "duration": 1003100,
+      "message": "明文 gRPC 探测失败: PullClientConfig: rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing: dial tcp 127.0.0.1:9001: connectex: No connection could be made because the target machine actively refused it.\"（若生产为纯 TLS 部署属正常）",
+      "fix_hint": "insecure 模式仅用于本机/反代内网；若线上暴露明文 gRPC 端口请启用 CLIENT_TLS_RPC",
+      "config_refs": [
+        "MASTER_RPC_PORT",
+        "CLIENT_TLS_RPC"
+      ]
+    },
+    {
+      "checker": "grpc_wss",
+      "group": "master",
+      "severity": "minor",
+      "status": "fail",
+      "duration": 999500,
+      "message": "wss 传输探测失败: PullClientConfig: rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing: dial tcp 127.0.0.1:9001: connectex: No connection could be made because the target machine actively refused it.\\nwsgrpc dialer error\\nwsgrpc error\"",
+      "fix_hint": "wss 需要 API 端口前置 HTTPS 反代或 TLS；检查证书有效性",
+      "config_refs": [
+        "CLIENT_RPC_URL",
+        "MASTER_API_HOST",
+        "MASTER_API_PORT",
+        "/wsgrpc"
+      ]
+    },
+    {
+      "checker": "json_compat",
+      "group": "master",
+      "severity": "minor",
+      "status": "skip",
+      "duration": 0,
+      "message": "未提供登录凭证，跳过 JSON 协议兼容检查",
+      "fix_hint": "项目 REST 层支持 protobuf 与 JSON 双协议（common.GetProtoRequest/OKResp）；JSON 失败影响部分老前端调用",
+      "config_refs": [
+        "common.GetProtoRequest（application/json 分支）"
+      ]
+    }
+  ],
+  "summary": {
+    "fail": 14,
+    "pass": 8,
+    "skip": 4,
+    "warn": 2
+  },
+  "by_severity": {
+    "critical": 6,
+    "major": 14,
+    "minor": 8
+  },
+  "fail_exit": true
+}
