@@ -18,9 +18,11 @@ type ClientQuery interface {
 	GetClientByOriginClientID(originClientID string) (*models.ClientEntity, error)
 	ListClients(userInfo models.UserInfo, page, pageSize int) ([]*models.ClientEntity, error)
 	ListClientsWithKeyword(userInfo models.UserInfo, page, pageSize int, keyword string) ([]*models.ClientEntity, error)
+	ListAllClientsOrdered(userInfo models.UserInfo) ([]*models.ClientEntity, error)
 	GetAllClients(userInfo models.UserInfo) ([]*models.ClientEntity, error)
 	CountClients(userInfo models.UserInfo) (int64, error)
 	CountClientsWithKeyword(userInfo models.UserInfo, keyword string) (int64, error)
+	CountClientsByComment(userInfo models.UserInfo, comment string, excludeClientID string) (int64, error)
 	CountConfiguredClients(userInfo models.UserInfo) (int64, error)
 	CountClientsInShadow(userInfo models.UserInfo, clientID string) (int64, error)
 	GetClientIDsInShadowByClientID(userInfo models.UserInfo, clientID string) ([]string, error)
@@ -31,6 +33,7 @@ type ClientMutation interface {
 	CreateClient(userInfo models.UserInfo, client *models.ClientEntity) error
 	DeleteClient(userInfo models.UserInfo, clientID string) error
 	UpdateClient(userInfo models.UserInfo, client *models.ClientEntity) error
+	UpdateClientSortOrders(userInfo models.UserInfo, orderedClientIDs []string) error
 	AdminUpdateClientLastSeen(clientID string) error
 }
 
@@ -204,6 +207,25 @@ func (m *clientMutation) UpdateClient(userInfo models.UserInfo, client *models.C
 	}).Save(c).Error
 }
 
+// UpdateClientSortOrders 按给定顺序批量重排 sort_index（位置从 1 开始），供排序交换后全量回写。
+func (m *clientMutation) UpdateClientSortOrders(userInfo models.UserInfo, orderedClientIDs []string) error {
+	if len(orderedClientIDs) == 0 {
+		return nil
+	}
+	db := m.ctx.GetApp().GetDBManager().GetDefaultDB()
+	return db.Transaction(func(tx *gorm.DB) error {
+		for i, clientID := range orderedClientIDs {
+			if err := tx.Model(&models.Client{}).
+				Where("client_id = ? AND user_id = ? AND tenant_id = ?",
+					clientID, userInfo.GetUserID(), userInfo.GetTenantID()).
+				Update("sort_index", i+1).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 func (q *clientQuery) ListClients(userInfo models.UserInfo, page, pageSize int) ([]*models.ClientEntity, error) {
 	if page < 1 || pageSize < 1 {
 		return nil, fmt.Errorf("invalid page or page size")
@@ -223,7 +245,7 @@ func (q *clientQuery) ListClients(userInfo models.UserInfo, page, pageSize int) 
 			db.Where(
 				normalClientFilter(db),
 			),
-		).Offset(offset).Limit(pageSize).Find(&clients).Error
+		).Order(customSortOrderExpr).Offset(offset).Limit(pageSize).Find(&clients).Error
 	if err != nil {
 		return nil, err
 	}
@@ -244,13 +266,39 @@ func (q *clientQuery) ListClientsWithKeyword(userInfo models.UserInfo, page, pag
 	offset := (page - 1) * pageSize
 
 	var clients []*models.Client
-	err := db.Where("client_id like ?", "%"+keyword+"%").
+	// 界面以名称为主展示，关键词同时匹配 ID 与名称
+	err := db.Where("(client_id like ? OR comment like ?)", "%"+keyword+"%", "%"+keyword+"%").
 		Where(&models.Client{ClientEntity: &models.ClientEntity{
 			UserID:   userInfo.GetUserID(),
 			TenantID: userInfo.GetTenantID(),
 		}}).
 		Where(normalClientFilter(db)).
-		Offset(offset).Limit(pageSize).Find(&clients).Error
+		Order(customSortOrderExpr).Offset(offset).Limit(pageSize).Find(&clients).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return lo.Map(clients, func(c *models.Client, _ int) *models.ClientEntity {
+		return c.ClientEntity
+	}), nil
+}
+
+// ListAllClientsOrdered 返回用户全部可排序客户端（过滤条件与 ListClients 一致），
+// 按自定义排序规则全量有序返回，用于交换排序时定位上/下邻居（跨分页场景）。
+func (q *clientQuery) ListAllClientsOrdered(userInfo models.UserInfo) ([]*models.ClientEntity, error) {
+	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
+	var clients []*models.Client
+	err := db.Where(&models.Client{
+		ClientEntity: &models.ClientEntity{
+			UserID:   userInfo.GetUserID(),
+			TenantID: userInfo.GetTenantID(),
+		},
+	}).
+		Where(
+			db.Where(
+				normalClientFilter(db),
+			),
+		).Order(customSortOrderExpr).Find(&clients).Error
 	if err != nil {
 		return nil, err
 	}
@@ -294,6 +342,29 @@ func (q *clientQuery) CountClients(userInfo models.UserInfo) (int64, error) {
 	return count, nil
 }
 
+// CountClientsByComment 统计同一用户可见范围内名称（comment）相同的客户端数量，
+// 用于名称唯一性校验；excludeClientID 用于改名时排除自身，空名称不参与查重。
+func (q *clientQuery) CountClientsByComment(userInfo models.UserInfo, comment string, excludeClientID string) (int64, error) {
+	if len(comment) == 0 {
+		return 0, nil
+	}
+	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
+	var count int64
+	err := db.Model(&models.Client{}).
+		Where(&models.Client{ClientEntity: &models.ClientEntity{
+			UserID:   userInfo.GetUserID(),
+			TenantID: userInfo.GetTenantID(),
+		}}).
+		Where("comment = ?", comment).
+		Where("client_id != ?", excludeClientID).
+		Where(normalClientFilter(db)).
+		Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 func (q *clientQuery) CountClientsWithKeyword(userInfo models.UserInfo, keyword string) (int64, error) {
 	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
 	var count int64
@@ -303,7 +374,7 @@ func (q *clientQuery) CountClientsWithKeyword(userInfo models.UserInfo, keyword 
 			TenantID: userInfo.GetTenantID(),
 		},
 	}).
-		Where(normalClientFilter(db)).Where("client_id like ?", "%"+keyword+"%").Count(&count).Error
+		Where(normalClientFilter(db)).Where("(client_id like ? OR comment like ?)", "%"+keyword+"%", "%"+keyword+"%").Count(&count).Error
 	if err != nil {
 		return 0, err
 	}

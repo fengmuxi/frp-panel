@@ -23,8 +23,9 @@ const (
 
 type InitClientRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ClientId      *string                `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3,oneof" json:"client_id,omitempty"`
+	ClientId      *string                `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3,oneof" json:"client_id,omitempty"` // 可不传，后端自动生成唯一 ID
 	Ephemeral     *bool                  `protobuf:"varint,2,opt,name=ephemeral,proto3,oneof" json:"ephemeral,omitempty"`
+	Comment       *string                `protobuf:"bytes,3,opt,name=comment,proto3,oneof" json:"comment,omitempty"` // 名称，必填，不允许重复
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -71,6 +72,13 @@ func (x *InitClientRequest) GetEphemeral() bool {
 		return *x.Ephemeral
 	}
 	return false
+}
+
+func (x *InitClientRequest) GetComment() string {
+	if x != nil && x.Comment != nil {
+		return *x.Comment
+	}
+	return ""
 }
 
 type InitClientResponse struct {
@@ -437,6 +445,208 @@ func (x *DeleteClientResponse) GetStatus() *Status {
 	return nil
 }
 
+// 轻量更新客户端名称/备注与排序序号（不触碰 frpc 配置）
+type UpdateClientInfoRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ClientId      *string                `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3,oneof" json:"client_id,omitempty"`
+	Comment       *string                `protobuf:"bytes,2,opt,name=comment,proto3,oneof" json:"comment,omitempty"`                       // 名称/备注，不传则不修改
+	SortIndex     *int32                 `protobuf:"varint,3,opt,name=sort_index,json=sortIndex,proto3,oneof" json:"sort_index,omitempty"` // 排序序号，不传则不修改，0 表示排到最后
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateClientInfoRequest) Reset() {
+	*x = UpdateClientInfoRequest{}
+	mi := &file_api_client_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateClientInfoRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateClientInfoRequest) ProtoMessage() {}
+
+func (x *UpdateClientInfoRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_client_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateClientInfoRequest.ProtoReflect.Descriptor instead.
+func (*UpdateClientInfoRequest) Descriptor() ([]byte, []int) {
+	return file_api_client_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *UpdateClientInfoRequest) GetClientId() string {
+	if x != nil && x.ClientId != nil {
+		return *x.ClientId
+	}
+	return ""
+}
+
+func (x *UpdateClientInfoRequest) GetComment() string {
+	if x != nil && x.Comment != nil {
+		return *x.Comment
+	}
+	return ""
+}
+
+func (x *UpdateClientInfoRequest) GetSortIndex() int32 {
+	if x != nil && x.SortIndex != nil {
+		return *x.SortIndex
+	}
+	return 0
+}
+
+type UpdateClientInfoResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateClientInfoResponse) Reset() {
+	*x = UpdateClientInfoResponse{}
+	mi := &file_api_client_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateClientInfoResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateClientInfoResponse) ProtoMessage() {}
+
+func (x *UpdateClientInfoResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_client_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateClientInfoResponse.ProtoReflect.Descriptor instead.
+func (*UpdateClientInfoResponse) Descriptor() ([]byte, []int) {
+	return file_api_client_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *UpdateClientInfoResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+// 与相邻项交换排序位置（跨分页由服务端处理）
+type SwapClientSortRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ClientId      *string                `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3,oneof" json:"client_id,omitempty"`
+	Up            *bool                  `protobuf:"varint,2,opt,name=up,proto3,oneof" json:"up,omitempty"` // true=与上一项交换，false=与下一项交换
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SwapClientSortRequest) Reset() {
+	*x = SwapClientSortRequest{}
+	mi := &file_api_client_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SwapClientSortRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SwapClientSortRequest) ProtoMessage() {}
+
+func (x *SwapClientSortRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_client_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SwapClientSortRequest.ProtoReflect.Descriptor instead.
+func (*SwapClientSortRequest) Descriptor() ([]byte, []int) {
+	return file_api_client_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *SwapClientSortRequest) GetClientId() string {
+	if x != nil && x.ClientId != nil {
+		return *x.ClientId
+	}
+	return ""
+}
+
+func (x *SwapClientSortRequest) GetUp() bool {
+	if x != nil && x.Up != nil {
+		return *x.Up
+	}
+	return false
+}
+
+type SwapClientSortResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SwapClientSortResponse) Reset() {
+	*x = SwapClientSortResponse{}
+	mi := &file_api_client_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SwapClientSortResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SwapClientSortResponse) ProtoMessage() {}
+
+func (x *SwapClientSortResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_client_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SwapClientSortResponse.ProtoReflect.Descriptor instead.
+func (*SwapClientSortResponse) Descriptor() ([]byte, []int) {
+	return file_api_client_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *SwapClientSortResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
 type UpdateFRPCRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ClientId      *string                `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3,oneof" json:"client_id,omitempty"`
@@ -450,7 +660,7 @@ type UpdateFRPCRequest struct {
 
 func (x *UpdateFRPCRequest) Reset() {
 	*x = UpdateFRPCRequest{}
-	mi := &file_api_client_proto_msgTypes[8]
+	mi := &file_api_client_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -462,7 +672,7 @@ func (x *UpdateFRPCRequest) String() string {
 func (*UpdateFRPCRequest) ProtoMessage() {}
 
 func (x *UpdateFRPCRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[8]
+	mi := &file_api_client_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -475,7 +685,7 @@ func (x *UpdateFRPCRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateFRPCRequest.ProtoReflect.Descriptor instead.
 func (*UpdateFRPCRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{8}
+	return file_api_client_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *UpdateFRPCRequest) GetClientId() string {
@@ -522,7 +732,7 @@ type UpdateFRPCResponse struct {
 
 func (x *UpdateFRPCResponse) Reset() {
 	*x = UpdateFRPCResponse{}
-	mi := &file_api_client_proto_msgTypes[9]
+	mi := &file_api_client_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -534,7 +744,7 @@ func (x *UpdateFRPCResponse) String() string {
 func (*UpdateFRPCResponse) ProtoMessage() {}
 
 func (x *UpdateFRPCResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[9]
+	mi := &file_api_client_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -547,7 +757,7 @@ func (x *UpdateFRPCResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateFRPCResponse.ProtoReflect.Descriptor instead.
 func (*UpdateFRPCResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{9}
+	return file_api_client_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *UpdateFRPCResponse) GetStatus() *Status {
@@ -566,7 +776,7 @@ type RemoveFRPCRequest struct {
 
 func (x *RemoveFRPCRequest) Reset() {
 	*x = RemoveFRPCRequest{}
-	mi := &file_api_client_proto_msgTypes[10]
+	mi := &file_api_client_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -578,7 +788,7 @@ func (x *RemoveFRPCRequest) String() string {
 func (*RemoveFRPCRequest) ProtoMessage() {}
 
 func (x *RemoveFRPCRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[10]
+	mi := &file_api_client_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -591,7 +801,7 @@ func (x *RemoveFRPCRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveFRPCRequest.ProtoReflect.Descriptor instead.
 func (*RemoveFRPCRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{10}
+	return file_api_client_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *RemoveFRPCRequest) GetClientId() string {
@@ -610,7 +820,7 @@ type RemoveFRPCResponse struct {
 
 func (x *RemoveFRPCResponse) Reset() {
 	*x = RemoveFRPCResponse{}
-	mi := &file_api_client_proto_msgTypes[11]
+	mi := &file_api_client_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -622,7 +832,7 @@ func (x *RemoveFRPCResponse) String() string {
 func (*RemoveFRPCResponse) ProtoMessage() {}
 
 func (x *RemoveFRPCResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[11]
+	mi := &file_api_client_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -635,7 +845,7 @@ func (x *RemoveFRPCResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveFRPCResponse.ProtoReflect.Descriptor instead.
 func (*RemoveFRPCResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{11}
+	return file_api_client_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *RemoveFRPCResponse) GetStatus() *Status {
@@ -654,7 +864,7 @@ type StopFRPCRequest struct {
 
 func (x *StopFRPCRequest) Reset() {
 	*x = StopFRPCRequest{}
-	mi := &file_api_client_proto_msgTypes[12]
+	mi := &file_api_client_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -666,7 +876,7 @@ func (x *StopFRPCRequest) String() string {
 func (*StopFRPCRequest) ProtoMessage() {}
 
 func (x *StopFRPCRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[12]
+	mi := &file_api_client_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -679,7 +889,7 @@ func (x *StopFRPCRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StopFRPCRequest.ProtoReflect.Descriptor instead.
 func (*StopFRPCRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{12}
+	return file_api_client_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *StopFRPCRequest) GetClientId() string {
@@ -698,7 +908,7 @@ type StopFRPCResponse struct {
 
 func (x *StopFRPCResponse) Reset() {
 	*x = StopFRPCResponse{}
-	mi := &file_api_client_proto_msgTypes[13]
+	mi := &file_api_client_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -710,7 +920,7 @@ func (x *StopFRPCResponse) String() string {
 func (*StopFRPCResponse) ProtoMessage() {}
 
 func (x *StopFRPCResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[13]
+	mi := &file_api_client_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -723,7 +933,7 @@ func (x *StopFRPCResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StopFRPCResponse.ProtoReflect.Descriptor instead.
 func (*StopFRPCResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{13}
+	return file_api_client_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *StopFRPCResponse) GetStatus() *Status {
@@ -742,7 +952,7 @@ type StartFRPCRequest struct {
 
 func (x *StartFRPCRequest) Reset() {
 	*x = StartFRPCRequest{}
-	mi := &file_api_client_proto_msgTypes[14]
+	mi := &file_api_client_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -754,7 +964,7 @@ func (x *StartFRPCRequest) String() string {
 func (*StartFRPCRequest) ProtoMessage() {}
 
 func (x *StartFRPCRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[14]
+	mi := &file_api_client_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -767,7 +977,7 @@ func (x *StartFRPCRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartFRPCRequest.ProtoReflect.Descriptor instead.
 func (*StartFRPCRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{14}
+	return file_api_client_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *StartFRPCRequest) GetClientId() string {
@@ -786,7 +996,7 @@ type StartFRPCResponse struct {
 
 func (x *StartFRPCResponse) Reset() {
 	*x = StartFRPCResponse{}
-	mi := &file_api_client_proto_msgTypes[15]
+	mi := &file_api_client_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -798,7 +1008,7 @@ func (x *StartFRPCResponse) String() string {
 func (*StartFRPCResponse) ProtoMessage() {}
 
 func (x *StartFRPCResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[15]
+	mi := &file_api_client_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -811,7 +1021,7 @@ func (x *StartFRPCResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartFRPCResponse.ProtoReflect.Descriptor instead.
 func (*StartFRPCResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{15}
+	return file_api_client_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *StartFRPCResponse) GetStatus() *Status {
@@ -830,7 +1040,7 @@ type GetProxyStatsByClientIDRequest struct {
 
 func (x *GetProxyStatsByClientIDRequest) Reset() {
 	*x = GetProxyStatsByClientIDRequest{}
-	mi := &file_api_client_proto_msgTypes[16]
+	mi := &file_api_client_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -842,7 +1052,7 @@ func (x *GetProxyStatsByClientIDRequest) String() string {
 func (*GetProxyStatsByClientIDRequest) ProtoMessage() {}
 
 func (x *GetProxyStatsByClientIDRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[16]
+	mi := &file_api_client_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -855,7 +1065,7 @@ func (x *GetProxyStatsByClientIDRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProxyStatsByClientIDRequest.ProtoReflect.Descriptor instead.
 func (*GetProxyStatsByClientIDRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{16}
+	return file_api_client_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *GetProxyStatsByClientIDRequest) GetClientId() string {
@@ -875,7 +1085,7 @@ type GetProxyStatsByClientIDResponse struct {
 
 func (x *GetProxyStatsByClientIDResponse) Reset() {
 	*x = GetProxyStatsByClientIDResponse{}
-	mi := &file_api_client_proto_msgTypes[17]
+	mi := &file_api_client_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -887,7 +1097,7 @@ func (x *GetProxyStatsByClientIDResponse) String() string {
 func (*GetProxyStatsByClientIDResponse) ProtoMessage() {}
 
 func (x *GetProxyStatsByClientIDResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[17]
+	mi := &file_api_client_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -900,7 +1110,7 @@ func (x *GetProxyStatsByClientIDResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProxyStatsByClientIDResponse.ProtoReflect.Descriptor instead.
 func (*GetProxyStatsByClientIDResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{17}
+	return file_api_client_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *GetProxyStatsByClientIDResponse) GetStatus() *Status {
@@ -930,7 +1140,7 @@ type ListProxyConfigsRequest struct {
 
 func (x *ListProxyConfigsRequest) Reset() {
 	*x = ListProxyConfigsRequest{}
-	mi := &file_api_client_proto_msgTypes[18]
+	mi := &file_api_client_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -942,7 +1152,7 @@ func (x *ListProxyConfigsRequest) String() string {
 func (*ListProxyConfigsRequest) ProtoMessage() {}
 
 func (x *ListProxyConfigsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[18]
+	mi := &file_api_client_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -955,7 +1165,7 @@ func (x *ListProxyConfigsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProxyConfigsRequest.ProtoReflect.Descriptor instead.
 func (*ListProxyConfigsRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{18}
+	return file_api_client_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *ListProxyConfigsRequest) GetPage() int32 {
@@ -1004,7 +1214,7 @@ type ListProxyConfigsResponse struct {
 
 func (x *ListProxyConfigsResponse) Reset() {
 	*x = ListProxyConfigsResponse{}
-	mi := &file_api_client_proto_msgTypes[19]
+	mi := &file_api_client_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1016,7 +1226,7 @@ func (x *ListProxyConfigsResponse) String() string {
 func (*ListProxyConfigsResponse) ProtoMessage() {}
 
 func (x *ListProxyConfigsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[19]
+	mi := &file_api_client_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1029,7 +1239,7 @@ func (x *ListProxyConfigsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProxyConfigsResponse.ProtoReflect.Descriptor instead.
 func (*ListProxyConfigsResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{19}
+	return file_api_client_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *ListProxyConfigsResponse) GetStatus() *Status {
@@ -1065,7 +1275,7 @@ type CreateProxyConfigRequest struct {
 
 func (x *CreateProxyConfigRequest) Reset() {
 	*x = CreateProxyConfigRequest{}
-	mi := &file_api_client_proto_msgTypes[20]
+	mi := &file_api_client_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1077,7 +1287,7 @@ func (x *CreateProxyConfigRequest) String() string {
 func (*CreateProxyConfigRequest) ProtoMessage() {}
 
 func (x *CreateProxyConfigRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[20]
+	mi := &file_api_client_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1090,7 +1300,7 @@ func (x *CreateProxyConfigRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateProxyConfigRequest.ProtoReflect.Descriptor instead.
 func (*CreateProxyConfigRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{20}
+	return file_api_client_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *CreateProxyConfigRequest) GetClientId() string {
@@ -1130,7 +1340,7 @@ type CreateProxyConfigResponse struct {
 
 func (x *CreateProxyConfigResponse) Reset() {
 	*x = CreateProxyConfigResponse{}
-	mi := &file_api_client_proto_msgTypes[21]
+	mi := &file_api_client_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1142,7 +1352,7 @@ func (x *CreateProxyConfigResponse) String() string {
 func (*CreateProxyConfigResponse) ProtoMessage() {}
 
 func (x *CreateProxyConfigResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[21]
+	mi := &file_api_client_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1155,7 +1365,7 @@ func (x *CreateProxyConfigResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateProxyConfigResponse.ProtoReflect.Descriptor instead.
 func (*CreateProxyConfigResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{21}
+	return file_api_client_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *CreateProxyConfigResponse) GetStatus() *Status {
@@ -1176,7 +1386,7 @@ type DeleteProxyConfigRequest struct {
 
 func (x *DeleteProxyConfigRequest) Reset() {
 	*x = DeleteProxyConfigRequest{}
-	mi := &file_api_client_proto_msgTypes[22]
+	mi := &file_api_client_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1188,7 +1398,7 @@ func (x *DeleteProxyConfigRequest) String() string {
 func (*DeleteProxyConfigRequest) ProtoMessage() {}
 
 func (x *DeleteProxyConfigRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[22]
+	mi := &file_api_client_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1201,7 +1411,7 @@ func (x *DeleteProxyConfigRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteProxyConfigRequest.ProtoReflect.Descriptor instead.
 func (*DeleteProxyConfigRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{22}
+	return file_api_client_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *DeleteProxyConfigRequest) GetClientId() string {
@@ -1234,7 +1444,7 @@ type DeleteProxyConfigResponse struct {
 
 func (x *DeleteProxyConfigResponse) Reset() {
 	*x = DeleteProxyConfigResponse{}
-	mi := &file_api_client_proto_msgTypes[23]
+	mi := &file_api_client_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1246,7 +1456,7 @@ func (x *DeleteProxyConfigResponse) String() string {
 func (*DeleteProxyConfigResponse) ProtoMessage() {}
 
 func (x *DeleteProxyConfigResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[23]
+	mi := &file_api_client_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1259,7 +1469,7 @@ func (x *DeleteProxyConfigResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteProxyConfigResponse.ProtoReflect.Descriptor instead.
 func (*DeleteProxyConfigResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{23}
+	return file_api_client_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *DeleteProxyConfigResponse) GetStatus() *Status {
@@ -1281,7 +1491,7 @@ type UpdateProxyConfigRequest struct {
 
 func (x *UpdateProxyConfigRequest) Reset() {
 	*x = UpdateProxyConfigRequest{}
-	mi := &file_api_client_proto_msgTypes[24]
+	mi := &file_api_client_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1293,7 +1503,7 @@ func (x *UpdateProxyConfigRequest) String() string {
 func (*UpdateProxyConfigRequest) ProtoMessage() {}
 
 func (x *UpdateProxyConfigRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[24]
+	mi := &file_api_client_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1306,7 +1516,7 @@ func (x *UpdateProxyConfigRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateProxyConfigRequest.ProtoReflect.Descriptor instead.
 func (*UpdateProxyConfigRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{24}
+	return file_api_client_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *UpdateProxyConfigRequest) GetClientId() string {
@@ -1346,7 +1556,7 @@ type UpdateProxyConfigResponse struct {
 
 func (x *UpdateProxyConfigResponse) Reset() {
 	*x = UpdateProxyConfigResponse{}
-	mi := &file_api_client_proto_msgTypes[25]
+	mi := &file_api_client_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1358,7 +1568,7 @@ func (x *UpdateProxyConfigResponse) String() string {
 func (*UpdateProxyConfigResponse) ProtoMessage() {}
 
 func (x *UpdateProxyConfigResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[25]
+	mi := &file_api_client_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1371,10 +1581,163 @@ func (x *UpdateProxyConfigResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateProxyConfigResponse.ProtoReflect.Descriptor instead.
 func (*UpdateProxyConfigResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{25}
+	return file_api_client_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *UpdateProxyConfigResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+// 更新隧道自动规则（定时开关 + 流量限额），只修改面板元数据，不触碰 frp 配置
+type UpdateProxyRulesRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	ClientId        *string                `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3,oneof" json:"client_id,omitempty"`
+	ServerId        *string                `protobuf:"bytes,2,opt,name=server_id,json=serverId,proto3,oneof" json:"server_id,omitempty"`
+	Name            *string                `protobuf:"bytes,3,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	ScheduleEnabled *bool                  `protobuf:"varint,4,opt,name=schedule_enabled,json=scheduleEnabled,proto3,oneof" json:"schedule_enabled,omitempty"` // 是否启用定时开关
+	ScheduleStart   *string                `protobuf:"bytes,5,opt,name=schedule_start,json=scheduleStart,proto3,oneof" json:"schedule_start,omitempty"`        // HH:MM 开启时间
+	ScheduleEnd     *string                `protobuf:"bytes,6,opt,name=schedule_end,json=scheduleEnd,proto3,oneof" json:"schedule_end,omitempty"`              // HH:MM 关闭时间，start > end 表示跨天
+	ScheduleDays    []int32                `protobuf:"varint,7,rep,packed,name=schedule_days,json=scheduleDays,proto3" json:"schedule_days,omitempty"`         // 生效周几，0=周日 ~ 6=周六，多选
+	QuotaType       *string                `protobuf:"bytes,8,opt,name=quota_type,json=quotaType,proto3,oneof" json:"quota_type,omitempty"`                    // day/week/month，空=未启用
+	QuotaLimit      *int64                 `protobuf:"varint,9,opt,name=quota_limit,json=quotaLimit,proto3,oneof" json:"quota_limit,omitempty"`                // 限额字节数，0=未启用
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *UpdateProxyRulesRequest) Reset() {
+	*x = UpdateProxyRulesRequest{}
+	mi := &file_api_client_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateProxyRulesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateProxyRulesRequest) ProtoMessage() {}
+
+func (x *UpdateProxyRulesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_client_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateProxyRulesRequest.ProtoReflect.Descriptor instead.
+func (*UpdateProxyRulesRequest) Descriptor() ([]byte, []int) {
+	return file_api_client_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *UpdateProxyRulesRequest) GetClientId() string {
+	if x != nil && x.ClientId != nil {
+		return *x.ClientId
+	}
+	return ""
+}
+
+func (x *UpdateProxyRulesRequest) GetServerId() string {
+	if x != nil && x.ServerId != nil {
+		return *x.ServerId
+	}
+	return ""
+}
+
+func (x *UpdateProxyRulesRequest) GetName() string {
+	if x != nil && x.Name != nil {
+		return *x.Name
+	}
+	return ""
+}
+
+func (x *UpdateProxyRulesRequest) GetScheduleEnabled() bool {
+	if x != nil && x.ScheduleEnabled != nil {
+		return *x.ScheduleEnabled
+	}
+	return false
+}
+
+func (x *UpdateProxyRulesRequest) GetScheduleStart() string {
+	if x != nil && x.ScheduleStart != nil {
+		return *x.ScheduleStart
+	}
+	return ""
+}
+
+func (x *UpdateProxyRulesRequest) GetScheduleEnd() string {
+	if x != nil && x.ScheduleEnd != nil {
+		return *x.ScheduleEnd
+	}
+	return ""
+}
+
+func (x *UpdateProxyRulesRequest) GetScheduleDays() []int32 {
+	if x != nil {
+		return x.ScheduleDays
+	}
+	return nil
+}
+
+func (x *UpdateProxyRulesRequest) GetQuotaType() string {
+	if x != nil && x.QuotaType != nil {
+		return *x.QuotaType
+	}
+	return ""
+}
+
+func (x *UpdateProxyRulesRequest) GetQuotaLimit() int64 {
+	if x != nil && x.QuotaLimit != nil {
+		return *x.QuotaLimit
+	}
+	return 0
+}
+
+type UpdateProxyRulesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateProxyRulesResponse) Reset() {
+	*x = UpdateProxyRulesResponse{}
+	mi := &file_api_client_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateProxyRulesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateProxyRulesResponse) ProtoMessage() {}
+
+func (x *UpdateProxyRulesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_client_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateProxyRulesResponse.ProtoReflect.Descriptor instead.
+func (*UpdateProxyRulesResponse) Descriptor() ([]byte, []int) {
+	return file_api_client_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *UpdateProxyRulesResponse) GetStatus() *Status {
 	if x != nil {
 		return x.Status
 	}
@@ -1392,7 +1755,7 @@ type GetProxyConfigRequest struct {
 
 func (x *GetProxyConfigRequest) Reset() {
 	*x = GetProxyConfigRequest{}
-	mi := &file_api_client_proto_msgTypes[26]
+	mi := &file_api_client_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1404,7 +1767,7 @@ func (x *GetProxyConfigRequest) String() string {
 func (*GetProxyConfigRequest) ProtoMessage() {}
 
 func (x *GetProxyConfigRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[26]
+	mi := &file_api_client_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1417,7 +1780,7 @@ func (x *GetProxyConfigRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProxyConfigRequest.ProtoReflect.Descriptor instead.
 func (*GetProxyConfigRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{26}
+	return file_api_client_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *GetProxyConfigRequest) GetClientId() string {
@@ -1452,7 +1815,7 @@ type GetProxyConfigResponse struct {
 
 func (x *GetProxyConfigResponse) Reset() {
 	*x = GetProxyConfigResponse{}
-	mi := &file_api_client_proto_msgTypes[27]
+	mi := &file_api_client_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1464,7 +1827,7 @@ func (x *GetProxyConfigResponse) String() string {
 func (*GetProxyConfigResponse) ProtoMessage() {}
 
 func (x *GetProxyConfigResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[27]
+	mi := &file_api_client_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1477,7 +1840,7 @@ func (x *GetProxyConfigResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProxyConfigResponse.ProtoReflect.Descriptor instead.
 func (*GetProxyConfigResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{27}
+	return file_api_client_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *GetProxyConfigResponse) GetStatus() *Status {
@@ -1512,7 +1875,7 @@ type StopProxyRequest struct {
 
 func (x *StopProxyRequest) Reset() {
 	*x = StopProxyRequest{}
-	mi := &file_api_client_proto_msgTypes[28]
+	mi := &file_api_client_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1524,7 +1887,7 @@ func (x *StopProxyRequest) String() string {
 func (*StopProxyRequest) ProtoMessage() {}
 
 func (x *StopProxyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[28]
+	mi := &file_api_client_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1537,7 +1900,7 @@ func (x *StopProxyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StopProxyRequest.ProtoReflect.Descriptor instead.
 func (*StopProxyRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{28}
+	return file_api_client_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *StopProxyRequest) GetClientId() string {
@@ -1570,7 +1933,7 @@ type StopProxyResponse struct {
 
 func (x *StopProxyResponse) Reset() {
 	*x = StopProxyResponse{}
-	mi := &file_api_client_proto_msgTypes[29]
+	mi := &file_api_client_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1582,7 +1945,7 @@ func (x *StopProxyResponse) String() string {
 func (*StopProxyResponse) ProtoMessage() {}
 
 func (x *StopProxyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[29]
+	mi := &file_api_client_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1595,7 +1958,7 @@ func (x *StopProxyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StopProxyResponse.ProtoReflect.Descriptor instead.
 func (*StopProxyResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{29}
+	return file_api_client_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *StopProxyResponse) GetStatus() *Status {
@@ -1616,7 +1979,7 @@ type StartProxyRequest struct {
 
 func (x *StartProxyRequest) Reset() {
 	*x = StartProxyRequest{}
-	mi := &file_api_client_proto_msgTypes[30]
+	mi := &file_api_client_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1628,7 +1991,7 @@ func (x *StartProxyRequest) String() string {
 func (*StartProxyRequest) ProtoMessage() {}
 
 func (x *StartProxyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[30]
+	mi := &file_api_client_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1641,7 +2004,7 @@ func (x *StartProxyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartProxyRequest.ProtoReflect.Descriptor instead.
 func (*StartProxyRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{30}
+	return file_api_client_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *StartProxyRequest) GetClientId() string {
@@ -1674,7 +2037,7 @@ type StartProxyResponse struct {
 
 func (x *StartProxyResponse) Reset() {
 	*x = StartProxyResponse{}
-	mi := &file_api_client_proto_msgTypes[31]
+	mi := &file_api_client_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1686,7 +2049,7 @@ func (x *StartProxyResponse) String() string {
 func (*StartProxyResponse) ProtoMessage() {}
 
 func (x *StartProxyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[31]
+	mi := &file_api_client_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1699,7 +2062,7 @@ func (x *StartProxyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartProxyResponse.ProtoReflect.Descriptor instead.
 func (*StartProxyResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{31}
+	return file_api_client_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *StartProxyResponse) GetStatus() *Status {
@@ -1719,7 +2082,7 @@ type CreateWorkerRequest struct {
 
 func (x *CreateWorkerRequest) Reset() {
 	*x = CreateWorkerRequest{}
-	mi := &file_api_client_proto_msgTypes[32]
+	mi := &file_api_client_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1731,7 +2094,7 @@ func (x *CreateWorkerRequest) String() string {
 func (*CreateWorkerRequest) ProtoMessage() {}
 
 func (x *CreateWorkerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[32]
+	mi := &file_api_client_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1744,7 +2107,7 @@ func (x *CreateWorkerRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateWorkerRequest.ProtoReflect.Descriptor instead.
 func (*CreateWorkerRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{32}
+	return file_api_client_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *CreateWorkerRequest) GetClientId() string {
@@ -1771,7 +2134,7 @@ type CreateWorkerResponse struct {
 
 func (x *CreateWorkerResponse) Reset() {
 	*x = CreateWorkerResponse{}
-	mi := &file_api_client_proto_msgTypes[33]
+	mi := &file_api_client_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1783,7 +2146,7 @@ func (x *CreateWorkerResponse) String() string {
 func (*CreateWorkerResponse) ProtoMessage() {}
 
 func (x *CreateWorkerResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[33]
+	mi := &file_api_client_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1796,7 +2159,7 @@ func (x *CreateWorkerResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateWorkerResponse.ProtoReflect.Descriptor instead.
 func (*CreateWorkerResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{33}
+	return file_api_client_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *CreateWorkerResponse) GetStatus() *Status {
@@ -1823,7 +2186,7 @@ type RemoveWorkerRequest struct {
 
 func (x *RemoveWorkerRequest) Reset() {
 	*x = RemoveWorkerRequest{}
-	mi := &file_api_client_proto_msgTypes[34]
+	mi := &file_api_client_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1835,7 +2198,7 @@ func (x *RemoveWorkerRequest) String() string {
 func (*RemoveWorkerRequest) ProtoMessage() {}
 
 func (x *RemoveWorkerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[34]
+	mi := &file_api_client_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1848,7 +2211,7 @@ func (x *RemoveWorkerRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveWorkerRequest.ProtoReflect.Descriptor instead.
 func (*RemoveWorkerRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{34}
+	return file_api_client_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *RemoveWorkerRequest) GetClientId() string {
@@ -1874,7 +2237,7 @@ type RemoveWorkerResponse struct {
 
 func (x *RemoveWorkerResponse) Reset() {
 	*x = RemoveWorkerResponse{}
-	mi := &file_api_client_proto_msgTypes[35]
+	mi := &file_api_client_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1886,7 +2249,7 @@ func (x *RemoveWorkerResponse) String() string {
 func (*RemoveWorkerResponse) ProtoMessage() {}
 
 func (x *RemoveWorkerResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[35]
+	mi := &file_api_client_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1899,7 +2262,7 @@ func (x *RemoveWorkerResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveWorkerResponse.ProtoReflect.Descriptor instead.
 func (*RemoveWorkerResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{35}
+	return file_api_client_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *RemoveWorkerResponse) GetStatus() *Status {
@@ -1919,7 +2282,7 @@ type UpdateWorkerRequest struct {
 
 func (x *UpdateWorkerRequest) Reset() {
 	*x = UpdateWorkerRequest{}
-	mi := &file_api_client_proto_msgTypes[36]
+	mi := &file_api_client_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1931,7 +2294,7 @@ func (x *UpdateWorkerRequest) String() string {
 func (*UpdateWorkerRequest) ProtoMessage() {}
 
 func (x *UpdateWorkerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[36]
+	mi := &file_api_client_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1944,7 +2307,7 @@ func (x *UpdateWorkerRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateWorkerRequest.ProtoReflect.Descriptor instead.
 func (*UpdateWorkerRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{36}
+	return file_api_client_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *UpdateWorkerRequest) GetClientIds() []string {
@@ -1970,7 +2333,7 @@ type UpdateWorkerResponse struct {
 
 func (x *UpdateWorkerResponse) Reset() {
 	*x = UpdateWorkerResponse{}
-	mi := &file_api_client_proto_msgTypes[37]
+	mi := &file_api_client_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1982,7 +2345,7 @@ func (x *UpdateWorkerResponse) String() string {
 func (*UpdateWorkerResponse) ProtoMessage() {}
 
 func (x *UpdateWorkerResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[37]
+	mi := &file_api_client_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1995,7 +2358,7 @@ func (x *UpdateWorkerResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateWorkerResponse.ProtoReflect.Descriptor instead.
 func (*UpdateWorkerResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{37}
+	return file_api_client_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *UpdateWorkerResponse) GetStatus() *Status {
@@ -2015,7 +2378,7 @@ type RunWorkerRequest struct {
 
 func (x *RunWorkerRequest) Reset() {
 	*x = RunWorkerRequest{}
-	mi := &file_api_client_proto_msgTypes[38]
+	mi := &file_api_client_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2027,7 +2390,7 @@ func (x *RunWorkerRequest) String() string {
 func (*RunWorkerRequest) ProtoMessage() {}
 
 func (x *RunWorkerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[38]
+	mi := &file_api_client_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2040,7 +2403,7 @@ func (x *RunWorkerRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunWorkerRequest.ProtoReflect.Descriptor instead.
 func (*RunWorkerRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{38}
+	return file_api_client_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *RunWorkerRequest) GetClientId() string {
@@ -2066,7 +2429,7 @@ type RunWorkerResponse struct {
 
 func (x *RunWorkerResponse) Reset() {
 	*x = RunWorkerResponse{}
-	mi := &file_api_client_proto_msgTypes[39]
+	mi := &file_api_client_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2078,7 +2441,7 @@ func (x *RunWorkerResponse) String() string {
 func (*RunWorkerResponse) ProtoMessage() {}
 
 func (x *RunWorkerResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[39]
+	mi := &file_api_client_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2091,7 +2454,7 @@ func (x *RunWorkerResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunWorkerResponse.ProtoReflect.Descriptor instead.
 func (*RunWorkerResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{39}
+	return file_api_client_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *RunWorkerResponse) GetStatus() *Status {
@@ -2111,7 +2474,7 @@ type StopWorkerRequest struct {
 
 func (x *StopWorkerRequest) Reset() {
 	*x = StopWorkerRequest{}
-	mi := &file_api_client_proto_msgTypes[40]
+	mi := &file_api_client_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2123,7 +2486,7 @@ func (x *StopWorkerRequest) String() string {
 func (*StopWorkerRequest) ProtoMessage() {}
 
 func (x *StopWorkerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[40]
+	mi := &file_api_client_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2136,7 +2499,7 @@ func (x *StopWorkerRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StopWorkerRequest.ProtoReflect.Descriptor instead.
 func (*StopWorkerRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{40}
+	return file_api_client_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *StopWorkerRequest) GetClientId() string {
@@ -2162,7 +2525,7 @@ type StopWorkerResponse struct {
 
 func (x *StopWorkerResponse) Reset() {
 	*x = StopWorkerResponse{}
-	mi := &file_api_client_proto_msgTypes[41]
+	mi := &file_api_client_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2174,7 +2537,7 @@ func (x *StopWorkerResponse) String() string {
 func (*StopWorkerResponse) ProtoMessage() {}
 
 func (x *StopWorkerResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[41]
+	mi := &file_api_client_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2187,7 +2550,7 @@ func (x *StopWorkerResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StopWorkerResponse.ProtoReflect.Descriptor instead.
 func (*StopWorkerResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{41}
+	return file_api_client_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *StopWorkerResponse) GetStatus() *Status {
@@ -2210,7 +2573,7 @@ type ListWorkersRequest struct {
 
 func (x *ListWorkersRequest) Reset() {
 	*x = ListWorkersRequest{}
-	mi := &file_api_client_proto_msgTypes[42]
+	mi := &file_api_client_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2222,7 +2585,7 @@ func (x *ListWorkersRequest) String() string {
 func (*ListWorkersRequest) ProtoMessage() {}
 
 func (x *ListWorkersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[42]
+	mi := &file_api_client_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2235,7 +2598,7 @@ func (x *ListWorkersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListWorkersRequest.ProtoReflect.Descriptor instead.
 func (*ListWorkersRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{42}
+	return file_api_client_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *ListWorkersRequest) GetPage() int32 {
@@ -2284,7 +2647,7 @@ type ListWorkersResponse struct {
 
 func (x *ListWorkersResponse) Reset() {
 	*x = ListWorkersResponse{}
-	mi := &file_api_client_proto_msgTypes[43]
+	mi := &file_api_client_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2296,7 +2659,7 @@ func (x *ListWorkersResponse) String() string {
 func (*ListWorkersResponse) ProtoMessage() {}
 
 func (x *ListWorkersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[43]
+	mi := &file_api_client_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2309,7 +2672,7 @@ func (x *ListWorkersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListWorkersResponse.ProtoReflect.Descriptor instead.
 func (*ListWorkersResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{43}
+	return file_api_client_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *ListWorkersResponse) GetStatus() *Status {
@@ -2345,7 +2708,7 @@ type CreateWorkerIngressRequest struct {
 
 func (x *CreateWorkerIngressRequest) Reset() {
 	*x = CreateWorkerIngressRequest{}
-	mi := &file_api_client_proto_msgTypes[44]
+	mi := &file_api_client_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2357,7 +2720,7 @@ func (x *CreateWorkerIngressRequest) String() string {
 func (*CreateWorkerIngressRequest) ProtoMessage() {}
 
 func (x *CreateWorkerIngressRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[44]
+	mi := &file_api_client_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2370,7 +2733,7 @@ func (x *CreateWorkerIngressRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateWorkerIngressRequest.ProtoReflect.Descriptor instead.
 func (*CreateWorkerIngressRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{44}
+	return file_api_client_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *CreateWorkerIngressRequest) GetClientId() string {
@@ -2403,7 +2766,7 @@ type CreateWorkerIngressResponse struct {
 
 func (x *CreateWorkerIngressResponse) Reset() {
 	*x = CreateWorkerIngressResponse{}
-	mi := &file_api_client_proto_msgTypes[45]
+	mi := &file_api_client_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2415,7 +2778,7 @@ func (x *CreateWorkerIngressResponse) String() string {
 func (*CreateWorkerIngressResponse) ProtoMessage() {}
 
 func (x *CreateWorkerIngressResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[45]
+	mi := &file_api_client_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2428,7 +2791,7 @@ func (x *CreateWorkerIngressResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateWorkerIngressResponse.ProtoReflect.Descriptor instead.
 func (*CreateWorkerIngressResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{45}
+	return file_api_client_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *CreateWorkerIngressResponse) GetStatus() *Status {
@@ -2447,7 +2810,7 @@ type GetWorkerIngressRequest struct {
 
 func (x *GetWorkerIngressRequest) Reset() {
 	*x = GetWorkerIngressRequest{}
-	mi := &file_api_client_proto_msgTypes[46]
+	mi := &file_api_client_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2459,7 +2822,7 @@ func (x *GetWorkerIngressRequest) String() string {
 func (*GetWorkerIngressRequest) ProtoMessage() {}
 
 func (x *GetWorkerIngressRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[46]
+	mi := &file_api_client_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2472,7 +2835,7 @@ func (x *GetWorkerIngressRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetWorkerIngressRequest.ProtoReflect.Descriptor instead.
 func (*GetWorkerIngressRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{46}
+	return file_api_client_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *GetWorkerIngressRequest) GetWorkerId() string {
@@ -2492,7 +2855,7 @@ type GetWorkerIngressResponse struct {
 
 func (x *GetWorkerIngressResponse) Reset() {
 	*x = GetWorkerIngressResponse{}
-	mi := &file_api_client_proto_msgTypes[47]
+	mi := &file_api_client_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2504,7 +2867,7 @@ func (x *GetWorkerIngressResponse) String() string {
 func (*GetWorkerIngressResponse) ProtoMessage() {}
 
 func (x *GetWorkerIngressResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[47]
+	mi := &file_api_client_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2517,7 +2880,7 @@ func (x *GetWorkerIngressResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetWorkerIngressResponse.ProtoReflect.Descriptor instead.
 func (*GetWorkerIngressResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{47}
+	return file_api_client_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *GetWorkerIngressResponse) GetStatus() *Status {
@@ -2543,7 +2906,7 @@ type GetWorkerRequest struct {
 
 func (x *GetWorkerRequest) Reset() {
 	*x = GetWorkerRequest{}
-	mi := &file_api_client_proto_msgTypes[48]
+	mi := &file_api_client_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2555,7 +2918,7 @@ func (x *GetWorkerRequest) String() string {
 func (*GetWorkerRequest) ProtoMessage() {}
 
 func (x *GetWorkerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[48]
+	mi := &file_api_client_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2568,7 +2931,7 @@ func (x *GetWorkerRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetWorkerRequest.ProtoReflect.Descriptor instead.
 func (*GetWorkerRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{48}
+	return file_api_client_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *GetWorkerRequest) GetWorkerId() string {
@@ -2589,7 +2952,7 @@ type GetWorkerResponse struct {
 
 func (x *GetWorkerResponse) Reset() {
 	*x = GetWorkerResponse{}
-	mi := &file_api_client_proto_msgTypes[49]
+	mi := &file_api_client_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2601,7 +2964,7 @@ func (x *GetWorkerResponse) String() string {
 func (*GetWorkerResponse) ProtoMessage() {}
 
 func (x *GetWorkerResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[49]
+	mi := &file_api_client_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2614,7 +2977,7 @@ func (x *GetWorkerResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetWorkerResponse.ProtoReflect.Descriptor instead.
 func (*GetWorkerResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{49}
+	return file_api_client_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *GetWorkerResponse) GetStatus() *Status {
@@ -2647,7 +3010,7 @@ type GetWorkerStatusRequest struct {
 
 func (x *GetWorkerStatusRequest) Reset() {
 	*x = GetWorkerStatusRequest{}
-	mi := &file_api_client_proto_msgTypes[50]
+	mi := &file_api_client_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2659,7 +3022,7 @@ func (x *GetWorkerStatusRequest) String() string {
 func (*GetWorkerStatusRequest) ProtoMessage() {}
 
 func (x *GetWorkerStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[50]
+	mi := &file_api_client_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2672,7 +3035,7 @@ func (x *GetWorkerStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetWorkerStatusRequest.ProtoReflect.Descriptor instead.
 func (*GetWorkerStatusRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{50}
+	return file_api_client_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *GetWorkerStatusRequest) GetWorkerId() string {
@@ -2692,7 +3055,7 @@ type GetWorkerStatusResponse struct {
 
 func (x *GetWorkerStatusResponse) Reset() {
 	*x = GetWorkerStatusResponse{}
-	mi := &file_api_client_proto_msgTypes[51]
+	mi := &file_api_client_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2704,7 +3067,7 @@ func (x *GetWorkerStatusResponse) String() string {
 func (*GetWorkerStatusResponse) ProtoMessage() {}
 
 func (x *GetWorkerStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[51]
+	mi := &file_api_client_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2717,7 +3080,7 @@ func (x *GetWorkerStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetWorkerStatusResponse.ProtoReflect.Descriptor instead.
 func (*GetWorkerStatusResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{51}
+	return file_api_client_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *GetWorkerStatusResponse) GetStatus() *Status {
@@ -2744,7 +3107,7 @@ type InstallWorkerdRequest struct {
 
 func (x *InstallWorkerdRequest) Reset() {
 	*x = InstallWorkerdRequest{}
-	mi := &file_api_client_proto_msgTypes[52]
+	mi := &file_api_client_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2756,7 +3119,7 @@ func (x *InstallWorkerdRequest) String() string {
 func (*InstallWorkerdRequest) ProtoMessage() {}
 
 func (x *InstallWorkerdRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[52]
+	mi := &file_api_client_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2769,7 +3132,7 @@ func (x *InstallWorkerdRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InstallWorkerdRequest.ProtoReflect.Descriptor instead.
 func (*InstallWorkerdRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{52}
+	return file_api_client_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *InstallWorkerdRequest) GetClientId() string {
@@ -2795,7 +3158,7 @@ type InstallWorkerdResponse struct {
 
 func (x *InstallWorkerdResponse) Reset() {
 	*x = InstallWorkerdResponse{}
-	mi := &file_api_client_proto_msgTypes[53]
+	mi := &file_api_client_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2807,7 +3170,7 @@ func (x *InstallWorkerdResponse) String() string {
 func (*InstallWorkerdResponse) ProtoMessage() {}
 
 func (x *InstallWorkerdResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[53]
+	mi := &file_api_client_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2820,7 +3183,7 @@ func (x *InstallWorkerdResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InstallWorkerdResponse.ProtoReflect.Descriptor instead.
 func (*InstallWorkerdResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{53}
+	return file_api_client_proto_rawDescGZIP(), []int{59}
 }
 
 func (x *InstallWorkerdResponse) GetStatus() *Status {
@@ -2840,7 +3203,7 @@ type RedeployWorkerRequest struct {
 
 func (x *RedeployWorkerRequest) Reset() {
 	*x = RedeployWorkerRequest{}
-	mi := &file_api_client_proto_msgTypes[54]
+	mi := &file_api_client_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2852,7 +3215,7 @@ func (x *RedeployWorkerRequest) String() string {
 func (*RedeployWorkerRequest) ProtoMessage() {}
 
 func (x *RedeployWorkerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[54]
+	mi := &file_api_client_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2865,7 +3228,7 @@ func (x *RedeployWorkerRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RedeployWorkerRequest.ProtoReflect.Descriptor instead.
 func (*RedeployWorkerRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{54}
+	return file_api_client_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *RedeployWorkerRequest) GetWorkerId() string {
@@ -2891,7 +3254,7 @@ type RedeployWorkerResponse struct {
 
 func (x *RedeployWorkerResponse) Reset() {
 	*x = RedeployWorkerResponse{}
-	mi := &file_api_client_proto_msgTypes[55]
+	mi := &file_api_client_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2903,7 +3266,7 @@ func (x *RedeployWorkerResponse) String() string {
 func (*RedeployWorkerResponse) ProtoMessage() {}
 
 func (x *RedeployWorkerResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[55]
+	mi := &file_api_client_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2916,7 +3279,7 @@ func (x *RedeployWorkerResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RedeployWorkerResponse.ProtoReflect.Descriptor instead.
 func (*RedeployWorkerResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{55}
+	return file_api_client_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *RedeployWorkerResponse) GetStatus() *Status {
@@ -2946,7 +3309,7 @@ type UpgradeFrppRequest struct {
 
 func (x *UpgradeFrppRequest) Reset() {
 	*x = UpgradeFrppRequest{}
-	mi := &file_api_client_proto_msgTypes[56]
+	mi := &file_api_client_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2958,7 +3321,7 @@ func (x *UpgradeFrppRequest) String() string {
 func (*UpgradeFrppRequest) ProtoMessage() {}
 
 func (x *UpgradeFrppRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[56]
+	mi := &file_api_client_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2971,7 +3334,7 @@ func (x *UpgradeFrppRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpgradeFrppRequest.ProtoReflect.Descriptor instead.
 func (*UpgradeFrppRequest) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{56}
+	return file_api_client_proto_rawDescGZIP(), []int{62}
 }
 
 func (x *UpgradeFrppRequest) GetClientIds() []string {
@@ -3067,7 +3430,7 @@ type UpgradeFrppResponse struct {
 
 func (x *UpgradeFrppResponse) Reset() {
 	*x = UpgradeFrppResponse{}
-	mi := &file_api_client_proto_msgTypes[57]
+	mi := &file_api_client_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3079,7 +3442,7 @@ func (x *UpgradeFrppResponse) String() string {
 func (*UpgradeFrppResponse) ProtoMessage() {}
 
 func (x *UpgradeFrppResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_client_proto_msgTypes[57]
+	mi := &file_api_client_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3092,7 +3455,7 @@ func (x *UpgradeFrppResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpgradeFrppResponse.ProtoReflect.Descriptor instead.
 func (*UpgradeFrppResponse) Descriptor() ([]byte, []int) {
-	return file_api_client_proto_rawDescGZIP(), []int{57}
+	return file_api_client_proto_rawDescGZIP(), []int{63}
 }
 
 func (x *UpgradeFrppResponse) GetStatus() *Status {
@@ -3107,14 +3470,17 @@ var File_api_client_proto protoreflect.FileDescriptor
 const file_api_client_proto_rawDesc = "" +
 	"\n" +
 	"\x10api_client.proto\x12\n" +
-	"api_client\x1a\fcommon.proto\"t\n" +
+	"api_client\x1a\fcommon.proto\"\x9f\x01\n" +
 	"\x11InitClientRequest\x12 \n" +
 	"\tclient_id\x18\x01 \x01(\tH\x00R\bclientId\x88\x01\x01\x12!\n" +
-	"\tephemeral\x18\x02 \x01(\bH\x01R\tephemeral\x88\x01\x01B\f\n" +
+	"\tephemeral\x18\x02 \x01(\bH\x01R\tephemeral\x88\x01\x01\x12\x1d\n" +
+	"\acomment\x18\x03 \x01(\tH\x02R\acomment\x88\x01\x01B\f\n" +
 	"\n" +
 	"_client_idB\f\n" +
 	"\n" +
-	"_ephemeral\"|\n" +
+	"_ephemeralB\n" +
+	"\n" +
+	"\b_comment\"|\n" +
 	"\x12InitClientResponse\x12+\n" +
 	"\x06status\x18\x01 \x01(\v2\x0e.common.StatusH\x00R\x06status\x88\x01\x01\x12 \n" +
 	"\tclient_id\x18\x02 \x01(\tH\x01R\bclientId\x88\x01\x01B\t\n" +
@@ -3153,6 +3519,28 @@ const file_api_client_proto_rawDesc = "" +
 	"\n" +
 	"_client_id\"N\n" +
 	"\x14DeleteClientResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x0e.common.StatusH\x00R\x06status\x88\x01\x01B\t\n" +
+	"\a_status\"\xa7\x01\n" +
+	"\x17UpdateClientInfoRequest\x12 \n" +
+	"\tclient_id\x18\x01 \x01(\tH\x00R\bclientId\x88\x01\x01\x12\x1d\n" +
+	"\acomment\x18\x02 \x01(\tH\x01R\acomment\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"sort_index\x18\x03 \x01(\x05H\x02R\tsortIndex\x88\x01\x01B\f\n" +
+	"\n" +
+	"_client_idB\n" +
+	"\n" +
+	"\b_commentB\r\n" +
+	"\v_sort_index\"R\n" +
+	"\x18UpdateClientInfoResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x0e.common.StatusH\x00R\x06status\x88\x01\x01B\t\n" +
+	"\a_status\"c\n" +
+	"\x15SwapClientSortRequest\x12 \n" +
+	"\tclient_id\x18\x01 \x01(\tH\x00R\bclientId\x88\x01\x01\x12\x13\n" +
+	"\x02up\x18\x02 \x01(\bH\x01R\x02up\x88\x01\x01B\f\n" +
+	"\n" +
+	"_client_idB\x05\n" +
+	"\x03_up\"P\n" +
+	"\x16SwapClientSortResponse\x12+\n" +
 	"\x06status\x18\x01 \x01(\v2\x0e.common.StatusH\x00R\x06status\x88\x01\x01B\t\n" +
 	"\a_status\"\xf3\x01\n" +
 	"\x11UpdateFRPCRequest\x12 \n" +
@@ -3262,6 +3650,31 @@ const file_api_client_proto_rawDesc = "" +
 	"\x05_nameB\t\n" +
 	"\a_config\"S\n" +
 	"\x19UpdateProxyConfigResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x0e.common.StatusH\x00R\x06status\x88\x01\x01B\t\n" +
+	"\a_status\"\xe6\x03\n" +
+	"\x17UpdateProxyRulesRequest\x12 \n" +
+	"\tclient_id\x18\x01 \x01(\tH\x00R\bclientId\x88\x01\x01\x12 \n" +
+	"\tserver_id\x18\x02 \x01(\tH\x01R\bserverId\x88\x01\x01\x12\x17\n" +
+	"\x04name\x18\x03 \x01(\tH\x02R\x04name\x88\x01\x01\x12.\n" +
+	"\x10schedule_enabled\x18\x04 \x01(\bH\x03R\x0fscheduleEnabled\x88\x01\x01\x12*\n" +
+	"\x0eschedule_start\x18\x05 \x01(\tH\x04R\rscheduleStart\x88\x01\x01\x12&\n" +
+	"\fschedule_end\x18\x06 \x01(\tH\x05R\vscheduleEnd\x88\x01\x01\x12#\n" +
+	"\rschedule_days\x18\a \x03(\x05R\fscheduleDays\x12\"\n" +
+	"\n" +
+	"quota_type\x18\b \x01(\tH\x06R\tquotaType\x88\x01\x01\x12$\n" +
+	"\vquota_limit\x18\t \x01(\x03H\aR\n" +
+	"quotaLimit\x88\x01\x01B\f\n" +
+	"\n" +
+	"_client_idB\f\n" +
+	"\n" +
+	"_server_idB\a\n" +
+	"\x05_nameB\x13\n" +
+	"\x11_schedule_enabledB\x11\n" +
+	"\x0f_schedule_startB\x0f\n" +
+	"\r_schedule_endB\r\n" +
+	"\v_quota_typeB\x0e\n" +
+	"\f_quota_limit\"R\n" +
+	"\x18UpdateProxyRulesResponse\x12+\n" +
 	"\x06status\x18\x01 \x01(\v2\x0e.common.StatusH\x00R\x06status\x88\x01\x01B\t\n" +
 	"\a_status\"\x99\x01\n" +
 	"\x15GetProxyConfigRequest\x12 \n" +
@@ -3480,7 +3893,7 @@ func file_api_client_proto_rawDescGZIP() []byte {
 	return file_api_client_proto_rawDescData
 }
 
-var file_api_client_proto_msgTypes = make([]protoimpl.MessageInfo, 59)
+var file_api_client_proto_msgTypes = make([]protoimpl.MessageInfo, 65)
 var file_api_client_proto_goTypes = []any{
 	(*InitClientRequest)(nil),               // 0: api_client.InitClientRequest
 	(*InitClientResponse)(nil),              // 1: api_client.InitClientResponse
@@ -3490,112 +3903,121 @@ var file_api_client_proto_goTypes = []any{
 	(*GetClientResponse)(nil),               // 5: api_client.GetClientResponse
 	(*DeleteClientRequest)(nil),             // 6: api_client.DeleteClientRequest
 	(*DeleteClientResponse)(nil),            // 7: api_client.DeleteClientResponse
-	(*UpdateFRPCRequest)(nil),               // 8: api_client.UpdateFRPCRequest
-	(*UpdateFRPCResponse)(nil),              // 9: api_client.UpdateFRPCResponse
-	(*RemoveFRPCRequest)(nil),               // 10: api_client.RemoveFRPCRequest
-	(*RemoveFRPCResponse)(nil),              // 11: api_client.RemoveFRPCResponse
-	(*StopFRPCRequest)(nil),                 // 12: api_client.StopFRPCRequest
-	(*StopFRPCResponse)(nil),                // 13: api_client.StopFRPCResponse
-	(*StartFRPCRequest)(nil),                // 14: api_client.StartFRPCRequest
-	(*StartFRPCResponse)(nil),               // 15: api_client.StartFRPCResponse
-	(*GetProxyStatsByClientIDRequest)(nil),  // 16: api_client.GetProxyStatsByClientIDRequest
-	(*GetProxyStatsByClientIDResponse)(nil), // 17: api_client.GetProxyStatsByClientIDResponse
-	(*ListProxyConfigsRequest)(nil),         // 18: api_client.ListProxyConfigsRequest
-	(*ListProxyConfigsResponse)(nil),        // 19: api_client.ListProxyConfigsResponse
-	(*CreateProxyConfigRequest)(nil),        // 20: api_client.CreateProxyConfigRequest
-	(*CreateProxyConfigResponse)(nil),       // 21: api_client.CreateProxyConfigResponse
-	(*DeleteProxyConfigRequest)(nil),        // 22: api_client.DeleteProxyConfigRequest
-	(*DeleteProxyConfigResponse)(nil),       // 23: api_client.DeleteProxyConfigResponse
-	(*UpdateProxyConfigRequest)(nil),        // 24: api_client.UpdateProxyConfigRequest
-	(*UpdateProxyConfigResponse)(nil),       // 25: api_client.UpdateProxyConfigResponse
-	(*GetProxyConfigRequest)(nil),           // 26: api_client.GetProxyConfigRequest
-	(*GetProxyConfigResponse)(nil),          // 27: api_client.GetProxyConfigResponse
-	(*StopProxyRequest)(nil),                // 28: api_client.StopProxyRequest
-	(*StopProxyResponse)(nil),               // 29: api_client.StopProxyResponse
-	(*StartProxyRequest)(nil),               // 30: api_client.StartProxyRequest
-	(*StartProxyResponse)(nil),              // 31: api_client.StartProxyResponse
-	(*CreateWorkerRequest)(nil),             // 32: api_client.CreateWorkerRequest
-	(*CreateWorkerResponse)(nil),            // 33: api_client.CreateWorkerResponse
-	(*RemoveWorkerRequest)(nil),             // 34: api_client.RemoveWorkerRequest
-	(*RemoveWorkerResponse)(nil),            // 35: api_client.RemoveWorkerResponse
-	(*UpdateWorkerRequest)(nil),             // 36: api_client.UpdateWorkerRequest
-	(*UpdateWorkerResponse)(nil),            // 37: api_client.UpdateWorkerResponse
-	(*RunWorkerRequest)(nil),                // 38: api_client.RunWorkerRequest
-	(*RunWorkerResponse)(nil),               // 39: api_client.RunWorkerResponse
-	(*StopWorkerRequest)(nil),               // 40: api_client.StopWorkerRequest
-	(*StopWorkerResponse)(nil),              // 41: api_client.StopWorkerResponse
-	(*ListWorkersRequest)(nil),              // 42: api_client.ListWorkersRequest
-	(*ListWorkersResponse)(nil),             // 43: api_client.ListWorkersResponse
-	(*CreateWorkerIngressRequest)(nil),      // 44: api_client.CreateWorkerIngressRequest
-	(*CreateWorkerIngressResponse)(nil),     // 45: api_client.CreateWorkerIngressResponse
-	(*GetWorkerIngressRequest)(nil),         // 46: api_client.GetWorkerIngressRequest
-	(*GetWorkerIngressResponse)(nil),        // 47: api_client.GetWorkerIngressResponse
-	(*GetWorkerRequest)(nil),                // 48: api_client.GetWorkerRequest
-	(*GetWorkerResponse)(nil),               // 49: api_client.GetWorkerResponse
-	(*GetWorkerStatusRequest)(nil),          // 50: api_client.GetWorkerStatusRequest
-	(*GetWorkerStatusResponse)(nil),         // 51: api_client.GetWorkerStatusResponse
-	(*InstallWorkerdRequest)(nil),           // 52: api_client.InstallWorkerdRequest
-	(*InstallWorkerdResponse)(nil),          // 53: api_client.InstallWorkerdResponse
-	(*RedeployWorkerRequest)(nil),           // 54: api_client.RedeployWorkerRequest
-	(*RedeployWorkerResponse)(nil),          // 55: api_client.RedeployWorkerResponse
-	(*UpgradeFrppRequest)(nil),              // 56: api_client.UpgradeFrppRequest
-	(*UpgradeFrppResponse)(nil),             // 57: api_client.UpgradeFrppResponse
-	nil,                                     // 58: api_client.GetWorkerStatusResponse.WorkerStatusEntry
-	(*Status)(nil),                          // 59: common.Status
-	(*Client)(nil),                          // 60: common.Client
-	(*ProxyInfo)(nil),                       // 61: common.ProxyInfo
-	(*ProxyConfig)(nil),                     // 62: common.ProxyConfig
-	(*ProxyWorkingStatus)(nil),              // 63: common.ProxyWorkingStatus
-	(*Worker)(nil),                          // 64: common.Worker
+	(*UpdateClientInfoRequest)(nil),         // 8: api_client.UpdateClientInfoRequest
+	(*UpdateClientInfoResponse)(nil),        // 9: api_client.UpdateClientInfoResponse
+	(*SwapClientSortRequest)(nil),           // 10: api_client.SwapClientSortRequest
+	(*SwapClientSortResponse)(nil),          // 11: api_client.SwapClientSortResponse
+	(*UpdateFRPCRequest)(nil),               // 12: api_client.UpdateFRPCRequest
+	(*UpdateFRPCResponse)(nil),              // 13: api_client.UpdateFRPCResponse
+	(*RemoveFRPCRequest)(nil),               // 14: api_client.RemoveFRPCRequest
+	(*RemoveFRPCResponse)(nil),              // 15: api_client.RemoveFRPCResponse
+	(*StopFRPCRequest)(nil),                 // 16: api_client.StopFRPCRequest
+	(*StopFRPCResponse)(nil),                // 17: api_client.StopFRPCResponse
+	(*StartFRPCRequest)(nil),                // 18: api_client.StartFRPCRequest
+	(*StartFRPCResponse)(nil),               // 19: api_client.StartFRPCResponse
+	(*GetProxyStatsByClientIDRequest)(nil),  // 20: api_client.GetProxyStatsByClientIDRequest
+	(*GetProxyStatsByClientIDResponse)(nil), // 21: api_client.GetProxyStatsByClientIDResponse
+	(*ListProxyConfigsRequest)(nil),         // 22: api_client.ListProxyConfigsRequest
+	(*ListProxyConfigsResponse)(nil),        // 23: api_client.ListProxyConfigsResponse
+	(*CreateProxyConfigRequest)(nil),        // 24: api_client.CreateProxyConfigRequest
+	(*CreateProxyConfigResponse)(nil),       // 25: api_client.CreateProxyConfigResponse
+	(*DeleteProxyConfigRequest)(nil),        // 26: api_client.DeleteProxyConfigRequest
+	(*DeleteProxyConfigResponse)(nil),       // 27: api_client.DeleteProxyConfigResponse
+	(*UpdateProxyConfigRequest)(nil),        // 28: api_client.UpdateProxyConfigRequest
+	(*UpdateProxyConfigResponse)(nil),       // 29: api_client.UpdateProxyConfigResponse
+	(*UpdateProxyRulesRequest)(nil),         // 30: api_client.UpdateProxyRulesRequest
+	(*UpdateProxyRulesResponse)(nil),        // 31: api_client.UpdateProxyRulesResponse
+	(*GetProxyConfigRequest)(nil),           // 32: api_client.GetProxyConfigRequest
+	(*GetProxyConfigResponse)(nil),          // 33: api_client.GetProxyConfigResponse
+	(*StopProxyRequest)(nil),                // 34: api_client.StopProxyRequest
+	(*StopProxyResponse)(nil),               // 35: api_client.StopProxyResponse
+	(*StartProxyRequest)(nil),               // 36: api_client.StartProxyRequest
+	(*StartProxyResponse)(nil),              // 37: api_client.StartProxyResponse
+	(*CreateWorkerRequest)(nil),             // 38: api_client.CreateWorkerRequest
+	(*CreateWorkerResponse)(nil),            // 39: api_client.CreateWorkerResponse
+	(*RemoveWorkerRequest)(nil),             // 40: api_client.RemoveWorkerRequest
+	(*RemoveWorkerResponse)(nil),            // 41: api_client.RemoveWorkerResponse
+	(*UpdateWorkerRequest)(nil),             // 42: api_client.UpdateWorkerRequest
+	(*UpdateWorkerResponse)(nil),            // 43: api_client.UpdateWorkerResponse
+	(*RunWorkerRequest)(nil),                // 44: api_client.RunWorkerRequest
+	(*RunWorkerResponse)(nil),               // 45: api_client.RunWorkerResponse
+	(*StopWorkerRequest)(nil),               // 46: api_client.StopWorkerRequest
+	(*StopWorkerResponse)(nil),              // 47: api_client.StopWorkerResponse
+	(*ListWorkersRequest)(nil),              // 48: api_client.ListWorkersRequest
+	(*ListWorkersResponse)(nil),             // 49: api_client.ListWorkersResponse
+	(*CreateWorkerIngressRequest)(nil),      // 50: api_client.CreateWorkerIngressRequest
+	(*CreateWorkerIngressResponse)(nil),     // 51: api_client.CreateWorkerIngressResponse
+	(*GetWorkerIngressRequest)(nil),         // 52: api_client.GetWorkerIngressRequest
+	(*GetWorkerIngressResponse)(nil),        // 53: api_client.GetWorkerIngressResponse
+	(*GetWorkerRequest)(nil),                // 54: api_client.GetWorkerRequest
+	(*GetWorkerResponse)(nil),               // 55: api_client.GetWorkerResponse
+	(*GetWorkerStatusRequest)(nil),          // 56: api_client.GetWorkerStatusRequest
+	(*GetWorkerStatusResponse)(nil),         // 57: api_client.GetWorkerStatusResponse
+	(*InstallWorkerdRequest)(nil),           // 58: api_client.InstallWorkerdRequest
+	(*InstallWorkerdResponse)(nil),          // 59: api_client.InstallWorkerdResponse
+	(*RedeployWorkerRequest)(nil),           // 60: api_client.RedeployWorkerRequest
+	(*RedeployWorkerResponse)(nil),          // 61: api_client.RedeployWorkerResponse
+	(*UpgradeFrppRequest)(nil),              // 62: api_client.UpgradeFrppRequest
+	(*UpgradeFrppResponse)(nil),             // 63: api_client.UpgradeFrppResponse
+	nil,                                     // 64: api_client.GetWorkerStatusResponse.WorkerStatusEntry
+	(*Status)(nil),                          // 65: common.Status
+	(*Client)(nil),                          // 66: common.Client
+	(*ProxyInfo)(nil),                       // 67: common.ProxyInfo
+	(*ProxyConfig)(nil),                     // 68: common.ProxyConfig
+	(*ProxyWorkingStatus)(nil),              // 69: common.ProxyWorkingStatus
+	(*Worker)(nil),                          // 70: common.Worker
 }
 var file_api_client_proto_depIdxs = []int32{
-	59, // 0: api_client.InitClientResponse.status:type_name -> common.Status
-	59, // 1: api_client.ListClientsResponse.status:type_name -> common.Status
-	60, // 2: api_client.ListClientsResponse.clients:type_name -> common.Client
-	59, // 3: api_client.GetClientResponse.status:type_name -> common.Status
-	60, // 4: api_client.GetClientResponse.client:type_name -> common.Client
-	59, // 5: api_client.DeleteClientResponse.status:type_name -> common.Status
-	59, // 6: api_client.UpdateFRPCResponse.status:type_name -> common.Status
-	59, // 7: api_client.RemoveFRPCResponse.status:type_name -> common.Status
-	59, // 8: api_client.StopFRPCResponse.status:type_name -> common.Status
-	59, // 9: api_client.StartFRPCResponse.status:type_name -> common.Status
-	59, // 10: api_client.GetProxyStatsByClientIDResponse.status:type_name -> common.Status
-	61, // 11: api_client.GetProxyStatsByClientIDResponse.proxy_infos:type_name -> common.ProxyInfo
-	59, // 12: api_client.ListProxyConfigsResponse.status:type_name -> common.Status
-	62, // 13: api_client.ListProxyConfigsResponse.proxy_configs:type_name -> common.ProxyConfig
-	59, // 14: api_client.CreateProxyConfigResponse.status:type_name -> common.Status
-	59, // 15: api_client.DeleteProxyConfigResponse.status:type_name -> common.Status
-	59, // 16: api_client.UpdateProxyConfigResponse.status:type_name -> common.Status
-	59, // 17: api_client.GetProxyConfigResponse.status:type_name -> common.Status
-	62, // 18: api_client.GetProxyConfigResponse.proxy_config:type_name -> common.ProxyConfig
-	63, // 19: api_client.GetProxyConfigResponse.working_status:type_name -> common.ProxyWorkingStatus
-	59, // 20: api_client.StopProxyResponse.status:type_name -> common.Status
-	59, // 21: api_client.StartProxyResponse.status:type_name -> common.Status
-	64, // 22: api_client.CreateWorkerRequest.worker:type_name -> common.Worker
-	59, // 23: api_client.CreateWorkerResponse.status:type_name -> common.Status
-	59, // 24: api_client.RemoveWorkerResponse.status:type_name -> common.Status
-	64, // 25: api_client.UpdateWorkerRequest.worker:type_name -> common.Worker
-	59, // 26: api_client.UpdateWorkerResponse.status:type_name -> common.Status
-	59, // 27: api_client.RunWorkerResponse.status:type_name -> common.Status
-	59, // 28: api_client.StopWorkerResponse.status:type_name -> common.Status
-	59, // 29: api_client.ListWorkersResponse.status:type_name -> common.Status
-	64, // 30: api_client.ListWorkersResponse.workers:type_name -> common.Worker
-	59, // 31: api_client.CreateWorkerIngressResponse.status:type_name -> common.Status
-	59, // 32: api_client.GetWorkerIngressResponse.status:type_name -> common.Status
-	62, // 33: api_client.GetWorkerIngressResponse.proxy_configs:type_name -> common.ProxyConfig
-	59, // 34: api_client.GetWorkerResponse.status:type_name -> common.Status
-	64, // 35: api_client.GetWorkerResponse.worker:type_name -> common.Worker
-	60, // 36: api_client.GetWorkerResponse.clients:type_name -> common.Client
-	59, // 37: api_client.GetWorkerStatusResponse.status:type_name -> common.Status
-	58, // 38: api_client.GetWorkerStatusResponse.worker_status:type_name -> api_client.GetWorkerStatusResponse.WorkerStatusEntry
-	59, // 39: api_client.InstallWorkerdResponse.status:type_name -> common.Status
-	59, // 40: api_client.RedeployWorkerResponse.status:type_name -> common.Status
-	59, // 41: api_client.UpgradeFrppResponse.status:type_name -> common.Status
-	42, // [42:42] is the sub-list for method output_type
-	42, // [42:42] is the sub-list for method input_type
-	42, // [42:42] is the sub-list for extension type_name
-	42, // [42:42] is the sub-list for extension extendee
-	0,  // [0:42] is the sub-list for field type_name
+	65, // 0: api_client.InitClientResponse.status:type_name -> common.Status
+	65, // 1: api_client.ListClientsResponse.status:type_name -> common.Status
+	66, // 2: api_client.ListClientsResponse.clients:type_name -> common.Client
+	65, // 3: api_client.GetClientResponse.status:type_name -> common.Status
+	66, // 4: api_client.GetClientResponse.client:type_name -> common.Client
+	65, // 5: api_client.DeleteClientResponse.status:type_name -> common.Status
+	65, // 6: api_client.UpdateClientInfoResponse.status:type_name -> common.Status
+	65, // 7: api_client.SwapClientSortResponse.status:type_name -> common.Status
+	65, // 8: api_client.UpdateFRPCResponse.status:type_name -> common.Status
+	65, // 9: api_client.RemoveFRPCResponse.status:type_name -> common.Status
+	65, // 10: api_client.StopFRPCResponse.status:type_name -> common.Status
+	65, // 11: api_client.StartFRPCResponse.status:type_name -> common.Status
+	65, // 12: api_client.GetProxyStatsByClientIDResponse.status:type_name -> common.Status
+	67, // 13: api_client.GetProxyStatsByClientIDResponse.proxy_infos:type_name -> common.ProxyInfo
+	65, // 14: api_client.ListProxyConfigsResponse.status:type_name -> common.Status
+	68, // 15: api_client.ListProxyConfigsResponse.proxy_configs:type_name -> common.ProxyConfig
+	65, // 16: api_client.CreateProxyConfigResponse.status:type_name -> common.Status
+	65, // 17: api_client.DeleteProxyConfigResponse.status:type_name -> common.Status
+	65, // 18: api_client.UpdateProxyConfigResponse.status:type_name -> common.Status
+	65, // 19: api_client.UpdateProxyRulesResponse.status:type_name -> common.Status
+	65, // 20: api_client.GetProxyConfigResponse.status:type_name -> common.Status
+	68, // 21: api_client.GetProxyConfigResponse.proxy_config:type_name -> common.ProxyConfig
+	69, // 22: api_client.GetProxyConfigResponse.working_status:type_name -> common.ProxyWorkingStatus
+	65, // 23: api_client.StopProxyResponse.status:type_name -> common.Status
+	65, // 24: api_client.StartProxyResponse.status:type_name -> common.Status
+	70, // 25: api_client.CreateWorkerRequest.worker:type_name -> common.Worker
+	65, // 26: api_client.CreateWorkerResponse.status:type_name -> common.Status
+	65, // 27: api_client.RemoveWorkerResponse.status:type_name -> common.Status
+	70, // 28: api_client.UpdateWorkerRequest.worker:type_name -> common.Worker
+	65, // 29: api_client.UpdateWorkerResponse.status:type_name -> common.Status
+	65, // 30: api_client.RunWorkerResponse.status:type_name -> common.Status
+	65, // 31: api_client.StopWorkerResponse.status:type_name -> common.Status
+	65, // 32: api_client.ListWorkersResponse.status:type_name -> common.Status
+	70, // 33: api_client.ListWorkersResponse.workers:type_name -> common.Worker
+	65, // 34: api_client.CreateWorkerIngressResponse.status:type_name -> common.Status
+	65, // 35: api_client.GetWorkerIngressResponse.status:type_name -> common.Status
+	68, // 36: api_client.GetWorkerIngressResponse.proxy_configs:type_name -> common.ProxyConfig
+	65, // 37: api_client.GetWorkerResponse.status:type_name -> common.Status
+	70, // 38: api_client.GetWorkerResponse.worker:type_name -> common.Worker
+	66, // 39: api_client.GetWorkerResponse.clients:type_name -> common.Client
+	65, // 40: api_client.GetWorkerStatusResponse.status:type_name -> common.Status
+	64, // 41: api_client.GetWorkerStatusResponse.worker_status:type_name -> api_client.GetWorkerStatusResponse.WorkerStatusEntry
+	65, // 42: api_client.InstallWorkerdResponse.status:type_name -> common.Status
+	65, // 43: api_client.RedeployWorkerResponse.status:type_name -> common.Status
+	65, // 44: api_client.UpgradeFrppResponse.status:type_name -> common.Status
+	45, // [45:45] is the sub-list for method output_type
+	45, // [45:45] is the sub-list for method input_type
+	45, // [45:45] is the sub-list for extension type_name
+	45, // [45:45] is the sub-list for extension extendee
+	0,  // [0:45] is the sub-list for field type_name
 }
 
 func init() { file_api_client_proto_init() }
@@ -3662,13 +4084,19 @@ func file_api_client_proto_init() {
 	file_api_client_proto_msgTypes[55].OneofWrappers = []any{}
 	file_api_client_proto_msgTypes[56].OneofWrappers = []any{}
 	file_api_client_proto_msgTypes[57].OneofWrappers = []any{}
+	file_api_client_proto_msgTypes[58].OneofWrappers = []any{}
+	file_api_client_proto_msgTypes[59].OneofWrappers = []any{}
+	file_api_client_proto_msgTypes[60].OneofWrappers = []any{}
+	file_api_client_proto_msgTypes[61].OneofWrappers = []any{}
+	file_api_client_proto_msgTypes[62].OneofWrappers = []any{}
+	file_api_client_proto_msgTypes[63].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_client_proto_rawDesc), len(file_api_client_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   59,
+			NumMessages:   65,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

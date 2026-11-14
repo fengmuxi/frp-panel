@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/VaalaCat/frp-panel/common"
 	"github.com/VaalaCat/frp-panel/defs"
@@ -186,7 +187,19 @@ func UpdateFrpcHander(c *app.Context, req *pb.UpdateFRPCRequest) (*pb.UpdateFRPC
 	cli.ConfigContent = rawCliConf
 	cli.ServerID = serverID
 	if req.Comment != nil {
-		cli.Comment = req.GetComment()
+		newComment := strings.TrimSpace(req.GetComment())
+		// 名称不允许重复（排除自身）
+		dupCount, dupErr := q.CountClientsByComment(userInfo, newComment, cli.ClientID)
+		if dupErr != nil {
+			logger.Logger(c).WithError(dupErr).Errorf("count clients by comment failed, comment: [%s]", newComment)
+			return nil, dupErr
+		}
+		if dupCount > 0 {
+			return &pb.UpdateFRPCResponse{
+				Status: &pb.Status{Code: pb.RespCode_RESP_CODE_INVALID, Message: "client name already exists"},
+			}, nil
+		}
+		cli.Comment = newComment
 	}
 
 	if err := m.UpdateClient(userInfo, cli); err != nil {

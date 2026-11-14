@@ -31,6 +31,7 @@ type ClientEntity struct {
 	OriginClientID string `json:"origin_client_id" gorm:"index"`
 	FrpsUrl        string `json:"frps_url" gorm:"index"`
 	Ephemeral      bool   `json:"ephemeral" gorm:"index"`
+	SortIndex      int    `json:"sort_index" gorm:"not null;default:0"` // 用户自定义排序序号，0 表示未设置（排在最后）
 
 	LastSeenAt *time.Time `json:"last_seen_at" gorm:"index"`
 	CreatedAt  time.Time
@@ -91,6 +92,7 @@ func (c *ClientEntity) ToPB() *pb.Client {
 		OriginClientId: &c.OriginClientID,
 		FrpsUrl:        &c.FrpsUrl,
 		Ephemeral:      &c.Ephemeral,
+		SortIndex:      lo.ToPtr(int32(c.SortIndex)),
 	}
 	if c.LastSeenAt != nil {
 		resp.LastSeenAt = lo.ToPtr(c.LastSeenAt.UnixMilli())

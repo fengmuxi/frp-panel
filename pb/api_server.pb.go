@@ -437,6 +437,208 @@ func (x *DeleteServerResponse) GetStatus() *Status {
 	return nil
 }
 
+// 轻量更新服务端名称/备注与排序序号（不触碰 frps 配置）
+type UpdateServerInfoRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ServerId      *string                `protobuf:"bytes,1,opt,name=server_id,json=serverId,proto3,oneof" json:"server_id,omitempty"`
+	Comment       *string                `protobuf:"bytes,2,opt,name=comment,proto3,oneof" json:"comment,omitempty"`                       // 名称/备注，不传则不修改
+	SortIndex     *int32                 `protobuf:"varint,3,opt,name=sort_index,json=sortIndex,proto3,oneof" json:"sort_index,omitempty"` // 排序序号，不传则不修改，0 表示排到最后
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateServerInfoRequest) Reset() {
+	*x = UpdateServerInfoRequest{}
+	mi := &file_api_server_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateServerInfoRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateServerInfoRequest) ProtoMessage() {}
+
+func (x *UpdateServerInfoRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_server_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateServerInfoRequest.ProtoReflect.Descriptor instead.
+func (*UpdateServerInfoRequest) Descriptor() ([]byte, []int) {
+	return file_api_server_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *UpdateServerInfoRequest) GetServerId() string {
+	if x != nil && x.ServerId != nil {
+		return *x.ServerId
+	}
+	return ""
+}
+
+func (x *UpdateServerInfoRequest) GetComment() string {
+	if x != nil && x.Comment != nil {
+		return *x.Comment
+	}
+	return ""
+}
+
+func (x *UpdateServerInfoRequest) GetSortIndex() int32 {
+	if x != nil && x.SortIndex != nil {
+		return *x.SortIndex
+	}
+	return 0
+}
+
+type UpdateServerInfoResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateServerInfoResponse) Reset() {
+	*x = UpdateServerInfoResponse{}
+	mi := &file_api_server_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateServerInfoResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateServerInfoResponse) ProtoMessage() {}
+
+func (x *UpdateServerInfoResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_server_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateServerInfoResponse.ProtoReflect.Descriptor instead.
+func (*UpdateServerInfoResponse) Descriptor() ([]byte, []int) {
+	return file_api_server_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *UpdateServerInfoResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+// 与相邻项交换排序位置（跨分页由服务端处理）
+type SwapServerSortRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ServerId      *string                `protobuf:"bytes,1,opt,name=server_id,json=serverId,proto3,oneof" json:"server_id,omitempty"`
+	Up            *bool                  `protobuf:"varint,2,opt,name=up,proto3,oneof" json:"up,omitempty"` // true=与上一项交换，false=与下一项交换
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SwapServerSortRequest) Reset() {
+	*x = SwapServerSortRequest{}
+	mi := &file_api_server_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SwapServerSortRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SwapServerSortRequest) ProtoMessage() {}
+
+func (x *SwapServerSortRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_server_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SwapServerSortRequest.ProtoReflect.Descriptor instead.
+func (*SwapServerSortRequest) Descriptor() ([]byte, []int) {
+	return file_api_server_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *SwapServerSortRequest) GetServerId() string {
+	if x != nil && x.ServerId != nil {
+		return *x.ServerId
+	}
+	return ""
+}
+
+func (x *SwapServerSortRequest) GetUp() bool {
+	if x != nil && x.Up != nil {
+		return *x.Up
+	}
+	return false
+}
+
+type SwapServerSortResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *Status                `protobuf:"bytes,1,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SwapServerSortResponse) Reset() {
+	*x = SwapServerSortResponse{}
+	mi := &file_api_server_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SwapServerSortResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SwapServerSortResponse) ProtoMessage() {}
+
+func (x *SwapServerSortResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_server_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SwapServerSortResponse.ProtoReflect.Descriptor instead.
+func (*SwapServerSortResponse) Descriptor() ([]byte, []int) {
+	return file_api_server_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *SwapServerSortResponse) GetStatus() *Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
 type UpdateFRPSRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ServerId      *string                `protobuf:"bytes,1,opt,name=server_id,json=serverId,proto3,oneof" json:"server_id,omitempty"`
@@ -450,7 +652,7 @@ type UpdateFRPSRequest struct {
 
 func (x *UpdateFRPSRequest) Reset() {
 	*x = UpdateFRPSRequest{}
-	mi := &file_api_server_proto_msgTypes[8]
+	mi := &file_api_server_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -462,7 +664,7 @@ func (x *UpdateFRPSRequest) String() string {
 func (*UpdateFRPSRequest) ProtoMessage() {}
 
 func (x *UpdateFRPSRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_server_proto_msgTypes[8]
+	mi := &file_api_server_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -475,7 +677,7 @@ func (x *UpdateFRPSRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateFRPSRequest.ProtoReflect.Descriptor instead.
 func (*UpdateFRPSRequest) Descriptor() ([]byte, []int) {
-	return file_api_server_proto_rawDescGZIP(), []int{8}
+	return file_api_server_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *UpdateFRPSRequest) GetServerId() string {
@@ -522,7 +724,7 @@ type UpdateFRPSResponse struct {
 
 func (x *UpdateFRPSResponse) Reset() {
 	*x = UpdateFRPSResponse{}
-	mi := &file_api_server_proto_msgTypes[9]
+	mi := &file_api_server_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -534,7 +736,7 @@ func (x *UpdateFRPSResponse) String() string {
 func (*UpdateFRPSResponse) ProtoMessage() {}
 
 func (x *UpdateFRPSResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_server_proto_msgTypes[9]
+	mi := &file_api_server_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -547,7 +749,7 @@ func (x *UpdateFRPSResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateFRPSResponse.ProtoReflect.Descriptor instead.
 func (*UpdateFRPSResponse) Descriptor() ([]byte, []int) {
-	return file_api_server_proto_rawDescGZIP(), []int{9}
+	return file_api_server_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *UpdateFRPSResponse) GetStatus() *Status {
@@ -566,7 +768,7 @@ type RemoveFRPSRequest struct {
 
 func (x *RemoveFRPSRequest) Reset() {
 	*x = RemoveFRPSRequest{}
-	mi := &file_api_server_proto_msgTypes[10]
+	mi := &file_api_server_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -578,7 +780,7 @@ func (x *RemoveFRPSRequest) String() string {
 func (*RemoveFRPSRequest) ProtoMessage() {}
 
 func (x *RemoveFRPSRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_server_proto_msgTypes[10]
+	mi := &file_api_server_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -591,7 +793,7 @@ func (x *RemoveFRPSRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveFRPSRequest.ProtoReflect.Descriptor instead.
 func (*RemoveFRPSRequest) Descriptor() ([]byte, []int) {
-	return file_api_server_proto_rawDescGZIP(), []int{10}
+	return file_api_server_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *RemoveFRPSRequest) GetServerId() string {
@@ -610,7 +812,7 @@ type RemoveFRPSResponse struct {
 
 func (x *RemoveFRPSResponse) Reset() {
 	*x = RemoveFRPSResponse{}
-	mi := &file_api_server_proto_msgTypes[11]
+	mi := &file_api_server_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -622,7 +824,7 @@ func (x *RemoveFRPSResponse) String() string {
 func (*RemoveFRPSResponse) ProtoMessage() {}
 
 func (x *RemoveFRPSResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_server_proto_msgTypes[11]
+	mi := &file_api_server_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -635,7 +837,7 @@ func (x *RemoveFRPSResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveFRPSResponse.ProtoReflect.Descriptor instead.
 func (*RemoveFRPSResponse) Descriptor() ([]byte, []int) {
-	return file_api_server_proto_rawDescGZIP(), []int{11}
+	return file_api_server_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *RemoveFRPSResponse) GetStatus() *Status {
@@ -654,7 +856,7 @@ type StopFRPSRequest struct {
 
 func (x *StopFRPSRequest) Reset() {
 	*x = StopFRPSRequest{}
-	mi := &file_api_server_proto_msgTypes[12]
+	mi := &file_api_server_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -666,7 +868,7 @@ func (x *StopFRPSRequest) String() string {
 func (*StopFRPSRequest) ProtoMessage() {}
 
 func (x *StopFRPSRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_server_proto_msgTypes[12]
+	mi := &file_api_server_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -679,7 +881,7 @@ func (x *StopFRPSRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StopFRPSRequest.ProtoReflect.Descriptor instead.
 func (*StopFRPSRequest) Descriptor() ([]byte, []int) {
-	return file_api_server_proto_rawDescGZIP(), []int{12}
+	return file_api_server_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *StopFRPSRequest) GetServerId() string {
@@ -698,7 +900,7 @@ type StopFRPSResponse struct {
 
 func (x *StopFRPSResponse) Reset() {
 	*x = StopFRPSResponse{}
-	mi := &file_api_server_proto_msgTypes[13]
+	mi := &file_api_server_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -710,7 +912,7 @@ func (x *StopFRPSResponse) String() string {
 func (*StopFRPSResponse) ProtoMessage() {}
 
 func (x *StopFRPSResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_server_proto_msgTypes[13]
+	mi := &file_api_server_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -723,7 +925,7 @@ func (x *StopFRPSResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StopFRPSResponse.ProtoReflect.Descriptor instead.
 func (*StopFRPSResponse) Descriptor() ([]byte, []int) {
-	return file_api_server_proto_rawDescGZIP(), []int{13}
+	return file_api_server_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *StopFRPSResponse) GetStatus() *Status {
@@ -742,7 +944,7 @@ type StartFRPSRequest struct {
 
 func (x *StartFRPSRequest) Reset() {
 	*x = StartFRPSRequest{}
-	mi := &file_api_server_proto_msgTypes[14]
+	mi := &file_api_server_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -754,7 +956,7 @@ func (x *StartFRPSRequest) String() string {
 func (*StartFRPSRequest) ProtoMessage() {}
 
 func (x *StartFRPSRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_server_proto_msgTypes[14]
+	mi := &file_api_server_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -767,7 +969,7 @@ func (x *StartFRPSRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartFRPSRequest.ProtoReflect.Descriptor instead.
 func (*StartFRPSRequest) Descriptor() ([]byte, []int) {
-	return file_api_server_proto_rawDescGZIP(), []int{14}
+	return file_api_server_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *StartFRPSRequest) GetServerId() string {
@@ -786,7 +988,7 @@ type StartFRPSResponse struct {
 
 func (x *StartFRPSResponse) Reset() {
 	*x = StartFRPSResponse{}
-	mi := &file_api_server_proto_msgTypes[15]
+	mi := &file_api_server_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -798,7 +1000,7 @@ func (x *StartFRPSResponse) String() string {
 func (*StartFRPSResponse) ProtoMessage() {}
 
 func (x *StartFRPSResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_server_proto_msgTypes[15]
+	mi := &file_api_server_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -811,7 +1013,7 @@ func (x *StartFRPSResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartFRPSResponse.ProtoReflect.Descriptor instead.
 func (*StartFRPSResponse) Descriptor() ([]byte, []int) {
-	return file_api_server_proto_rawDescGZIP(), []int{15}
+	return file_api_server_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *StartFRPSResponse) GetStatus() *Status {
@@ -830,7 +1032,7 @@ type GetProxyStatsByServerIDRequest struct {
 
 func (x *GetProxyStatsByServerIDRequest) Reset() {
 	*x = GetProxyStatsByServerIDRequest{}
-	mi := &file_api_server_proto_msgTypes[16]
+	mi := &file_api_server_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -842,7 +1044,7 @@ func (x *GetProxyStatsByServerIDRequest) String() string {
 func (*GetProxyStatsByServerIDRequest) ProtoMessage() {}
 
 func (x *GetProxyStatsByServerIDRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_server_proto_msgTypes[16]
+	mi := &file_api_server_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -855,7 +1057,7 @@ func (x *GetProxyStatsByServerIDRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProxyStatsByServerIDRequest.ProtoReflect.Descriptor instead.
 func (*GetProxyStatsByServerIDRequest) Descriptor() ([]byte, []int) {
-	return file_api_server_proto_rawDescGZIP(), []int{16}
+	return file_api_server_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *GetProxyStatsByServerIDRequest) GetServerId() string {
@@ -875,7 +1077,7 @@ type GetProxyStatsByServerIDResponse struct {
 
 func (x *GetProxyStatsByServerIDResponse) Reset() {
 	*x = GetProxyStatsByServerIDResponse{}
-	mi := &file_api_server_proto_msgTypes[17]
+	mi := &file_api_server_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -887,7 +1089,7 @@ func (x *GetProxyStatsByServerIDResponse) String() string {
 func (*GetProxyStatsByServerIDResponse) ProtoMessage() {}
 
 func (x *GetProxyStatsByServerIDResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_server_proto_msgTypes[17]
+	mi := &file_api_server_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -900,7 +1102,7 @@ func (x *GetProxyStatsByServerIDResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProxyStatsByServerIDResponse.ProtoReflect.Descriptor instead.
 func (*GetProxyStatsByServerIDResponse) Descriptor() ([]byte, []int) {
-	return file_api_server_proto_rawDescGZIP(), []int{17}
+	return file_api_server_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *GetProxyStatsByServerIDResponse) GetStatus() *Status {
@@ -969,6 +1171,28 @@ const file_api_server_proto_rawDesc = "" +
 	"_server_id\"N\n" +
 	"\x14DeleteServerResponse\x12+\n" +
 	"\x06status\x18\x01 \x01(\v2\x0e.common.StatusH\x00R\x06status\x88\x01\x01B\t\n" +
+	"\a_status\"\xa7\x01\n" +
+	"\x17UpdateServerInfoRequest\x12 \n" +
+	"\tserver_id\x18\x01 \x01(\tH\x00R\bserverId\x88\x01\x01\x12\x1d\n" +
+	"\acomment\x18\x02 \x01(\tH\x01R\acomment\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"sort_index\x18\x03 \x01(\x05H\x02R\tsortIndex\x88\x01\x01B\f\n" +
+	"\n" +
+	"_server_idB\n" +
+	"\n" +
+	"\b_commentB\r\n" +
+	"\v_sort_index\"R\n" +
+	"\x18UpdateServerInfoResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x0e.common.StatusH\x00R\x06status\x88\x01\x01B\t\n" +
+	"\a_status\"c\n" +
+	"\x15SwapServerSortRequest\x12 \n" +
+	"\tserver_id\x18\x01 \x01(\tH\x00R\bserverId\x88\x01\x01\x12\x13\n" +
+	"\x02up\x18\x02 \x01(\bH\x01R\x02up\x88\x01\x01B\f\n" +
+	"\n" +
+	"_server_idB\x05\n" +
+	"\x03_up\"P\n" +
+	"\x16SwapServerSortResponse\x12+\n" +
+	"\x06status\x18\x01 \x01(\v2\x0e.common.StatusH\x00R\x06status\x88\x01\x01B\t\n" +
 	"\a_status\"\xe3\x01\n" +
 	"\x11UpdateFRPSRequest\x12 \n" +
 	"\tserver_id\x18\x01 \x01(\tH\x00R\bserverId\x88\x01\x01\x12\x1b\n" +
@@ -1029,7 +1253,7 @@ func file_api_server_proto_rawDescGZIP() []byte {
 	return file_api_server_proto_rawDescData
 }
 
-var file_api_server_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_api_server_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_api_server_proto_goTypes = []any{
 	(*InitServerRequest)(nil),               // 0: api_server.InitServerRequest
 	(*InitServerResponse)(nil),              // 1: api_server.InitServerResponse
@@ -1039,38 +1263,44 @@ var file_api_server_proto_goTypes = []any{
 	(*GetServerResponse)(nil),               // 5: api_server.GetServerResponse
 	(*DeleteServerRequest)(nil),             // 6: api_server.DeleteServerRequest
 	(*DeleteServerResponse)(nil),            // 7: api_server.DeleteServerResponse
-	(*UpdateFRPSRequest)(nil),               // 8: api_server.UpdateFRPSRequest
-	(*UpdateFRPSResponse)(nil),              // 9: api_server.UpdateFRPSResponse
-	(*RemoveFRPSRequest)(nil),               // 10: api_server.RemoveFRPSRequest
-	(*RemoveFRPSResponse)(nil),              // 11: api_server.RemoveFRPSResponse
-	(*StopFRPSRequest)(nil),                 // 12: api_server.StopFRPSRequest
-	(*StopFRPSResponse)(nil),                // 13: api_server.StopFRPSResponse
-	(*StartFRPSRequest)(nil),                // 14: api_server.StartFRPSRequest
-	(*StartFRPSResponse)(nil),               // 15: api_server.StartFRPSResponse
-	(*GetProxyStatsByServerIDRequest)(nil),  // 16: api_server.GetProxyStatsByServerIDRequest
-	(*GetProxyStatsByServerIDResponse)(nil), // 17: api_server.GetProxyStatsByServerIDResponse
-	(*Status)(nil),                          // 18: common.Status
-	(*Server)(nil),                          // 19: common.Server
-	(*ProxyInfo)(nil),                       // 20: common.ProxyInfo
+	(*UpdateServerInfoRequest)(nil),         // 8: api_server.UpdateServerInfoRequest
+	(*UpdateServerInfoResponse)(nil),        // 9: api_server.UpdateServerInfoResponse
+	(*SwapServerSortRequest)(nil),           // 10: api_server.SwapServerSortRequest
+	(*SwapServerSortResponse)(nil),          // 11: api_server.SwapServerSortResponse
+	(*UpdateFRPSRequest)(nil),               // 12: api_server.UpdateFRPSRequest
+	(*UpdateFRPSResponse)(nil),              // 13: api_server.UpdateFRPSResponse
+	(*RemoveFRPSRequest)(nil),               // 14: api_server.RemoveFRPSRequest
+	(*RemoveFRPSResponse)(nil),              // 15: api_server.RemoveFRPSResponse
+	(*StopFRPSRequest)(nil),                 // 16: api_server.StopFRPSRequest
+	(*StopFRPSResponse)(nil),                // 17: api_server.StopFRPSResponse
+	(*StartFRPSRequest)(nil),                // 18: api_server.StartFRPSRequest
+	(*StartFRPSResponse)(nil),               // 19: api_server.StartFRPSResponse
+	(*GetProxyStatsByServerIDRequest)(nil),  // 20: api_server.GetProxyStatsByServerIDRequest
+	(*GetProxyStatsByServerIDResponse)(nil), // 21: api_server.GetProxyStatsByServerIDResponse
+	(*Status)(nil),                          // 22: common.Status
+	(*Server)(nil),                          // 23: common.Server
+	(*ProxyInfo)(nil),                       // 24: common.ProxyInfo
 }
 var file_api_server_proto_depIdxs = []int32{
-	18, // 0: api_server.InitServerResponse.status:type_name -> common.Status
-	18, // 1: api_server.ListServersResponse.status:type_name -> common.Status
-	19, // 2: api_server.ListServersResponse.servers:type_name -> common.Server
-	18, // 3: api_server.GetServerResponse.status:type_name -> common.Status
-	19, // 4: api_server.GetServerResponse.server:type_name -> common.Server
-	18, // 5: api_server.DeleteServerResponse.status:type_name -> common.Status
-	18, // 6: api_server.UpdateFRPSResponse.status:type_name -> common.Status
-	18, // 7: api_server.RemoveFRPSResponse.status:type_name -> common.Status
-	18, // 8: api_server.StopFRPSResponse.status:type_name -> common.Status
-	18, // 9: api_server.StartFRPSResponse.status:type_name -> common.Status
-	18, // 10: api_server.GetProxyStatsByServerIDResponse.status:type_name -> common.Status
-	20, // 11: api_server.GetProxyStatsByServerIDResponse.proxy_infos:type_name -> common.ProxyInfo
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	22, // 0: api_server.InitServerResponse.status:type_name -> common.Status
+	22, // 1: api_server.ListServersResponse.status:type_name -> common.Status
+	23, // 2: api_server.ListServersResponse.servers:type_name -> common.Server
+	22, // 3: api_server.GetServerResponse.status:type_name -> common.Status
+	23, // 4: api_server.GetServerResponse.server:type_name -> common.Server
+	22, // 5: api_server.DeleteServerResponse.status:type_name -> common.Status
+	22, // 6: api_server.UpdateServerInfoResponse.status:type_name -> common.Status
+	22, // 7: api_server.SwapServerSortResponse.status:type_name -> common.Status
+	22, // 8: api_server.UpdateFRPSResponse.status:type_name -> common.Status
+	22, // 9: api_server.RemoveFRPSResponse.status:type_name -> common.Status
+	22, // 10: api_server.StopFRPSResponse.status:type_name -> common.Status
+	22, // 11: api_server.StartFRPSResponse.status:type_name -> common.Status
+	22, // 12: api_server.GetProxyStatsByServerIDResponse.status:type_name -> common.Status
+	24, // 13: api_server.GetProxyStatsByServerIDResponse.proxy_infos:type_name -> common.ProxyInfo
+	14, // [14:14] is the sub-list for method output_type
+	14, // [14:14] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_api_server_proto_init() }
@@ -1097,13 +1327,17 @@ func file_api_server_proto_init() {
 	file_api_server_proto_msgTypes[15].OneofWrappers = []any{}
 	file_api_server_proto_msgTypes[16].OneofWrappers = []any{}
 	file_api_server_proto_msgTypes[17].OneofWrappers = []any{}
+	file_api_server_proto_msgTypes[18].OneofWrappers = []any{}
+	file_api_server_proto_msgTypes[19].OneofWrappers = []any{}
+	file_api_server_proto_msgTypes[20].OneofWrappers = []any{}
+	file_api_server_proto_msgTypes[21].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_server_proto_rawDesc), len(file_api_server_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   18,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

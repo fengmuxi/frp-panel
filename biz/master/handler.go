@@ -57,6 +57,8 @@ func ConfigureRouter(appInstance app.Application, router *gin.Engine) {
 			clientRouter.POST("/init", app.Wrapper(appInstance, client.InitClientHandler))
 			clientRouter.POST("/delete", app.Wrapper(appInstance, client.DeleteClientHandler))
 			clientRouter.POST("/list", app.Wrapper(appInstance, client.ListClientsHandler))
+			clientRouter.POST("/update_info", app.Wrapper(appInstance, client.UpdateClientInfoHandler))
+			clientRouter.POST("/swap_sort", app.Wrapper(appInstance, client.SwapClientSortHandler))
 			clientRouter.POST("/install_workerd", app.Wrapper(appInstance, worker.InstallWorkerd))
 			clientRouter.POST("/upgrade", app.Wrapper(appInstance, client.UpgradeFrppHandler))
 		}
@@ -66,6 +68,8 @@ func ConfigureRouter(appInstance app.Application, router *gin.Engine) {
 			serverRouter.POST("/init", app.Wrapper(appInstance, server.InitServerHandler))
 			serverRouter.POST("/delete", app.Wrapper(appInstance, server.DeleteServerHandler))
 			serverRouter.POST("/list", app.Wrapper(appInstance, server.ListServersHandler))
+			serverRouter.POST("/update_info", app.Wrapper(appInstance, server.UpdateServerInfoHandler))
+			serverRouter.POST("/swap_sort", app.Wrapper(appInstance, server.SwapServerSortHandler))
 		}
 		frpcRouter := v1.Group("/frpc")
 		{

@@ -16,9 +16,9 @@ type RespType interface {
 		pb.UpdateFRPSResponse | pb.RemoveFRPSResponse |
 		pb.CommonResponse | pb.RegisterResponse | pb.LoginResponse |
 		pb.InitClientResponse | pb.ListClientsResponse | pb.GetClientResponse |
-		pb.DeleteClientResponse |
+		pb.DeleteClientResponse | pb.UpdateClientInfoResponse | pb.SwapClientSortResponse |
 		pb.InitServerResponse | pb.ListServersResponse | pb.GetServerResponse |
-		pb.DeleteServerResponse |
+		pb.DeleteServerResponse | pb.UpdateServerInfoResponse | pb.SwapServerSortResponse |
 		pb.GetUserInfoResponse | pb.UpdateUserInfoResponse |
 		pb.GetPlatformInfoResponse | pb.GetClientsStatusResponse |
 		pb.GetClientCertResponse |

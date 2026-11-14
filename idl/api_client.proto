@@ -6,8 +6,9 @@ option go_package="../pb";
 
 
 message InitClientRequest {
-  optional string client_id = 1;
+  optional string client_id = 1; // 可不传，后端自动生成唯一 ID
   optional bool ephemeral = 2;
+  optional string comment = 3; // 名称，必填，不允许重复
 }
 
 message InitClientResponse {
@@ -42,6 +43,27 @@ message DeleteClientRequest {
 }
 
 message DeleteClientResponse {
+  optional common.Status status = 1;
+}
+
+// 轻量更新客户端名称/备注与排序序号（不触碰 frpc 配置）
+message UpdateClientInfoRequest {
+  optional string client_id = 1;
+  optional string comment = 2;   // 名称/备注，不传则不修改
+  optional int32 sort_index = 3; // 排序序号，不传则不修改，0 表示排到最后
+}
+
+message UpdateClientInfoResponse {
+  optional common.Status status = 1;
+}
+
+// 与相邻项交换排序位置（跨分页由服务端处理）
+message SwapClientSortRequest {
+  optional string client_id = 1;
+  optional bool up = 2; // true=与上一项交换，false=与下一项交换
+}
+
+message SwapClientSortResponse {
   optional common.Status status = 1;
 }
 
@@ -133,6 +155,23 @@ message UpdateProxyConfigRequest {
 }
 
 message UpdateProxyConfigResponse {
+  optional common.Status status = 1;
+}
+
+// 更新隧道自动规则（定时开关 + 流量限额），只修改面板元数据，不触碰 frp 配置
+message UpdateProxyRulesRequest {
+  optional string client_id = 1;
+  optional string server_id = 2;
+  optional string name = 3;
+  optional bool schedule_enabled = 4;   // 是否启用定时开关
+  optional string schedule_start = 5;   // HH:MM 开启时间
+  optional string schedule_end = 6;     // HH:MM 关闭时间，start > end 表示跨天
+  repeated int32 schedule_days = 7;     // 生效周几，0=周日 ~ 6=周六，多选
+  optional string quota_type = 8;       // day/week/month，空=未启用
+  optional int64 quota_limit = 9;       // 限额字节数，0=未启用
+}
+
+message UpdateProxyRulesResponse {
   optional common.Status status = 1;
 }
 

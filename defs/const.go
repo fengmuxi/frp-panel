@@ -64,6 +64,7 @@ const (
 
 const (
 	DefaultServerID    = "default"
+	DefaultServerName  = "默认服务端" // 默认服务端的兜底名称（界面直接展示）
 	DefaultAdminUserID = 1
 	DefaultServiceName = "frpp"
 )

@@ -68,6 +68,7 @@ func ListClientsHandler(ctx *app.Context, req *pb.ListClientsRequest) (*pb.ListC
 			Comment:   lo.ToPtr(c.Comment),
 			ClientIds: clientIDs,
 			Ephemeral: lo.ToPtr(c.Ephemeral),
+			SortIndex: lo.ToPtr(int32(c.SortIndex)),
 		}
 		if c.LastSeenAt != nil {
 			respCli.LastSeenAt = lo.ToPtr(c.LastSeenAt.UnixMilli())

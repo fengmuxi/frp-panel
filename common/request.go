@@ -15,9 +15,9 @@ type ReqType interface {
 		pb.UpdateFRPSRequest | pb.RemoveFRPSRequest |
 		pb.CommonRequest | pb.RegisterRequest | pb.LoginRequest |
 		pb.InitClientRequest | pb.ListClientsRequest | pb.GetClientRequest |
-		pb.DeleteClientRequest |
+		pb.DeleteClientRequest | pb.UpdateClientInfoRequest | pb.SwapClientSortRequest |
 		pb.InitServerRequest | pb.ListServersRequest | pb.GetServerRequest |
-		pb.DeleteServerRequest |
+		pb.DeleteServerRequest | pb.UpdateServerInfoRequest | pb.SwapServerSortRequest |
 		pb.GetUserInfoRequest | pb.UpdateUserInfoRequest |
 		pb.GetPlatformInfoRequest | pb.GetClientsStatusRequest |
 		pb.GetClientCertRequest |

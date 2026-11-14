@@ -34,12 +34,13 @@ func GetServerHandler(c *app.Context, req *pb.GetServerRequest) (*pb.GetServerRe
 	return &pb.GetServerResponse{
 		Status: &pb.Status{Code: pb.RespCode_RESP_CODE_SUCCESS, Message: "ok"},
 		Server: &pb.Server{
-			Id:       lo.ToPtr(serverEntity.ServerID),
-			Config:   lo.ToPtr(string(serverEntity.ConfigContent)),
-			Secret:   lo.ToPtr(serverEntity.ConnectSecret),
-			Comment:  lo.ToPtr(serverEntity.Comment),
-			Ip:       lo.ToPtr(serverEntity.ServerIP),
-			FrpsUrls: serverEntity.FrpsUrls,
+			Id:        lo.ToPtr(serverEntity.ServerID),
+			Config:    lo.ToPtr(string(serverEntity.ConfigContent)),
+			Secret:    lo.ToPtr(serverEntity.ConnectSecret),
+			Comment:   lo.ToPtr(serverEntity.Comment),
+			Ip:        lo.ToPtr(serverEntity.ServerIP),
+			FrpsUrls:  serverEntity.FrpsUrls,
+			SortIndex: lo.ToPtr(int32(serverEntity.SortIndex)),
 		},
 	}, nil
 }

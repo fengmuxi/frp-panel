@@ -23,6 +23,7 @@ type ServerEntity struct {
 	ConnectSecret string            `json:"connect_secret" gorm:"not null"`
 	Comment       string            `json:"comment"`
 	FrpsUrls      GormArray[string] `json:"frps_urls"`
+	SortIndex     int               `json:"sort_index" gorm:"not null;default:0"` // 用户自定义排序序号，0 表示未设置（排在最后）
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 	DeletedAt     gorm.DeletedAt `gorm:"index"`

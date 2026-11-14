@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/VaalaCat/frp-panel/common"
 	"github.com/VaalaCat/frp-panel/conf"
@@ -61,7 +62,22 @@ func UpdateFrpsHander(c *app.Context, req *pb.UpdateFRPSRequest) (*pb.UpdateFRPS
 		return nil, err
 	}
 
-	srv.Comment = req.GetComment()
+	// optional 字段：未传则保持原值（避免配置表单未携带名称时被清空）
+	if req.Comment != nil {
+		newComment := strings.TrimSpace(req.GetComment())
+		// 名称不允许重复（排除自身；默认服务端归属 user_id=0，查重时单独纳入）
+		dupCount, dupErr := q.CountServersByComment(userInfo, newComment, serverID)
+		if dupErr != nil {
+			logger.Logger(c).WithError(dupErr).Errorf("count servers by comment failed, comment: [%s]", newComment)
+			return nil, dupErr
+		}
+		if dupCount > 0 {
+			return &pb.UpdateFRPSResponse{
+				Status: &pb.Status{Code: pb.RespCode_RESP_CODE_INVALID, Message: "server name already exists"},
+			}, nil
+		}
+		srv.Comment = newComment
+	}
 	if len(req.GetServerIp()) > 0 {
 		srv.ServerIP = req.GetServerIp()
 	}
