@@ -87,7 +87,7 @@ steps:
         - linux/amd64
       build_args:
         - ARCH=amd64
-      repo: vaalacat/frp-panel
+      repo: fengmuxi/frp-panel
       tags:
         - amd64
       registry:
@@ -117,7 +117,7 @@ steps:
         - linux/arm64
       build_args:
         - ARCH=arm64
-      repo: vaalacat/frp-panel
+      repo: fengmuxi/frp-panel
       tags:
         - arm64
       registry:

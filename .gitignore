@@ -1,4 +1,6 @@
 .vscode
+.trae
+.zcode
 __debug*
 .env
 tmp
@@ -7,6 +9,8 @@ frp-panel
 out
 cmd/out
 frp-panel*
+/frpp
+/frppc
 dist/
 
 /coverage
