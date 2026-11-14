@@ -1140,7 +1140,8 @@
       "outRatio": "出站佔比"
     },
     "trend": {
-      "title": "流量趨勢（日）"
+      "title": "流量趨勢（日）",
+      "title_minute": "流量趨勢（分鐘）"
     },
     "top": {
       "title": "隧道流量 Top10",

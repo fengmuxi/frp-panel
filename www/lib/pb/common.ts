@@ -208,6 +208,10 @@ export interface ProxyInfo {
      * @generated from protobuf field: optional bool first_sync = 9;
      */
     firstSync?: boolean;
+    /**
+     * @generated from protobuf field: optional string stats_date = 10;
+     */
+    statsDate?: string; // frps 节点本地自然日（YYYY-MM-DD），today_* 计数的归属日；空表示旧节点未上报
 }
 /**
  * @generated from protobuf message common.ProxyConfig
@@ -896,7 +900,8 @@ class ProxyInfo$Type extends MessageType<ProxyInfo> {
             { no: 6, name: "today_traffic_out", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 7, name: "history_traffic_in", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 8, name: "history_traffic_out", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 9, name: "first_sync", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ }
+            { no: 9, name: "first_sync", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
+            { no: 10, name: "stats_date", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<ProxyInfo>): ProxyInfo {
@@ -937,6 +942,9 @@ class ProxyInfo$Type extends MessageType<ProxyInfo> {
                 case /* optional bool first_sync */ 9:
                     message.firstSync = reader.bool();
                     break;
+                case /* optional string stats_date */ 10:
+                    message.statsDate = reader.string();
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -976,6 +984,9 @@ class ProxyInfo$Type extends MessageType<ProxyInfo> {
         /* optional bool first_sync = 9; */
         if (message.firstSync !== undefined)
             writer.tag(9, WireType.Varint).bool(message.firstSync);
+        /* optional string stats_date = 10; */
+        if (message.statsDate !== undefined)
+            writer.tag(10, WireType.LengthDelimited).string(message.statsDate);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

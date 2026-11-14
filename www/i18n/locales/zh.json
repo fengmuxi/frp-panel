@@ -1166,6 +1166,7 @@
     "trend": {
       "title": "流量趋势（日）",
       "title_hour": "流量趋势（小时）",
+      "title_minute": "流量趋势（分钟）",
       "title_month": "流量趋势（月）"
     },
     "top": {

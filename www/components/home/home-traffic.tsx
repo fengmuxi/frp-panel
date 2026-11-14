@@ -82,10 +82,10 @@ export function HomeTraffic() {
   const totalIn = Number(query.data?.totalIn ?? 0n)
   const totalOut = Number(query.data?.totalOut ?? 0n)
 
-  // 趋势图粒度：今日/昨日 → 小时，本年 → 月，其余（本周/本月/自定义）→ 日
+  // 趋势图粒度：今日/昨日 → 分钟（推送增量流水聚合，准实时），本年 → 月，其余（本周/本月/自定义）→ 日
   const granularity: TrendGranularity =
     period === 'today' || period === 'yesterday'
-      ? 'hour'
+      ? 'minute'
       : period === 'year'
         ? 'month'
         : 'day'

@@ -1171,6 +1171,7 @@
     "trend": {
       "title": "Traffic Trend (Daily)",
       "title_hour": "Traffic Trend (Hourly)",
+      "title_minute": "Traffic Trend (Minute)",
       "title_month": "Traffic Trend (Monthly)"
     },
     "top": {

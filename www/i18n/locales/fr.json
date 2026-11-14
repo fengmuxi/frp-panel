@@ -1150,7 +1150,8 @@
       "outRatio": "Part sortante"
     },
     "trend": {
-      "title": "Tendance du trafic (quotidienne)"
+      "title": "Tendance du trafic (quotidienne)",
+      "title_minute": "Tendance du trafic (minute)"
     },
     "top": {
       "title": "Top 10 des tunnels par trafic",

@@ -21,8 +21,8 @@ export interface TrendPoint {
   out: number
 }
 
-// TrendGranularity 趋势粒度：由时段决定（今日/昨日→小时，本年→月，其余→日）
-export type TrendGranularity = 'hour' | 'day' | 'month'
+// TrendGranularity 趋势粒度：由时段决定（今日/昨日→分钟，本年→月，其余→日）
+export type TrendGranularity = 'minute' | 'hour' | 'day' | 'month'
 
 interface TrafficTrendChartProps {
   series: TrendPoint[]
@@ -47,7 +47,7 @@ export function TrafficTrendChart({ series, granularity = 'day' }: TrafficTrendC
     }
     return series.map((p) => ({
       date:
-        effective === 'hour'
+        effective === 'hour' || effective === 'minute'
           ? new Date(p.ts * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           : effective === 'month'
             ? new Date(p.ts * 1000).toLocaleDateString([], { year: 'numeric', month: '2-digit' })
@@ -69,13 +69,13 @@ export function TrafficTrendChart({ series, granularity = 'day' }: TrafficTrendC
   if (series.length === 1) {
     const only = series[0]
     const timeLabel =
-      granularity === 'hour'
+      granularity === 'hour' || granularity === 'minute'
         ? new Date(only.ts * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         : new Date(only.ts * 1000).toLocaleDateString()
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{t(granularity === 'hour' ? 'home.trend.title_hour' : 'home.trend.title')}</CardTitle>
+          <CardTitle>{t(granularity === 'hour' ? 'home.trend.title_hour' : granularity === 'minute' ? 'home.trend.title_minute' : 'home.trend.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[260px] flex flex-col items-center justify-center gap-5">
@@ -120,9 +120,11 @@ export function TrafficTrendChart({ series, granularity = 'day' }: TrafficTrendC
           {t(
             granularity === 'hour'
               ? 'home.trend.title_hour'
-              : granularity === 'month'
-                ? 'home.trend.title_month'
-                : 'home.trend.title',
+              : granularity === 'minute'
+                ? 'home.trend.title_minute'
+                : granularity === 'month'
+                  ? 'home.trend.title_month'
+                  : 'home.trend.title',
           )}
         </CardTitle>
       </CardHeader>
