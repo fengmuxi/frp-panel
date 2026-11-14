@@ -44,21 +44,7 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm@9
 
-      # Step 4: Restore cache for pnpm and VitePress build
-      - name: Restore cache
-        uses: actions/cache@v4
-        with:
-          # Cache pnpm store and .vitepress cache
-          path: |
-            ~/.pnpm-store
-            docs/.vitepress/cache
-          # Generate a cache key based on lock file and source files
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
-          # Fallback to a partial cache if lock file changes
-          restore-keys: |
-            ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}-
-
-      # Step 5: Install dependencies using pnpm
+      # Step 4: Install dependencies using pnpm
       - name: Install dependencies
         working-directory: ./docs
         run: pnpm install
