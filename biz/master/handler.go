@@ -47,6 +47,9 @@ func ConfigureRouter(appInstance app.Application, router *gin.Engine) {
 		{
 			platformRouter.GET("/baseinfo", platform.GetPlatformInfo(appInstance))
 			platformRouter.POST("/clientsstatus", app.Wrapper(appInstance, platform.GetClientsStatus))
+			platformRouter.POST("/smtp/get", platform.GetSMTPSettings(appInstance))
+			platformRouter.POST("/smtp/update", platform.UpdateSMTPSettings(appInstance))
+			platformRouter.POST("/smtp/test", platform.SendTestEmail(appInstance))
 		}
 		clientRouter := v1.Group("/client")
 		{

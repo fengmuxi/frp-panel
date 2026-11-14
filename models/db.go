@@ -57,7 +57,14 @@ func (dbm *dbManagerImpl) Init() {
 			if err := db.AutoMigrate(&WireGuardLink{}); err != nil {
 				logger.Logger(ctx).WithError(err).Fatalf("cannot init db table [%s]", (&WireGuardLink{}).TableName())
 			}
+			if err := db.AutoMigrate(&SMTPSettings{}); err != nil {
+				logger.Logger(ctx).WithError(err).Fatalf("cannot init db table [%s]", (&SMTPSettings{}).TableName())
+			}
 
+			// AutoMigrate 先补齐加列/建表，再执行版本化迁移处理破坏性变更与数据回填
+			if err := migrate(db); err != nil {
+				logger.Logger(ctx).WithError(err).Fatalf("cannot apply db migrations")
+			}
 		}
 	}
 }

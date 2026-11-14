@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/VaalaCat/frp-panel/conf"
 	"github.com/VaalaCat/frp-panel/defs"
@@ -18,6 +19,7 @@ import (
 	"github.com/samber/lo"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -48,6 +50,16 @@ func newMasterCli(appInstance app.Application) pb.MasterClient {
 	ctx := context.Background()
 
 	opt := []grpc.DialOption{}
+
+	// 启用 gRPC keepalive：定期发送 HTTP/2 PING，快速探测半开连接（Master 静默故障/网络中断），
+	// 避免客户端 Recv 长时间阻塞、无法感知断线。Master 服务端默认 EnforcementPolicy.MinTime 为 5min，
+	// 低于该值的 PING 会累计违规计数，但客户端每 30s 的定时 Pull 请求（DATA 帧）会重置计数，
+	// 因此正常运行不会触发服务端 too_many_pings 断连。
+	opt = append(opt, grpc.WithKeepaliveParams(keepalive.ClientParameters{
+		Time:                1 * time.Minute,
+		Timeout:             20 * time.Second,
+		PermitWithoutStream: true,
+	}))
 
 	switch connInfo.Scheme {
 	case conf.GRPC:

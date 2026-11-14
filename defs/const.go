@@ -81,6 +81,9 @@ const (
 
 	ReportWireGuardRuntimeInfoDuration = 60 * time.Second
 
+	// OfflineCheckDelay 节点连接断开后的掉线确认延迟（防抖：期间重连则不发通知）
+	OfflineCheckDelay = 60 * time.Second
+
 	AppStartTimeout = 5 * time.Minute
 )
 
