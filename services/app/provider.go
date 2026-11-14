@@ -147,6 +147,10 @@ type ServerHandler interface {
 	Run()
 	Stop()
 	IsFirstSync() bool
+	// MarkFirstSyncSent 标记首次代理信息上报已成功送达 master。
+	// IsFirstSync 在此之后才翻转为 false，保证推送失败可重试时
+	// master 仍能收到 firstSync 标记完成跨重启衔接补偿。
+	MarkFirstSyncSent()
 	GetCommonCfg() *v1.ServerConfig
 	GetMem() *mem.ServerStats
 	GetProxyStatsByType(v1.ProxyType) []*mem.ProxyStats

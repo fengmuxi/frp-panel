@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
-	"sync"
+	"sync/atomic"
 
 	"github.com/VaalaCat/frp-panel/services/app"
 	"github.com/VaalaCat/frp-panel/utils/logger"
@@ -15,9 +15,9 @@ import (
 )
 
 type serverImpl struct {
-	srv       *server.Service
-	Common    *v1.ServerConfig
-	firstSync sync.Once
+	srv           *server.Service
+	Common        *v1.ServerConfig
+	firstSyncSent atomic.Bool
 }
 
 func NewServerHandler(svrCfg *v1.ServerConfig) (app.ServerHandler, error) {
@@ -43,9 +43,8 @@ func NewServerHandler(svrCfg *v1.ServerConfig) (app.ServerHandler, error) {
 	logger.Logger(ctx).Debugf("create server, config is: [ %+v ]", svrCfg)
 
 	return &serverImpl{
-		srv:       svr,
-		Common:    svrCfg,
-		firstSync: sync.Once{},
+		srv:    svr,
+		Common: svrCfg,
 	}, nil
 }
 
@@ -80,10 +79,13 @@ func (s *serverImpl) GetProxyStatsByType(proxyType v1.ProxyType) []*mem.ProxySta
 	return mem.StatsCollector.GetProxiesByType(string(proxyType))
 }
 
+// IsFirstSync 返回该 frps 实例是否尚未成功完成过一次代理信息上报。
+// 仅在推送成功送达 master 后由 MarkFirstSyncSent 消费：首次推送失败时
+// 下次上报仍带 firstSync 标记，master 侧跨重启衔接补偿不会因此丢失。
 func (s *serverImpl) IsFirstSync() bool {
-	result := false
-	s.firstSync.Do(func() {
-		result = true
-	})
-	return result
+	return !s.firstSyncSent.Load()
+}
+
+func (s *serverImpl) MarkFirstSyncSent() {
+	s.firstSyncSent.Store(true)
 }

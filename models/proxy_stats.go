@@ -28,9 +28,14 @@ type ProxyStatsEntity struct {
 	// nil 表示该补偿字段上线前没有记录（首次上报按旧口径衔接）。
 	ReportedTodayIn  *int64 `json:"reported_today_in,omitempty"`
 	ReportedTodayOut *int64 `json:"reported_today_out,omitempty"`
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	DeletedAt        gorm.DeletedAt `gorm:"index"`
+	// StatsDate 是 today_* 计数的归属自然日（frps 节点本地日，YYYY-MM-DD）。
+	// 跨天翻转按该日期变化判断，而非 master 本地日——节点与 master 时区
+	// 不一致、或推送延迟跨零点时仍能正确翻转；空表示旧节点未上报（回退
+	// 到按 UpdatedAt 的本地日判断）。
+	StatsDate string `json:"stats_date" gorm:"default:''"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 func (*ProxyStats) TableName() string {

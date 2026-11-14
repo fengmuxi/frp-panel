@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/VaalaCat/frp-panel/models"
+	"github.com/VaalaCat/frp-panel/services/dao"
 )
 
 var (
@@ -380,6 +381,42 @@ func TestCalcHourlySeriesCrossDay(t *testing.T) {
 		}
 		if got[1].GetTrafficIn() != 10 || got[2].GetTrafficIn() != 0 || got[3].GetTrafficIn() != 20 || got[4].GetTrafficIn() != 10 {
 			t.Fatalf("unexpected values: %+v", got)
+		}
+	})
+}
+
+// TestCalcTickSeries 覆盖推送增量流水（5 分钟桶）趋势序列的转换。
+func TestCalcTickSeries(t *testing.T) {
+	todayDay := time.Date(2026, 11, 13, 0, 0, 0, 0, testLoc).Unix()
+	bucket := int64(300)
+	bucketAt := func(h, m int64) int64 { return todayDay + h*3600 + m*60 - (todayDay+h*3600+m*60)%bucket }
+
+	t.Run("范围外桶过滤_负值钳零_升序输出", func(t *testing.T) {
+		buckets := []*dao.ProxyStatsTickBucket{
+			{Ts: bucketAt(8, 0), DeltaIn: 100, DeltaOut: 50},
+			{Ts: bucketAt(9, 5), DeltaIn: -1, DeltaOut: 20}, // 计数异常 → 钳 0
+			{Ts: todayDay - bucket},                         // 昨日残留 → 过滤
+			{Ts: bucketAt(23, 55)},                          // 今日 23:55 → 保留（今日区间尾点）
+			{Ts: todayDay + 24*3600},                        // 明日 → 过滤
+		}
+		got := CalcTickSeries(buckets, todayDay, todayDay+24*3600-1)
+		if len(got) != 3 {
+			t.Fatalf("expect 3 points, got %d: %+v", len(got), got)
+		}
+		if got[0].GetTs() != bucketAt(8, 0) || got[0].GetTrafficIn() != 100 || got[0].GetTrafficOut() != 50 {
+			t.Fatalf("point0 unexpected: %v", got[0])
+		}
+		if got[1].GetTs() != bucketAt(9, 5) || got[1].GetTrafficIn() != 0 || got[1].GetTrafficOut() != 20 {
+			t.Fatalf("point1 unexpected: %v", got[1])
+		}
+		if got[2].GetTs() != bucketAt(23, 55) || got[2].GetTrafficIn() != 0 || got[2].GetTrafficOut() != 0 {
+			t.Fatalf("point2 unexpected: %v", got[2])
+		}
+	})
+
+	t.Run("空桶_返回空_由调用方回退小时快照", func(t *testing.T) {
+		if got := CalcTickSeries(nil, todayDay, todayDay+3600); len(got) != 0 {
+			t.Fatalf("expect empty, got %d", len(got))
 		}
 	})
 }

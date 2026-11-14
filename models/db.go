@@ -39,6 +39,9 @@ func (dbm *dbManagerImpl) Init() {
 			if err := db.AutoMigrate(&ProxyStatsHourly{}); err != nil {
 				logger.Logger(ctx).WithError(err).Fatalf("cannot init db table [%s]", (&ProxyStatsHourly{}).TableName())
 			}
+			if err := db.AutoMigrate(&ProxyStatsTick{}); err != nil {
+				logger.Logger(ctx).WithError(err).Fatalf("cannot init db table [%s]", (&ProxyStatsTick{}).TableName())
+			}
 			if err := db.AutoMigrate(&Worker{}); err != nil {
 				logger.Logger(ctx).WithError(err).Fatalf("cannot init db table [%s]", (&Worker{}).TableName())
 			}

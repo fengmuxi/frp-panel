@@ -79,6 +79,7 @@ message ProxyInfo {
 	optional int64 history_traffic_in = 7;
 	optional int64 history_traffic_out = 8;
 	optional bool first_sync = 9;
+	optional string stats_date = 10; // frps 节点本地自然日（YYYY-MM-DD），today_* 计数的归属日；空表示旧节点未上报
 }
 
 message ProxyConfig {

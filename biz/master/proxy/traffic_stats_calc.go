@@ -6,6 +6,7 @@ import (
 
 	"github.com/VaalaCat/frp-panel/models"
 	"github.com/VaalaCat/frp-panel/pb"
+	"github.com/VaalaCat/frp-panel/services/dao"
 	"github.com/samber/lo"
 )
 
@@ -13,6 +14,34 @@ import (
 type trafficCum struct {
 	in  int64
 	out int64
+}
+
+// tickSeriesBucketSeconds 分钟粒度趋势的聚合桶宽：推送增量流水（约 30s 一条）
+// 按 5 分钟聚合为趋势点，今日/昨日时段一天最多 288 点
+const tickSeriesBucketSeconds = int64(300)
+
+// CalcTickSeries 把 SQL 端按桶聚合好的增量流水转成趋势点（时间升序，负值钳 0
+// 防御计数异常）。无流量的桶没有 tick 行、自然不产生点，曲线跨接即为零流量段。
+func CalcTickSeries(buckets []*dao.ProxyStatsTickBucket, fromTs, toTs int64) []*pb.TrafficSeriesPoint {
+	var series []*pb.TrafficSeriesPoint
+	for _, b := range buckets {
+		if b == nil || b.Ts < fromTs || b.Ts > toTs {
+			continue
+		}
+		in, out := b.DeltaIn, b.DeltaOut
+		if in < 0 {
+			in = 0
+		}
+		if out < 0 {
+			out = 0
+		}
+		series = append(series, &pb.TrafficSeriesPoint{
+			Ts:         lo.ToPtr(b.Ts),
+			TrafficIn:  lo.ToPtr(in),
+			TrafficOut: lo.ToPtr(out),
+		})
+	}
+	return series
 }
 
 // startOfDayUnix 返回 ts 所在"日"的 00:00 unix 秒（按 loc 时区切日）

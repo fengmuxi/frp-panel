@@ -236,9 +236,10 @@ func (c *dataStatsReconcile) Run(ctx context.Context, env *Env) Result {
 
 type dataDuplicateProxyStats struct{ baseChecker }
 
-// Run 检查 proxy_stats 中 (server_id, name) 重复的统计行：
-// frps 层面 (server, 去前缀隧道名) 唯一，重复行说明发生过归属漂移
-// （历史版本按 user_id 加载旧行导致 Save 插入新行），尚未被上报收敛清理。
+// Run 检查 proxy_stats 中 (server_id, client_id, name) 重复的统计行：
+// frps 层面 (server, frps 全名) 唯一，同一 client 下同名隧道的重复行说明发生过
+// 归属漂移（历史版本按 user_id 加载旧行导致 Save 插入新行），尚未被上报收敛清理。
+// 不同 client 的同名隧道是多用户共享节点的合法数据，不算重复。
 func (c *dataDuplicateProxyStats) Run(ctx context.Context, env *Env) Result {
 	refs := []string{"proxy_stats", "dao.AdminUpdateProxyStats 同名收敛"}
 	db, err := env.DB(ctx)
@@ -251,12 +252,13 @@ func (c *dataDuplicateProxyStats) Run(ctx context.Context, env *Env) Result {
 
 	var dups []struct {
 		ServerID string
+		ClientID string
 		Name     string
 		Count    int64
 	}
 	if err := db.Model(&models.ProxyStats{}).
-		Select("server_id, name, COUNT(*) AS count").
-		Group("server_id, name").
+		Select("server_id, client_id, name, COUNT(*) AS count").
+		Group("server_id, client_id, name").
 		Having("COUNT(*) > 1").
 		Find(&dups).Error; err != nil {
 		return Result{}.Skip(fmt.Sprintf("聚合 proxy_stats 失败: %v", err))
@@ -267,9 +269,9 @@ func (c *dataDuplicateProxyStats) Run(ctx context.Context, env *Env) Result {
 
 	details := make([]string, 0, len(dups))
 	for _, d := range dups {
-		details = append(details, fmt.Sprintf("server=%s name=%s 共 %d 行", d.ServerID, d.Name, d.Count))
+		details = append(details, fmt.Sprintf("server=%s client=%s name=%s 共 %d 行", d.ServerID, d.ClientID, d.Name, d.Count))
 	}
-	return Result{}.Fail(fmt.Sprintf("%d 个隧道存在重复统计行", len(dups))).WithDetails(details...).ConfigRefs(refs...)
+	return Result{}.Fail(fmt.Sprintf("%d 条隧道存在重复统计行", len(dups))).WithDetails(details...).ConfigRefs(refs...)
 }
 
 // ---------------- data/schema_diff ----------------

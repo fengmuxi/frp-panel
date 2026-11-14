@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"time"
 
 	"github.com/VaalaCat/frp-panel/pb"
 	"github.com/VaalaCat/frp-panel/services/app"
@@ -26,6 +27,10 @@ func PushProxyInfo(appInstance app.Application, serverID, serverSecret string) e
 
 	if cli := appInstance.GetServerController().Get(serverID); cli != nil {
 		firstSync := cli.IsFirstSync()
+		// today_* 计数按 frps 所在机器的本地自然日切分（frp DateCounter），
+		// 上报该归属日供 master 精确判断跨天翻转，避免节点与 master 时区
+		// 不一致（或推送延迟跨零点）时误判。
+		statsDate := lo.ToPtr(time.Now().Format("2006-01-02"))
 		for _, proxyType := range proxyTypeList {
 			proxyStatsList := cli.GetProxyStatsByType(proxyType)
 			for _, proxyStats := range proxyStatsList {
@@ -38,6 +43,7 @@ func PushProxyInfo(appInstance app.Application, serverID, serverSecret string) e
 					TodayTrafficIn:  lo.ToPtr(proxyStats.TodayTrafficIn),
 					TodayTrafficOut: lo.ToPtr(proxyStats.TodayTrafficOut),
 					FirstSync:       lo.ToPtr(firstSync),
+					StatsDate:       statsDate,
 				})
 			}
 		}
@@ -56,6 +62,10 @@ func PushProxyInfo(appInstance app.Application, serverID, serverSecret string) e
 		if err != nil {
 			logger.Logger(context.Background()).WithError(err).Error("cannot push proxy info")
 			return err
+		}
+		// 推送成功后才消费 firstSync：失败的推送下次重试仍带标记
+		if handler := appInstance.GetServerController().Get(serverID); handler != nil {
+			handler.MarkFirstSyncSent()
 		}
 	}
 	return nil

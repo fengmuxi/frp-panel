@@ -70,16 +70,24 @@ func GetProxyTrafficStats(c *app.Context, req *pb.GetProxyTrafficStatsRequest) (
 		live, snaps, start, end, tzOffset, req.GetWithSeries(), now,
 	)
 
-	// 小时粒度时段（今日/昨日）：用小时快照差分替换单点日粒度序列，
-	// 让趋势图呈现逐时走势。区间完全落在 [昨天00:00, 今天] 内才启用；
-	// 无可用快照（部署当天首个整点前 / 旧数据）时保持原单点回退。
+	// 分钟粒度时段（今日/昨日）：优先用推送增量流水按 5 分钟桶聚合（准实时，
+	// 随 30s 上报滚动更新）；无 tick 数据（部署初期/刚清库）时回退小时快照差分，
+	// 再无则保持日粒度单点。昨日区间需截断到昨日 24:00，避免混入今日增量。
 	todayDay := startOfDayUnix(now.Unix(), loc)
 	startDay := startOfDayUnix(start, loc)
 	endDay := startOfDayUnix(end, loc)
 	isHourRange := endDay == todayDay && (startDay == todayDay || startDay == todayDay-daySeconds)
 	if req.GetWithSeries() && isHourRange {
-		hourly, err := dao.NewQuery(c).GetHourlySnapshotsByUser(userInfo, startDay, now.Unix())
+		tickTo := now.Unix()
+		if endDay != todayDay {
+			tickTo = endDay + daySeconds - 1
+		}
+		buckets, err := dao.NewQuery(c).AdminGetProxyStatTickBucketsInRange(userInfo, startDay, tickTo, tickSeriesBucketSeconds)
 		if err != nil {
+			logger.Logger(context.Background()).WithError(err).Warn("cannot get proxy stat ticks, fallback to hourly snapshots")
+		} else if tickSeries := CalcTickSeries(buckets, startDay, tickTo); len(tickSeries) > 0 {
+			series = tickSeries
+		} else if hourly, err := dao.NewQuery(c).GetHourlySnapshotsByUser(userInfo, startDay, now.Unix()); err != nil {
 			logger.Logger(context.Background()).WithError(err).Warn("cannot get hourly snapshots, fallback to daily series")
 		} else if hourSeries := CalcHourlySeries(live, hourly, startDay, endDay, now); len(hourSeries) > 0 {
 			series = hourSeries

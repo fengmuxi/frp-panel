@@ -17,33 +17,38 @@ func statsRow(id int, userID int, updated time.Time) *models.ProxyStats {
 	}}
 }
 
-// 归属漂移产生的孤儿行（user_id 不等于当前节点归属者）不参与保留，
-// 即使它更新时间更晚也不应被选中。
-func TestPickKeptStatsRowPrefersOwnerRow(t *testing.T) {
+// 归属漂移产生的孤儿行（user_id 不等于当前行归属者）不再接收推送、必然更旧，
+// 保留行取最近更新的行时自然落选。
+func TestPickKeptStatsRowPrefersNewest(t *testing.T) {
 	now := time.Now()
-	owner := statsRow(2, 10, now.Add(-time.Minute))
-	orphan := statsRow(1, 99, now)
-
-	pick := pickKeptStatsRow([]*models.ProxyStats{orphan, owner}, 10)
-	assert.Same(t, owner, pick)
-}
-
-// 两行都不属于当前归属者时（如节点整体转移），取最近更新的行。
-func TestPickKeptStatsRowFallsBackToNewest(t *testing.T) {
-	now := time.Now()
-	old := statsRow(1, 99, now.Add(-time.Hour))
-	newest := statsRow(2, 88, now)
-
-	pick := pickKeptStatsRow([]*models.ProxyStats{old, newest}, 10)
-	assert.Same(t, newest, pick)
-}
-
-// 同为归属者的多行取最近更新的行。
-func TestPickKeptStatsRowAmongOwnerRows(t *testing.T) {
-	now := time.Now()
-	stale := statsRow(1, 10, now.Add(-time.Hour))
 	fresh := statsRow(2, 10, now)
+	stale := statsRow(1, 10, now.Add(-time.Hour))
+	drifted := statsRow(3, 99, now.Add(-2*time.Hour))
 
-	pick := pickKeptStatsRow([]*models.ProxyStats{stale, fresh}, 10)
+	pick := pickKeptStatsRow([]*models.ProxyStats{drifted, stale, fresh})
 	assert.Same(t, fresh, pick)
+}
+
+// 多用户前缀去名：按所属用户的 "userName." 前缀剥离，返回前缀归属用户 ID
+func TestStripProxyStatsPrefix(t *testing.T) {
+	userNames := map[int]string{1: "admin", 2: "ab", 3: ""}
+
+	name, owner := stripProxyStatsPrefix("admin.emby", userNames)
+	assert.Equal(t, "emby", name)
+	assert.Equal(t, 1, owner)
+
+	// 短前缀误吞防护："ab.emby" 必须按 "ab" 剥离而非 "a"
+	name, owner = stripProxyStatsPrefix("ab.emby", map[int]string{1: "a", 2: "ab"})
+	assert.Equal(t, "emby", name)
+	assert.Equal(t, 2, owner)
+
+	// 无已知前缀（multiuser 插件未启用，frps 上报裸名）：原样返回、归属用户 0
+	name, owner = stripProxyStatsPrefix("emby", userNames)
+	assert.Equal(t, "emby", name)
+	assert.Equal(t, 0, owner)
+
+	// 空用户名不参与前缀匹配
+	name, owner = stripProxyStatsPrefix(".emby", userNames)
+	assert.Equal(t, ".emby", name)
+	assert.Equal(t, 0, owner)
 }

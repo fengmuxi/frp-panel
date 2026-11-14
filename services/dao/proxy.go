@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -13,12 +14,13 @@ import (
 	"github.com/samber/lo"
 	"github.com/sourcegraph/conc/pool"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type ProxyQuery interface {
 	GetProxyStatsByClientID(userInfo models.UserInfo, clientID string) ([]*models.ProxyStatsEntity, error)
 	GetProxyStatsByServerID(userInfo models.UserInfo, serverID string) ([]*models.ProxyStatsEntity, error)
+	AdminGetProxyStatsByServerID(serverID string) ([]*models.ProxyStatsEntity, error)
+	AdminGetProxyStatTickBucketsInRange(userInfo models.UserInfo, from, to int64, bucket int64) ([]*ProxyStatsTickBucket, error)
 	GetProxyStatsByUser(userInfo models.UserInfo) ([]*models.ProxyStatsEntity, error)
 	AdminGetTenantProxyStats(tenantID int) ([]*models.ProxyStatsEntity, error)
 	AdminGetAllProxyStats(tx *gorm.DB) ([]*models.ProxyStatsEntity, error)
@@ -42,6 +44,8 @@ type ProxyQuery interface {
 
 type ProxyMutation interface {
 	AdminUpdateProxyStats(srv *models.ServerEntity, inputs []*pb.ProxyInfo) error
+	AdminSaveProxyStatTicks(tx *gorm.DB, ticks []*models.ProxyStatsTick) error
+	AdminDeleteProxyStatTicksBefore(beforeTs int64) error
 	AdminCreateProxyConfig(proxyCfg *models.ProxyConfig) error
 	RebuildProxyConfigFromClient(userInfo models.UserInfo, client *models.Client) error
 	CreateProxyConfig(userInfo models.UserInfo, proxyCfg *models.ProxyConfigEntity) error
@@ -101,6 +105,24 @@ func (q *proxyQuery) GetProxyStatsByServerID(userInfo models.UserInfo, serverID 
 	}), nil
 }
 
+// AdminGetProxyStatsByServerID 服务端内部使用：按节点取全部实时统计（不限用户）。
+// 统计行归属为各隧道的 client 归属用户，节点维度的内部逻辑（掉线检测等）必须
+// 用本方法而非带用户过滤的 GetProxyStatsByServerID，否则会漏掉其他用户的隧道。
+func (q *proxyQuery) AdminGetProxyStatsByServerID(serverID string) ([]*models.ProxyStatsEntity, error) {
+	if serverID == "" {
+		return nil, fmt.Errorf("invalid server id")
+	}
+	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
+	list := []*models.ProxyStats{}
+	err := db.Where("server_id = ?", serverID).Find(&list).Error
+	if err != nil {
+		return nil, err
+	}
+	return lo.Map(list, func(item *models.ProxyStats, _ int) *models.ProxyStatsEntity {
+		return item.ProxyStatsEntity
+	}), nil
+}
+
 // GetProxyStatsByUser 返回当前用户可见的全部实时统计（含 UserID=0 的全局记录），只读无锁
 func (q *proxyQuery) GetProxyStatsByUser(userInfo models.UserInfo) ([]*models.ProxyStatsEntity, error) {
 	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
@@ -145,11 +167,10 @@ func (m *proxyMutation) AdminUpdateProxyStats(srv *models.ServerEntity, inputs [
 		p.Go(
 			func() error {
 				clients := []*models.Client{}
+				// 不限 user_id：多租户下其他用户的 client 也可连接本节点，
+				// 其隧道的流量统计需要归属到各自 client（而非节点 owner）
 				if err := tx.
-					Where(&models.Client{ClientEntity: &models.ClientEntity{
-						UserID:   srv.UserID,
-						ServerID: srv.ServerID,
-					}}).Find(&clients).Error; err != nil {
+					Where("server_id = ?", srv.ServerID).Find(&clients).Error; err != nil {
 					return err
 				}
 				queryResults[1] = clients
@@ -159,7 +180,7 @@ func (m *proxyMutation) AdminUpdateProxyStats(srv *models.ServerEntity, inputs [
 		p.Go(
 			func() error {
 				oldProxy := []*models.ProxyStats{}
-				// 按 server_id 加载、不限 user_id：frps 层面 (server_id, 去前缀 name) 唯一，
+				// 按 server_id 加载、不限 user_id：frps 层面 (server_id, frps 全名) 唯一，
 				// 历史版本/归属变更等原因可能留下 user_id 漂移的旧统计行，按 user_id
 				// 过滤会漏掉它们，导致 Save 时主键为空直接插入新行（同名重复统计且永不收敛）。
 				if err := tx.
@@ -178,41 +199,102 @@ func (m *proxyMutation) AdminUpdateProxyStats(srv *models.ServerEntity, inputs [
 		clients := queryResults[1].([]*models.Client)
 		oldProxyRows := queryResults[2].([]*models.ProxyStats)
 
-		inputMap := map[string]*pb.ProxyInfo{}
-		proxyMap := map[string]*models.ProxyStatsEntity{}
-		for _, proxyInfo := range inputs {
-			if proxyInfo == nil {
-				continue
+		// client owner 用户名映射：frps multiuser 插件给隧道名加 "userName." 前缀，
+		// 需按 client 所属用户去前缀才能与 client 配置里的裸隧道名对上
+		userNames := map[int]string{srv.UserID: user.UserName}
+		knownUserIDs := []int{srv.UserID}
+		for _, client := range clients {
+			if client.UserID != srv.UserID {
+				knownUserIDs = append(knownUserIDs, client.UserID)
 			}
-			proxyName := strings.TrimPrefix(proxyInfo.GetName(), user.UserName+".")
-			proxyMap[proxyName] = &models.ProxyStatsEntity{
-				ServerID:        srv.ServerID,
-				Name:            proxyName,
-				Type:            proxyInfo.GetType(),
-				UserID:          srv.UserID,
-				TenantID:        srv.TenantID,
-				TodayTrafficIn:  proxyInfo.GetTodayTrafficIn(),
-				TodayTrafficOut: proxyInfo.GetTodayTrafficOut(),
+		}
+		if len(knownUserIDs) > 1 {
+			users := []*models.User{}
+			if err := tx.Where("user_id IN ?", knownUserIDs).Find(&users).Error; err != nil {
+				return err
 			}
-			inputMap[proxyName] = proxyInfo
+			for _, u := range users {
+				userNames[u.UserID] = u.UserName
+			}
 		}
 
-		// 同 (server, name) 重复统计行收敛：只处理本次上报涉及的隧道名
-		//（frps 重启期间隧道可能暂时缺席，缺席的名字不动，避免误删）。
-		// 优先保留当前归属者的行（否则取最近更新的行），其余行的历史累计
-		// 并入保留行后软删除，让漂移产生的重复行在下次上报时自动收敛。
-		oldProxyByName := map[string][]*models.ProxyStats{}
-		for _, p := range oldProxyRows {
-			oldProxyByName[p.Name] = append(oldProxyByName[p.Name], p)
-		}
-		oldProxyMap := make(map[string]*models.ProxyStats, len(proxyMap))
-		for name := range proxyMap {
-			rows := oldProxyByName[name]
-			if len(rows) == 0 {
+		// 上报项按 (去前缀裸名, 前缀归属用户) 索引：不同用户的同名隧道在 frps
+		// 层面靠 user 前缀区分，去前缀后必须连同归属用户一起作为匹配键；
+		// 无前缀（multiuser 插件未启用）时归属用户记 0，供任意 client 回退匹配
+		inputByKey := make(map[proxyStatsInputKey]*pb.ProxyInfo, len(inputs))
+		for _, proxyInfo := range inputs {
+			if proxyInfo == nil || strings.TrimSpace(proxyInfo.GetName()) == "" {
 				continue
 			}
-			pick := pickKeptStatsRow(rows, srv.UserID)
-			for _, r := range rows {
+			stripped, ownerID := stripProxyStatsPrefix(strings.TrimSpace(proxyInfo.GetName()), userNames)
+			inputByKey[proxyStatsInputKey{name: stripped, userID: ownerID}] = proxyInfo
+		}
+
+		// 与 client 配置匹配：owner 前缀命中的上报项优先，其次无前缀上报项；
+		// 同一上报项可能同时命中 origin 与 shadow client 的配置，后遍历的 client
+		// 覆盖 ClientID 归属（shadow 是实际连接本节点的实例）
+		proxyEntityMap := make(map[proxyStatsInputKey]*proxyStatsMatch, len(inputByKey))
+		for _, client := range clients {
+			cliCfg, err := client.GetConfigContent()
+			if err != nil || cliCfg == nil {
+				continue
+			}
+			for _, cfg := range cliCfg.Proxies {
+				cfgName := cfg.GetBaseConfig().Name
+				info, ok := inputByKey[proxyStatsInputKey{name: cfgName, userID: client.UserID}]
+				if !ok {
+					info, ok = inputByKey[proxyStatsInputKey{name: cfgName, userID: 0}]
+				}
+				if !ok {
+					continue
+				}
+				proxyEntityMap[proxyStatsInputKey{name: cfgName, userID: client.UserID}] = &proxyStatsMatch{
+					entity: &models.ProxyStatsEntity{
+						ServerID:        srv.ServerID,
+						Name:            cfgName,
+						Type:            info.GetType(),
+						ClientID:        client.ClientID,
+						OriginClientID:  client.OriginClientID,
+						UserID:          client.UserID,
+						TenantID:        client.TenantID,
+						TodayTrafficIn:  info.GetTodayTrafficIn(),
+						TodayTrafficOut: info.GetTodayTrafficOut(),
+						StatsDate:       info.GetStatsDate(),
+					},
+					info: info,
+				}
+			}
+		}
+
+		// 旧统计行按裸名分桶，逐匹配项收敛：
+		//   - 同 (裸名, ClientID) 的多行是同一隧道的重复行（历史版本/归属漂移产生），
+		//     保留最近更新的一行，其余行的历史累计并入后软删除；
+		//   - ClientID 已不在本节点活跃 client 集合中的行（client 被删除重建）视同
+		//     孤儿，仅并入同归属用户的行，避免把他人历史流量记错归属；
+		//   - 不同活跃 client 的同名行是不同用户的隧道，各自保留。
+		// 仅处理本次上报命中的隧道名：frps 重启期间缺席的隧道不动，避免误删。
+		activeClientIDs := make(map[string]struct{}, len(clients))
+		for _, client := range clients {
+			activeClientIDs[client.ClientID] = struct{}{}
+		}
+		oldProxyByName := map[string][]*models.ProxyStats{}
+		for _, r := range oldProxyRows {
+			oldProxyByName[r.Name] = append(oldProxyByName[r.Name], r)
+		}
+		oldProxyMap := make(map[proxyStatsInputKey]*models.ProxyStats, len(proxyEntityMap))
+		for key, matched := range proxyEntityMap {
+			var pool []*models.ProxyStats
+			for _, r := range oldProxyByName[key.name] {
+				if _, active := activeClientIDs[r.ClientID]; r.ClientID == matched.entity.ClientID ||
+					(!active && r.UserID == matched.entity.UserID) {
+					pool = append(pool, r)
+				}
+			}
+			if len(pool) == 0 {
+				continue
+			}
+			pick := pickKeptStatsRow(pool)
+			for _, r := range pool {
 				if r.ProxyID == pick.ProxyID {
 					continue
 				}
@@ -222,30 +304,15 @@ func (m *proxyMutation) AdminUpdateProxyStats(srv *models.ServerEntity, inputs [
 					return err
 				}
 			}
-			oldProxyMap[name] = pick
-		}
-
-		proxyEntityMap := map[string]*models.ProxyStatsEntity{}
-		for _, client := range clients {
-			cliCfg, err := client.GetConfigContent()
-			if err != nil || cliCfg == nil {
-				continue
-			}
-			for _, cfg := range cliCfg.Proxies {
-				if proxy, ok := proxyMap[cfg.GetBaseConfig().Name]; ok {
-					proxy.ClientID = client.ClientID
-					proxy.OriginClientID = client.OriginClientID
-					proxyEntityMap[proxy.Name] = proxy
-				}
-			}
+			oldProxyMap[key] = pick
 		}
 
 		nowTime := time.Now()
-		results := lo.Values(lo.MapValues(proxyEntityMap, func(p *models.ProxyStatsEntity, name string) *models.ProxyStats {
-			item := &models.ProxyStats{
-				ProxyStatsEntity: p,
-			}
-			if oldProxy, ok := oldProxyMap[name]; ok {
+		results := make([]*models.ProxyStats, 0, len(proxyEntityMap))
+		ticks := make([]*models.ProxyStatsTick, 0, len(proxyEntityMap))
+		for key, matched := range proxyEntityMap {
+			item := &models.ProxyStats{ProxyStatsEntity: matched.entity}
+			if oldProxy, ok := oldProxyMap[key]; ok {
 				item.ProxyID = oldProxy.ProxyID
 
 				// 今日/历史累计的补偿维护（跨 frps 重启连续）：
@@ -254,14 +321,20 @@ func (m *proxyMutation) AdminUpdateProxyStats(srv *models.ServerEntity, inputs [
 				//   - 跨天时昨日今日累计滚入历史。
 				// 注意：firstSync（frps 重启后的首次同步）不再把旧今日值滚入历史——
 				// history 的语义是"今天 00:00 的累计"，滚入会让区间差分虚高。
-				firstSync := inputMap[name].GetFirstSync()
+				// 跨天判断优先用上报携带的 frps 本地日期（节点时区与 master 不一致、
+				// 推送延迟跨零点时仍正确）；旧节点未上报日期时回退本地日判断。
+				inputDate := matched.info.GetStatsDate()
+				isSameDay := utils.IsSameDay(nowTime, oldProxy.UpdatedAt)
+				if inputDate != "" && oldProxy.StatsDate != "" {
+					isSameDay = inputDate == oldProxy.StatsDate
+				}
 				upd := computeProxyStatsDailyUpdate(
 					oldProxy.TodayTrafficIn, oldProxy.TodayTrafficOut,
 					oldProxy.HistoryTrafficIn, oldProxy.HistoryTrafficOut,
 					oldProxy.ReportedTodayIn, oldProxy.ReportedTodayOut,
-					inputMap[name].GetTodayTrafficIn(), inputMap[name].GetTodayTrafficOut(),
-					firstSync,
-					utils.IsSameDay(nowTime, oldProxy.UpdatedAt),
+					matched.info.GetTodayTrafficIn(), matched.info.GetTodayTrafficOut(),
+					matched.info.GetFirstSync(),
+					isSameDay,
 				)
 				item.TodayTrafficIn = upd.TodayIn
 				item.TodayTrafficOut = upd.TodayOut
@@ -269,29 +342,88 @@ func (m *proxyMutation) AdminUpdateProxyStats(srv *models.ServerEntity, inputs [
 				item.HistoryTrafficOut = upd.HistoryOut
 				item.ReportedTodayIn = lo.ToPtr(upd.ReportedIn)
 				item.ReportedTodayOut = lo.ToPtr(upd.ReportedOut)
+				if inputDate != "" {
+					item.StatsDate = inputDate
+				}
+
+				// 本推送周期的流量增量落流水（分钟粒度趋势的数据源）。
+				// 跨天翻转时增量可能为负（昨日累计被今日小值替代），钳 0 后丢弃；
+				// frps 重启衔接时增量即断网期间流量，跳变正常。
+				deltaIn := item.TodayTrafficIn - oldProxy.TodayTrafficIn
+				deltaOut := item.TodayTrafficOut - oldProxy.TodayTrafficOut
+				if deltaIn > 0 || deltaOut > 0 {
+					if deltaIn < 0 {
+						deltaIn = 0
+					}
+					if deltaOut < 0 {
+						deltaOut = 0
+					}
+					ticks = append(ticks, &models.ProxyStatsTick{
+						ProxyID:  item.ProxyID,
+						Ts:       nowTime.Unix(),
+						DeltaIn:  deltaIn,
+						DeltaOut: deltaOut,
+						Name:     item.Name,
+						Type:     item.Type,
+						ServerID: item.ServerID,
+						ClientID: item.ClientID,
+						UserID:   item.UserID,
+						TenantID: item.TenantID,
+					})
+				}
 			}
-			return item
-		}))
+			results = append(results, item)
+		}
 
 		if len(results) > 0 {
-			return tx.Save(results).Error
+			if err := tx.Save(results).Error; err != nil {
+				return err
+			}
 		}
-		return nil
+		return m.AdminSaveProxyStatTicks(tx, ticks)
 	})
 }
 
-// pickKeptStatsRow 从同一 (server_id, name) 的多条统计行中选出保留行：
-// 优先保留当前节点归属者的行（归属漂移产生的孤儿行会被软删除），
-// 同为归属者/同为非归属者时取最近更新的行。
-func pickKeptStatsRow(rows []*models.ProxyStats, srvUserID int) *models.ProxyStats {
+// proxyStatsInputKey 是统计上报项与统计行的匹配键：去前缀后的裸隧道名 +
+// 前缀归属用户（0 表示无用户前缀的上报，可被任意 client 回退匹配）。
+type proxyStatsInputKey struct {
+	name   string
+	userID int
+}
+
+// proxyStatsMatch 是一次上报与 client 配置的匹配结果。
+type proxyStatsMatch struct {
+	entity *models.ProxyStatsEntity
+	info   *pb.ProxyInfo
+}
+
+// stripProxyStatsPrefix 去掉 frps multiuser 添加的 "userName." 前缀，
+// 返回 (裸隧道名, 前缀归属用户 ID)；无已知用户前缀时返回 (原名, 0)。
+// 用户名按长度降序尝试，避免短前缀误吞（如用户名 "a" 与 "ab" 并存时，
+// "ab.emby" 必须按 "ab" 去前缀）。
+func stripProxyStatsPrefix(name string, userNames map[int]string) (string, int) {
+	type idPrefix struct {
+		id     int
+		prefix string
+	}
+	all := make([]idPrefix, 0, len(userNames))
+	for id, prefix := range userNames {
+		if prefix != "" && strings.HasPrefix(name, prefix+".") {
+			all = append(all, idPrefix{id: id, prefix: prefix})
+		}
+	}
+	if len(all) == 0 {
+		return name, 0
+	}
+	sort.Slice(all, func(i, j int) bool { return len(all[i].prefix) > len(all[j].prefix) })
+	return strings.TrimPrefix(name, all[0].prefix+"."), all[0].id
+}
+
+// pickKeptStatsRow 从同一隧道的多条统计行中选出保留行：取最近更新的行
+// （孤儿行因不再接收推送必然更旧，自然落选）。
+func pickKeptStatsRow(rows []*models.ProxyStats) *models.ProxyStats {
 	pick := rows[0]
 	for _, r := range rows[1:] {
-		if (r.UserID == srvUserID) != (pick.UserID == srvUserID) {
-			if r.UserID == srvUserID {
-				pick = r
-			}
-			continue
-		}
 		if r.UpdatedAt.After(pick.UpdatedAt) {
 			pick = r
 		}
@@ -315,11 +447,12 @@ func (q *proxyQuery) AdminGetTenantProxyStats(tenantID int) ([]*models.ProxyStat
 	}), nil
 }
 
+// AdminGetAllProxyStats 全量读取实时统计（供每日/每小时快照任务使用）。
+// 纯读操作，不加 FOR UPDATE：SQLite 不支持该语法且裸连接上的锁无意义。
 func (q *proxyQuery) AdminGetAllProxyStats(tx *gorm.DB) ([]*models.ProxyStatsEntity, error) {
 	db := tx
 	list := []*models.ProxyStats{}
-	err := db.Clauses(clause.Locking{Strength: "UPDATE"}).
-		Find(&list).Error
+	err := db.Find(&list).Error
 	if err != nil {
 		return nil, err
 	}

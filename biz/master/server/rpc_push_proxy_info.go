@@ -35,8 +35,12 @@ func PushProxyInfo(ctx *app.Context, req *pb.PushProxyInfoReq) (*pb.PushProxyInf
 //   - firstSync 为 true（frps 首次同步）或本次无活跃隧道时不判定；
 //   - 隧道需曾经活跃过（存在于 proxy_stats）、未被手动停止（proxy_config.Stopped=false）、
 //     且所属客户端节点未整体停止（client.Stopped=false），避免主动操作误报。
+//
+// 全部按节点维度查询（不限用户）：统计行归属各隧道的 client 归属用户，
+// 节点 owner 的用户过滤查询会漏掉其他用户连接本节点的隧道。
 func trackProxyOffline(ctx *app.Context, srv *models.ServerEntity, infos []*pb.ProxyInfo) {
 	firstSync := false
+	prefixes := serverProxyNamePrefixes(ctx, srv)
 	activeNames := map[string]bool{}
 	for _, info := range infos {
 		if info == nil {
@@ -45,15 +49,14 @@ func trackProxyOffline(ctx *app.Context, srv *models.ServerEntity, infos []*pb.P
 		if info.GetFirstSync() {
 			firstSync = true
 		}
-		if name := normalizeProxyName(ctx, srv, info.GetName()); name != "" {
+		if name := normalizeProxyName(prefixes, info.GetName()); name != "" {
 			activeNames[name] = true
 		}
 	}
 
-	userInfo := &models.UserEntity{UserID: srv.UserID, TenantID: srv.TenantID}
 	query := dao.NewQuery(ctx)
 
-	stats, err := query.GetProxyStatsByServerID(userInfo, srv.ServerID)
+	stats, err := query.AdminGetProxyStatsByServerID(srv.ServerID)
 	if err != nil {
 		logger.Logger(ctx).WithError(err).Warnf("track proxy offline: list proxy stats failed, server: [%s]", srv.ServerID)
 		return
@@ -63,7 +66,7 @@ func trackProxyOffline(ctx *app.Context, srv *models.ServerEntity, infos []*pb.P
 		logger.Logger(ctx).WithError(err).Warnf("track proxy offline: list proxy configs failed, server: [%s]", srv.ServerID)
 		return
 	}
-	clients, err := query.GetAllClients(userInfo)
+	clients, err := query.AdminGetClientsByServerID(srv.ServerID)
 	if err != nil {
 		logger.Logger(ctx).WithError(err).Warnf("track proxy offline: list clients failed, server: [%s]", srv.ServerID)
 		return
@@ -100,15 +103,43 @@ func trackProxyOffline(ctx *app.Context, srv *models.ServerEntity, infos []*pb.P
 	mailer.TrackProxyOffline(ctx, srv, activeNames, disappeared, firstSync)
 }
 
-// normalizeProxyName 与 AdminUpdateProxyStats 保持一致：去掉 frps multiuser 插件添加的 "userName." 前缀
-func normalizeProxyName(ctx *app.Context, srv *models.ServerEntity, rawName string) string {
+// serverProxyNamePrefixes 返回连接本节点的所有 client 归属用户的 "userName."
+// 前缀集合（含节点 owner）。frps multiuser 插件给隧道名加该前缀，处理推送时
+// 需按 client 所属用户去前缀才能对上配置里的裸隧道名。
+func serverProxyNamePrefixes(ctx *app.Context, srv *models.ServerEntity) []string {
+	clients, err := dao.NewQuery(ctx).AdminGetClientsByServerID(srv.ServerID)
+	if err != nil {
+		logger.Logger(ctx).WithError(err).Warnf("track proxy offline: list clients failed, server: [%s]", srv.ServerID)
+		return nil
+	}
+	userIDs := map[int]struct{}{srv.UserID: {}}
+	for _, c := range clients {
+		userIDs[c.UserID] = struct{}{}
+	}
+	prefixes := make([]string, 0, len(userIDs))
+	for id := range userIDs {
+		user, err := dao.NewQuery(ctx).GetUserByUserID(id)
+		if err != nil || user == nil {
+			continue
+		}
+		if user.UserName != "" {
+			prefixes = append(prefixes, user.UserName+".")
+		}
+	}
+	return prefixes
+}
+
+// normalizeProxyName 与 AdminUpdateProxyStats 的去前缀规则保持一致：
+// 去掉 frps multiuser 插件添加的 "userName." 前缀（尝试所有已知用户前缀）。
+func normalizeProxyName(prefixes []string, rawName string) string {
 	name := strings.TrimSpace(rawName)
 	if name == "" {
 		return ""
 	}
-	user, err := dao.NewQuery(ctx).GetUserByUserID(srv.UserID)
-	if err != nil || user == nil {
-		return name
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(name, prefix) {
+			return strings.TrimPrefix(name, prefix)
+		}
 	}
-	return strings.TrimPrefix(name, user.UserName+".")
+	return name
 }
