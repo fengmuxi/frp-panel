@@ -48,6 +48,9 @@ const SmtpSchema = z.object({
 	enable_client_offline: z.boolean().default(false),
 	enable_proxy_offline: z.boolean().default(false),
 	enable_login_notify: z.boolean().default(false),
+	enable_server_online: z.boolean().default(false),
+	enable_client_online: z.boolean().default(false),
+	enable_proxy_online: z.boolean().default(false),
 })
 
 type SmtpFormValues = z.infer<typeof SmtpSchema>
@@ -78,6 +81,9 @@ export function SmtpSettingsForm() {
 			enable_client_offline: false,
 			enable_proxy_offline: false,
 			enable_login_notify: false,
+			enable_server_online: false,
+			enable_client_online: false,
+			enable_proxy_online: false,
 		},
 	})
 
@@ -104,6 +110,9 @@ export function SmtpSettingsForm() {
 					enable_client_offline: !!s.enable_client_offline,
 					enable_proxy_offline: !!s.enable_proxy_offline,
 					enable_login_notify: !!s.enable_login_notify,
+					enable_server_online: !!s.enable_server_online,
+					enable_client_online: !!s.enable_client_online,
+					enable_proxy_online: !!s.enable_proxy_online,
 				}
 				setHasPassword(!!s.has_password)
 				form.reset(values)
@@ -132,6 +141,9 @@ export function SmtpSettingsForm() {
 		enable_client_offline: values.enable_client_offline,
 		enable_proxy_offline: values.enable_proxy_offline,
 		enable_login_notify: values.enable_login_notify,
+		enable_server_online: values.enable_server_online,
+		enable_client_online: values.enable_client_online,
+		enable_proxy_online: values.enable_proxy_online,
 	})
 
 	const onSubmit = async (values: SmtpFormValues) => {
@@ -392,6 +404,61 @@ export function SmtpSettingsForm() {
 									<FormControl>
 										<div className="flex items-center gap-2">
 											{notifyTestButton('proxy_offline')}
+											<Switch checked={field.value} onCheckedChange={field.onChange} />
+										</div>
+									</FormControl>
+								</FormItem>
+							)}
+						/>
+						{/* 上线提醒开关 */}
+						<FormField
+							control={form.control}
+							name="enable_server_online"
+							render={({ field }) => (
+								<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+									<div className="space-y-0.5">
+										<FormLabel>{t('settings.smtp.form.serverOnlineLabel')}</FormLabel>
+										<FormDescription>{t('settings.smtp.form.serverOnlineDescription')}</FormDescription>
+									</div>
+									<FormControl>
+										<div className="flex items-center gap-2">
+											{notifyTestButton('server_online')}
+											<Switch checked={field.value} onCheckedChange={field.onChange} />
+										</div>
+									</FormControl>
+								</FormItem>
+							)}
+						/>
+						<FormField
+							control={form.control}
+							name="enable_client_online"
+							render={({ field }) => (
+								<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+									<div className="space-y-0.5">
+										<FormLabel>{t('settings.smtp.form.clientOnlineLabel')}</FormLabel>
+										<FormDescription>{t('settings.smtp.form.clientOnlineDescription')}</FormDescription>
+									</div>
+									<FormControl>
+										<div className="flex items-center gap-2">
+											{notifyTestButton('client_online')}
+											<Switch checked={field.value} onCheckedChange={field.onChange} />
+										</div>
+									</FormControl>
+								</FormItem>
+							)}
+						/>
+						<FormField
+							control={form.control}
+							name="enable_proxy_online"
+							render={({ field }) => (
+								<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+									<div className="space-y-0.5">
+										<FormLabel>{t('settings.smtp.form.proxyOnlineLabel')}</FormLabel>
+										<FormDescription>{t('settings.smtp.form.proxyOnlineDescription')}</FormDescription>
+									</div>
+									<FormControl>
+										<div className="flex items-center gap-2">
+											{notifyTestButton('proxy_online')}
 											<Switch checked={field.value} onCheckedChange={field.onChange} />
 										</div>
 									</FormControl>

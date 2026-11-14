@@ -921,7 +921,13 @@
         "encryptionHint": "SSL/TLS 为隐式加密，通常搭配 465 端口；STARTTLS 通常搭配 587 端口；不加密通常搭配 25 端口",
         "fromName": "发件人名称",
         "fromNamePlaceholder": "例如 FRP-Panel",
-        "fromNameHint": "可选。收件方将显示为「名称 <发件人地址>」；留空则仅显示地址，支持中文"
+        "fromNameHint": "可选。收件方将显示为「名称 <发件人地址>」；留空则仅显示地址，支持中文",
+        "serverOnlineLabel": "服务端上线提醒",
+        "serverOnlineDescription": "服务端节点上线时向所属用户发送邮件",
+        "clientOnlineLabel": "客户端上线提醒",
+        "clientOnlineDescription": "客户端节点上线时向所属用户发送邮件",
+        "proxyOnlineLabel": "隧道上线提醒",
+        "proxyOnlineDescription": "隧道恢复运行时向所属用户发送邮件"
       },
       "actions": {
         "saveChanges": "保存更改",

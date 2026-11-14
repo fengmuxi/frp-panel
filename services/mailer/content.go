@@ -15,9 +15,10 @@ type MailContent struct {
 
 // 邮件徽章级别（决定模板配色）
 const (
-	levelAlert = "alert" // 掉线告警（红）
-	levelInfo  = "info"  // 通知（蓝）
-	levelTest  = "test"  // 测试（灰）
+	levelAlert  = "alert"  // 掉线告警（红）
+	levelInfo   = "info"   // 通知（蓝）
+	levelOnline = "online" // 上线通知（绿）
+	levelTest   = "test"   // 测试（灰）
 )
 
 // contentField 邮件正文的键值字段行
@@ -43,6 +44,9 @@ const (
 	MailTemplateClientOffline = "client_offline" // 客户端掉线提醒
 	MailTemplateProxyOffline  = "proxy_offline"  // 隧道掉线提醒
 	MailTemplateLogin         = "login"          // 用户登录通知
+	MailTemplateServerOnline  = "server_online"  // 服务端上线提醒
+	MailTemplateClientOnline  = "client_online"  // 客户端上线提醒
+	MailTemplateProxyOnline   = "proxy_online"   // 隧道上线提醒
 )
 
 // NodeOfflineContent 节点（服务端/客户端）掉线提醒。
@@ -81,6 +85,47 @@ func TunnelOfflineContent(proxyName, serverID string, foundAt time.Time) MailCon
 	}
 	return MailContent{
 		Subject: fmt.Sprintf("[frp-panel] 隧道「%s」掉线提醒", proxyName),
+		Text:    renderText(p),
+		HTML:    renderHTML(p),
+	}
+}
+
+// NodeOnlineContent 节点（服务端/客户端）上线提醒。
+func NodeOnlineContent(kind, name, clientID string, onlineAt time.Time) MailContent {
+	p := contentParams{
+		Level:    levelOnline,
+		Kind:     "上线通知",
+		Title:    fmt.Sprintf("%s「%s」已上线", kind, name),
+		Subtitle: "该节点已重新连接到面板，恢复正常工作。",
+		Fields: []contentField{
+			{"节点类型", kind},
+			{"节点名称", name},
+			{"节点 ID", clientID},
+			{"上线时间", formatMailTime(onlineAt)},
+		},
+	}
+	return MailContent{
+		Subject: fmt.Sprintf("[frp-panel] %s「%s」上线提醒", kind, name),
+		Text:    renderText(p),
+		HTML:    renderHTML(p),
+	}
+}
+
+// TunnelOnlineContent 隧道上线提醒。
+func TunnelOnlineContent(proxyName, serverID string, onlineAt time.Time) MailContent {
+	p := contentParams{
+		Level:    levelOnline,
+		Kind:     "上线通知",
+		Title:    fmt.Sprintf("隧道「%s」已上线", proxyName),
+		Subtitle: "该隧道在服务端上的代理已恢复运行。",
+		Fields: []contentField{
+			{"隧道名称", proxyName},
+			{"服务端 ID", serverID},
+			{"恢复时间", formatMailTime(onlineAt)},
+		},
+	}
+	return MailContent{
+		Subject: fmt.Sprintf("[frp-panel] 隧道「%s」上线提醒", proxyName),
 		Text:    renderText(p),
 		HTML:    renderHTML(p),
 	}
@@ -138,6 +183,12 @@ func BuildSampleContent(template string) (content MailContent, ok bool) {
 		return TunnelOfflineContent("test-tunnel", "srv-example-001", now), true
 	case MailTemplateLogin:
 		return LoginContent("admin", "203.0.113.10", now), true
+	case MailTemplateServerOnline:
+		return NodeOnlineContent("服务端", "test-server", "srv-example-001", now), true
+	case MailTemplateClientOnline:
+		return NodeOnlineContent("客户端", "test-client", "cli-example-001", now), true
+	case MailTemplateProxyOnline:
+		return TunnelOnlineContent("test-tunnel", "srv-example-001", now), true
 	}
 	return MailContent{}, false
 }
@@ -168,6 +219,8 @@ func levelColor(level string) (bg, text string) {
 		return "#fef2f2", "#dc2626"
 	case levelInfo:
 		return "#eff6ff", "#2563eb"
+	case levelOnline:
+		return "#f0fdf4", "#16a34a"
 	default:
 		return "#f3f4f6", "#6b7280"
 	}

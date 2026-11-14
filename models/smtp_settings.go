@@ -19,6 +19,9 @@ type SMTPSettings struct {
 	EnableClientOffline bool   `gorm:"default:false"`                         // 客户端掉线提醒
 	EnableProxyOffline  bool   `gorm:"default:false"`                         // 隧道掉线提醒
 	EnableLoginNotify   bool   `gorm:"default:false"`                         // 用户登录通知
+	EnableServerOnline  bool   `gorm:"default:false"`                         // 服务端上线提醒
+	EnableClientOnline  bool   `gorm:"default:false"`                         // 客户端上线提醒
+	EnableProxyOnline   bool   `gorm:"default:false"`                         // 隧道上线提醒
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
 }

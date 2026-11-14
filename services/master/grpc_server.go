@@ -239,6 +239,8 @@ func (s *server) ServerSend(sender pb.Master_ServerSendServer) error {
 	}
 	<-done
 	if registeredOK {
+		// 节点注册成功：上线提醒（内部判断开关，60s 防抖避免闪断刷屏）
+		go mailer.NotifyNodeOnline(ctx, registeredCliType, registeredClientID)
 		// 连接断开后延迟确认掉线并发送提醒邮件（内部防抖：期间重连则不通知）
 		go mailer.CheckNodeOffline(ctx, registeredCliType, registeredClientID, registeredConnectTime)
 	}

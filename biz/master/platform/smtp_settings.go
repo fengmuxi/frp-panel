@@ -30,6 +30,9 @@ type smtpSettingsDTO struct {
 	EnableClientOffline bool   `json:"enable_client_offline"`
 	EnableProxyOffline  bool   `json:"enable_proxy_offline"`
 	EnableLoginNotify   bool   `json:"enable_login_notify"`
+	EnableServerOnline  bool   `json:"enable_server_online"`
+	EnableClientOnline  bool   `json:"enable_client_online"`
+	EnableProxyOnline   bool   `json:"enable_proxy_online"`
 }
 
 type smtpTestRequest struct {
@@ -54,6 +57,9 @@ func toSMTPDTO(s *models.SMTPSettings) smtpSettingsDTO {
 		EnableClientOffline: s.EnableClientOffline,
 		EnableProxyOffline:  s.EnableProxyOffline,
 		EnableLoginNotify:   s.EnableLoginNotify,
+		EnableServerOnline:  s.EnableServerOnline,
+		EnableClientOnline:  s.EnableClientOnline,
+		EnableProxyOnline:   s.EnableProxyOnline,
 	}
 }
 
@@ -141,6 +147,9 @@ func UpdateSMTPSettings(appInstance app.Application) gin.HandlerFunc {
 			EnableClientOffline: req.EnableClientOffline,
 			EnableProxyOffline:  req.EnableProxyOffline,
 			EnableLoginNotify:   req.EnableLoginNotify,
+			EnableServerOnline:  req.EnableServerOnline,
+			EnableClientOnline:  req.EnableClientOnline,
+			EnableProxyOnline:   req.EnableProxyOnline,
 			CreatedAt:           old.CreatedAt,
 			FromName:            strings.TrimSpace(req.FromName),
 		}

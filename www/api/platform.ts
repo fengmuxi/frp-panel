@@ -28,6 +28,9 @@ export interface SmtpSettings {
   enable_client_offline: boolean
   enable_proxy_offline: boolean
   enable_login_notify: boolean
+  enable_server_online: boolean
+  enable_client_online: boolean
+  enable_proxy_online: boolean
 }
 
 export const getSmtpSettings = async (): Promise<SmtpSettings> => {

@@ -926,7 +926,13 @@
         "encryptionHint": "SSL/TLS is implicit TLS (usually port 465); STARTTLS usually uses port 587; no encryption usually uses port 25",
         "fromName": "Sender Name",
         "fromNamePlaceholder": "e.g. FRP-Panel",
-        "fromNameHint": "Optional. Recipients will see \"Name <from address>\"; leave empty to show the address only. Non-ASCII names are supported."
+        "fromNameHint": "Optional. Recipients will see \"Name <from address>\"; leave empty to show the address only. Non-ASCII names are supported.",
+        "serverOnlineLabel": "Server Online Alert",
+        "serverOnlineDescription": "Send an email to the owner when a server node comes online",
+        "clientOnlineLabel": "Client Online Alert",
+        "clientOnlineDescription": "Send an email to the owner when a client node comes online",
+        "proxyOnlineLabel": "Tunnel Online Alert",
+        "proxyOnlineDescription": "Send an email to the owner when a tunnel resumes running"
       },
       "actions": {
         "saveChanges": "Save Changes",

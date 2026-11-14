@@ -108,6 +108,84 @@ func CheckNodeOffline(ctx *app.Context, cliType, clientID string, connTime time.
 	SendAsync(ctx, cfg, []string{email}, NodeOfflineContent(kind, name, clientID, time.Now()))
 }
 
+// nodeOnlineNotified 节点上线提醒防抖：同节点 60s 内只通知一次
+// （网络闪断时 gRPC 可能短时间内反复 Register，避免刷屏）。
+var (
+	nodeOnlineMu       sync.Mutex
+	nodeOnlineLastSeen = map[string]time.Time{}
+)
+
+const nodeOnlineDebounce = 60 * time.Second
+
+// NotifyNodeOnline 节点（服务端/客户端）注册成功后的上线提醒。
+// 内部判断开关与收件人，调用方用 go 启动；防抖由节点注册语义保证低频，
+// 此处仅做 60s 去重兜底。
+func NotifyNodeOnline(ctx *app.Context, cliType, clientID string) {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Logger(ctx).Errorf("notify node online panic: %v", r)
+		}
+	}()
+
+	cfg := loadSettings(ctx)
+	if cfg == nil || cfg.Host == "" {
+		return
+	}
+
+	var (
+		enabled bool
+		name    string
+		userID  int
+		kind    string
+	)
+	switch cliType {
+	case defs.CliTypeServer:
+		enabled = cfg.EnableServerOnline
+		kind = "服务端"
+		srv, err := dao.NewQuery(ctx).AdminGetServerByServerID(clientID)
+		if err != nil || srv == nil {
+			logger.Logger(ctx).WithError(err).Infof("server not found, skip online notify, id: [%s]", clientID)
+			return
+		}
+		name, userID = srv.Comment, srv.UserID
+	case defs.CliTypeClient:
+		enabled = cfg.EnableClientOnline
+		kind = "客户端"
+		cli, err := dao.NewQuery(ctx).AdminGetClientByClientID(clientID)
+		if err != nil || cli == nil {
+			logger.Logger(ctx).WithError(err).Infof("client not found, skip online notify, id: [%s]", clientID)
+			return
+		}
+		name, userID = cli.Comment, cli.UserID
+	default:
+		return
+	}
+
+	if !enabled {
+		return
+	}
+	if strings.TrimSpace(name) == "" {
+		name = clientID
+	}
+
+	// 防抖：同节点 60s 内只发一次上线提醒
+	key := cliType + "\x00" + clientID
+	nodeOnlineMu.Lock()
+	if last, ok := nodeOnlineLastSeen[key]; ok && time.Since(last) < nodeOnlineDebounce {
+		nodeOnlineMu.Unlock()
+		return
+	}
+	nodeOnlineLastSeen[key] = time.Now()
+	nodeOnlineMu.Unlock()
+
+	email := resolveEmail(ctx, userID)
+	if email == "" {
+		return
+	}
+
+	SendAsync(ctx, cfg, []string{email}, NodeOnlineContent(kind, name, clientID, time.Now()))
+}
+
 // NotifyLogin 用户登录成功后的通知（内部判断开关与邮箱，调用方用 go 启动）。
 func NotifyLogin(ctx *app.Context, userID int, username, ip string) {
 	defer func() {
@@ -168,6 +246,8 @@ func TrackProxyOffline(ctx *app.Context, srv *models.ServerEntity, activeNames m
 	now := time.Now()
 	disappearedSet := map[string]bool{}
 	var toSend []ProxyOfflineItem
+	// 隧道重现且此前通知过掉线时的上线提醒队列
+	var toOnlineSend []ProxyOfflineItem
 
 	for _, item := range disappeared {
 		if item.ServerID != srv.ServerID || item.ProxyName == "" {
@@ -189,7 +269,7 @@ func TrackProxyOffline(ctx *app.Context, srv *models.ServerEntity, activeNames m
 		}
 	}
 
-	// 隧道重新出现则复位（允许下一次事故再次通知）
+	// 隧道重新出现：复位防抖状态；若此前已通知过掉线，补发一条上线提醒（与掉线配对）
 	prefix := srv.ServerID + "\x00"
 	for key := range proxyPending {
 		if !strings.HasPrefix(key, prefix) {
@@ -197,6 +277,13 @@ func TrackProxyOffline(ctx *app.Context, srv *models.ServerEntity, activeNames m
 		}
 		name := strings.SplitN(key, prefix, 2)[1]
 		if !disappearedSet[name] {
+			if proxyNotified[key] {
+				toOnlineSend = append(toOnlineSend, ProxyOfflineItem{
+					UserID:    srv.UserID,
+					ServerID:  srv.ServerID,
+					ProxyName: name,
+				})
+			}
 			delete(proxyPending, key)
 			delete(proxyNotified, key)
 		}
@@ -204,21 +291,30 @@ func TrackProxyOffline(ctx *app.Context, srv *models.ServerEntity, activeNames m
 
 	proxyMu.Unlock()
 
-	if len(toSend) == 0 {
-		return
-	}
-
 	cfg := loadSettings(ctx)
-	if cfg == nil || !cfg.EnableProxyOffline || cfg.Host == "" {
+	if cfg == nil || cfg.Host == "" {
 		return
 	}
 
-	for _, item := range toSend {
-		email := resolveEmail(ctx, item.UserID)
-		if email == "" {
-			continue
+	if len(toSend) > 0 && cfg.EnableProxyOffline {
+		for _, item := range toSend {
+			email := resolveEmail(ctx, item.UserID)
+			if email == "" {
+				continue
+			}
+			SendAsync(ctx, cfg, []string{email}, TunnelOfflineContent(item.ProxyName, item.ServerID, time.Now()))
 		}
-		SendAsync(ctx, cfg, []string{email}, TunnelOfflineContent(item.ProxyName, item.ServerID, time.Now()))
+	}
+
+	// 隧道上线提醒：重现且此前通知过掉线时补发，与掉线提醒配对
+	if len(toOnlineSend) > 0 && cfg.EnableProxyOnline {
+		for _, item := range toOnlineSend {
+			email := resolveEmail(ctx, item.UserID)
+			if email == "" {
+				continue
+			}
+			SendAsync(ctx, cfg, []string{email}, TunnelOnlineContent(item.ProxyName, item.ServerID, time.Now()))
+		}
 	}
 }
 
