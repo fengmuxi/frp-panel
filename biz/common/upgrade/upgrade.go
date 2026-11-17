@@ -86,6 +86,13 @@ func StartWithResult(ctx context.Context, opt Options) (StartResult, error) {
 	}
 	_ = os.Chmod(staged, 0755)
 
+	// 完整性校验（安全审计 P1-11）：下载产物必须与 release 旁挂的 SHA-256 清单一致，
+	// fail-closed —— 清单缺失/不一致都拒绝升级
+	if err := verifyDownloadChecksum(ctx, staged, downloadURL); err != nil {
+		_ = os.Remove(staged)
+		return StartResult{}, err
+	}
+
 	if err := verifyBinary(staged); err != nil {
 		_ = os.Remove(staged)
 		return StartResult{}, err

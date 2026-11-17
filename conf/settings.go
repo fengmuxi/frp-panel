@@ -18,22 +18,32 @@ import (
 
 type Config struct {
 	App struct {
-		UseGvisorNet   bool   `env:"USE_GVISOR_NET" env-default:"false" env-description:"use gvisor netstack for TUN device"`
-		GlobalSecret   string `env:"GLOBAL_SECRET" env-default:"frp-panel" env-description:"global secret, used in manager gen secret, keep it safe"`
-		CookieAge      int    `env:"COOKIE_AGE" env-default:"86400" env-description:"cookie age in second, default is 1 day"`
-		CookieName     string `env:"COOKIE_NAME" env-default:"frp-panel-cookie" env-description:"cookie name"`
-		CookiePath     string `env:"COOKIE_PATH" env-default:"/" env-description:"cookie path"`
-		CookieDomain   string `env:"COOKIE_DOMAIN" env-default:"" env-description:"cookie domain"`
-		CookieSecure   bool   `env:"COOKIE_SECURE" env-default:"false" env-description:"cookie secure"`
-		CookieHTTPOnly bool   `env:"COOKIE_HTTP_ONLY" env-default:"true" env-description:"cookie http only"`
-		EnableRegister bool   `env:"ENABLE_REGISTER" env-default:"false" env-description:"enable register, only allow the first admin to register"`
-		GithubProxyUrl string `env:"GITHUB_PROXY_URL" env-default:"https://ghfast.top/" env-description:"github proxy url"`
+		UseGvisorNet bool   `env:"USE_GVISOR_NET" env-default:"false" env-description:"use gvisor netstack for TUN device"`
+		GlobalSecret string `env:"GLOBAL_SECRET" env-default:"frp-panel" env-description:"global secret, used in manager gen secret, keep it safe"`
+		// RequireStrongSecret 安全基线开关：拒绝默认/过短 GLOBAL_SECRET 启动（默认开启）。
+		// 仅应作为历史部署（仍使用默认值）的过渡兼容手段——尽快经 frpp migrate rekey
+		// 换成强随机值后移除该开关，弱钥派生的 JWT 签名密钥可被离线推导
+		RequireStrongSecret bool   `env:"REQUIRE_STRONG_SECRET" env-default:"true" env-description:"reject default/weak GLOBAL_SECRET at master startup; set false only to keep legacy deployments booting (rotate via frpp migrate rekey)"`
+		CookieAge           int    `env:"COOKIE_AGE" env-default:"86400" env-description:"cookie age in second, default is 1 day"`
+		CookieName          string `env:"COOKIE_NAME" env-default:"frp-panel-cookie" env-description:"cookie name"`
+		CookiePath          string `env:"COOKIE_PATH" env-default:"/" env-description:"cookie path"`
+		CookieDomain        string `env:"COOKIE_DOMAIN" env-default:"" env-description:"cookie domain"`
+		CookieSecure        bool   `env:"COOKIE_SECURE" env-default:"true" env-description:"cookie secure (安全审计 P1-8：默认收紧为 true；纯 HTTP 部署请改用反代 TLS 或显式回退)"`
+		CookieHTTPOnly      bool   `env:"COOKIE_HTTP_ONLY" env-default:"true" env-description:"cookie http only"`
+		EnableRegister      bool   `env:"ENABLE_REGISTER" env-default:"false" env-description:"enable register, only allow the first admin to register"`
+		GithubProxyUrl      string `env:"GITHUB_PROXY_URL" env-default:"https://ghfast.top/" env-description:"github proxy url"`
 	} `env-prefix:"APP_"`
 	Master struct {
-		APIPort               int    `env:"API_PORT" env-default:"9000" env-description:"master api port"`
-		APIHost               string `env:"API_HOST" env-description:"master host, can behind proxy like cdn"`
-		APIScheme             string `env:"API_SCHEME" env-default:"http" env-description:"master api scheme"`
-		CacheSize             int    `env:"CACHE_SIZE" env-default:"10" env-description:"cache size in MB"`
+		APIPort int `env:"API_PORT" env-default:"9000" env-description:"master api port"`
+		// APIListenIP 是 API/WebUI 的监听 IP：默认 0.0.0.0 监听所有网卡（含公网）。
+		// 只做本机反代/本机访问时建议改为 127.0.0.1，避免面板直接暴露公网
+		APIListenIP string `env:"API_LISTEN_IP" env-default:"0.0.0.0" env-description:"panel api/webui listen ip, 0.0.0.0 = all interfaces; set 127.0.0.1 to bind loopback only (e.g. behind a local reverse proxy)"`
+		APIHost     string `env:"API_HOST" env-description:"master host, can behind proxy like cdn"`
+		APIScheme   string `env:"API_SCHEME" env-default:"http" env-description:"master api scheme"`
+		CacheSize   int    `env:"CACHE_SIZE" env-default:"10" env-description:"cache size in MB"`
+		// RPCListenIP 是节点 RPC（wsgrpc）的监听 IP：默认 0.0.0.0 让节点可从任意地址连入；
+		// 节点全部经域名反代/CDN 接入时可改 127.0.0.1 收紧
+		RPCListenIP           string `env:"RPC_LISTEN_IP" env-default:"0.0.0.0" env-description:"node rpc (wsgrpc) listen ip, 0.0.0.0 = all interfaces; set 127.0.0.1 when nodes reach master via reverse proxy only"`
 		RPCHost               string `env:"RPC_HOST" env-default:"127.0.0.1" env-description:"master host, is a public ip or domain"`
 		RPCPort               int    `env:"RPC_PORT" env-default:"9001" env-description:"master rpc port"`
 		InternalFRPServerHost string `env:"INTERNAL_FRP_SERVER_HOST" env-description:"internal frp server host, used for client connection"`
@@ -51,7 +61,7 @@ type Config struct {
 		TLSRpc                bool   `env:"TLS_RPC" env-default:"true" env-description:"use tls for rpc connection"`
 		RPCUrl                string `env:"RPC_URL" env-description:"rpc url, support ws or wss or grpc scheme, eg: ws://127.0.0.1:9000"`
 		APIUrl                string `env:"API_URL" env-description:"api url, support http or https scheme, eg: http://127.0.0.1:9000"`
-		TLSInsecureSkipVerify bool   `env:"TLS_INSECURE_SKIP_VERIFY" env-default:"true" env-description:"skip tls verify"`
+		TLSInsecureSkipVerify bool   `env:"TLS_INSECURE_SKIP_VERIFY" env-default:"false" env-description:"skip tls verify (安全审计 P1-10：默认收紧为验证模式；自签部署需将 master CA 纳入信任或显式回退)"`
 		Worker                struct {
 			WorkerdBinaryPath  string `env:"WORKERD_BINARY_PATH" env-description:"workerd binary path"`
 			WorkerdWorkDir     string `env:"WORKERD_WORK_DIR" env-default:"/tmp/frpp/workerd" env-description:"workerd work dir"`
@@ -113,6 +123,41 @@ func NewConfig() Config {
 	}
 
 	return cfg
+}
+
+// GlobalSecretWeak 判断 GLOBAL_SECRET 是否为弱值（默认值或长度不足）。
+// 校验开关关闭时调用方应据此降级告警而非拒绝启动。
+func (cfg *Config) GlobalSecretWeak() bool {
+	return cfg.App.GlobalSecret == "" || cfg.App.GlobalSecret == "frp-panel" || len(cfg.App.GlobalSecret) < 16
+}
+
+// ValidateGlobalSecret 校验 GLOBAL_SECRET 安全基线（安全审计 P1-4）：
+// 默认值 "frp-panel" 或过短密钥会让 JWT 签名密钥（SHA1(APIHost:APIPort:GLOBAL_SECRET)）
+// 可被任何知道面板域名的人离线推导，进而伪造管理员 token。master 启动时默认必须通过本校验。
+//
+// 兼容口：REQUIRE_STRONG_SECRET=false 可放宽本校验（仍拒绝空值），供仍在使用
+// 默认/短密钥的历史部署继续启动。这只是过渡手段——弱钥风险依然存在，应在完成
+// `frpp migrate rekey` 轮换后移除开关；frpp check env 会持续降级告警。
+func (cfg *Config) ValidateGlobalSecret() error {
+	if cfg.App.GlobalSecret == "" {
+		return fmt.Errorf("APP_GLOBAL_SECRET is empty")
+	}
+	if !cfg.App.RequireStrongSecret {
+		if cfg.GlobalSecretWeak() {
+			logger.Logger(context.Background()).Warnf("strong-secret check disabled (REQUIRE_STRONG_SECRET=false): " +
+				"APP_GLOBAL_SECRET is weak, JWT signing key can be derived offline; " +
+				"rotate via `frpp migrate rekey` and re-enable the check")
+		}
+		return nil
+	}
+	if cfg.App.GlobalSecret == "frp-panel" {
+		return fmt.Errorf("APP_GLOBAL_SECRET is still the default value; it derives the JWT signing key, refusing to start " +
+			"(legacy deployments can temporarily set APP_REQUIRE_STRONG_SECRET=false, but rotation via `frpp migrate rekey` is strongly recommended)")
+	}
+	if len(cfg.App.GlobalSecret) < 16 {
+		return fmt.Errorf("APP_GLOBAL_SECRET too short (%d chars, >=16 required)", len(cfg.App.GlobalSecret))
+	}
+	return nil
 }
 
 func (cfg *Config) Complete() {

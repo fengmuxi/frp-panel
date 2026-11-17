@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"time"
 
@@ -58,7 +59,8 @@ func (q *clientQuery) ValidateClientSecret(clientID, clientSecret string) (*mode
 	if err != nil {
 		return nil, err
 	}
-	if c.ConnectSecret != clientSecret {
+	// 常量时间比较（安全审计 P2：避免逐字节时序泄露节点接入凭证）
+	if subtle.ConstantTimeCompare([]byte(c.ConnectSecret), []byte(clientSecret)) != 1 {
 		return nil, fmt.Errorf("invalid client secret")
 	}
 	return c.ClientEntity, nil
@@ -123,10 +125,19 @@ func (q *clientQuery) GetClientsByClientIDs(userInfo models.UserInfo, clientIDs 
 	if len(clientIDs) == 0 {
 		return nil, fmt.Errorf("invalid client ids")
 	}
+	if userInfo == nil {
+		return nil, fmt.Errorf("invalid user info")
+	}
 
 	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
 	cs := []*models.Client{}
-	err := db.Where("client_id IN ?", clientIDs).Find(&cs).Error
+	query := db.Where("client_id IN ?", clientIDs)
+	// 修复安全审计 P0-3：此前不过滤租户，worker 可附加其他租户的 client 并部署代码。
+	// admin 角色放行（跨租户运维），普通用户仅能命中自己的 client。
+	if !userInfo.IsAdmin() {
+		query = query.Where("user_id = ? AND tenant_id = ?", userInfo.GetUserID(), userInfo.GetTenantID())
+	}
+	err := query.Find(&cs).Error
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +210,7 @@ func (m *clientMutation) DeleteClient(userInfo models.UserInfo, clientID string)
 		return fmt.Errorf("invalid client id")
 	}
 	db := m.ctx.GetApp().GetDBManager().GetDefaultDB()
-	return db.Unscoped().Where(&models.Client{
+	if err := db.Unscoped().Where(&models.Client{
 		ClientEntity: &models.ClientEntity{
 			ClientID: clientID,
 			UserID:   userInfo.GetUserID(),
@@ -211,7 +222,11 @@ func (m *clientMutation) DeleteClient(userInfo models.UserInfo, clientID string)
 			UserID:         userInfo.GetUserID(),
 			TenantID:       userInfo.GetTenantID(),
 		},
-	}).Delete(&models.Client{}).Error
+	}).Delete(&models.Client{}).Error; err != nil {
+		return err
+	}
+	// 级联清理该节点的通知覆盖配置，避免孤儿记录
+	return deleteResourceNotifyPrefs(m.ctx, models.NotifyResTypeClient, clientID)
 }
 
 func (m *clientMutation) UpdateClient(userInfo models.UserInfo, client *models.ClientEntity) error {

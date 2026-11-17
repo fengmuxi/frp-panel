@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"bytes"
+	"fmt"
+
 	"github.com/fatedier/frp/pkg/config"
 	v1 "github.com/fatedier/frp/pkg/config/v1"
 	"github.com/samber/lo"
@@ -12,6 +15,13 @@ func LoadContentWithTemplate(content []byte, values *config.Values) ([]byte, err
 }
 
 func LoadConfigureFromContent(content []byte, c any, strict bool) error {
+	// 安全审计 P1-14：frp 的 RenderWithTemplate 以 master 进程真实环境变量为数据源
+	//（frp 内部 glbEnvs = os.Environ()），租户配置里的 `{{.Envs.APP_GLOBAL_SECRET}}`
+	// 之类字段会在渲染时把面板凭证写进结果并回传给租户。
+	// 面板托管场景没有合法的模板用途，在唯一的加载入口直接拒绝。
+	if bytes.Contains(content, []byte("{{")) {
+		return fmt.Errorf("config template syntax '{{' is not allowed in panel-managed configs")
+	}
 	ans, err := LoadContentWithTemplate(content, config.GetValues())
 	if err != nil {
 		return err

@@ -96,9 +96,13 @@ func FindExecutableNames(filter func(name string) bool, extraPaths ...string) ([
 
 var TmpFileDir = path.Join(os.TempDir(), "vaala-frp-panel-download")
 
+// extractMaxBytes 解压产物的体积上限（防 gzip bomb 磁盘耗尽）
+const extractMaxBytes = 1 << 29 // 512 MB
+
 // DownloadFile 下载文件到一个临时文件，返回临时文件路径
 func DownloadFile(ctx context.Context, url string, proxyUrl string) (string, error) {
-	os.MkdirAll(TmpFileDir, 0777)
+	// 0700（安全审计 P2：0777 的下载暂存目录在多用户主机上是本地预置换攻击面）
+	os.MkdirAll(TmpFileDir, 0700)
 
 	tmpPath, err := os.MkdirTemp(TmpFileDir, "downloads")
 	if err != nil {
@@ -303,7 +307,8 @@ func ExtractGZTo(srcGZ, newName, destDir string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create temporary directory: %w", err)
 	}
-	// Note: tmpDir is not auto-deleted. Caller may clean up if desired.
+	// 无论成败都清理临时目录（安全审计 P3：此前不清理会残留临时产物）
+	defer os.RemoveAll(tmpDir)
 
 	// 4. Create the output file in the temp directory with the new name
 	tmpFilePath := filepath.Join(tmpDir, newName)
@@ -313,13 +318,17 @@ func ExtractGZTo(srcGZ, newName, destDir string) (string, error) {
 	}
 	defer outFile.Close()
 
-	// 5. Decompress into temp file
-	if _, err := io.Copy(outFile, zr); err != nil {
+	// 5. Decompress into temp file（安全审计 P3：加解压体积上限，防 gzip bomb 磁盘耗尽）
+	written, err := io.Copy(outFile, io.LimitReader(zr, extractMaxBytes+1))
+	if err != nil {
 		return "", fmt.Errorf("failed to write decompressed data to %q: %w", tmpFilePath, err)
+	}
+	if written > extractMaxBytes {
+		return "", fmt.Errorf("decompressed size %d exceeds limit %d (possible gzip bomb)", written, extractMaxBytes)
 	}
 
 	// 6. Ensure destination directory exists
-	if err := os.MkdirAll(destDir, 0755); err != nil {
+	if err := os.MkdirAll(destDir, 0700); err != nil {
 		return "", fmt.Errorf("failed to create destination directory %q: %w", destDir, err)
 	}
 

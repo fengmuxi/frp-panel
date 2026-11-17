@@ -4,6 +4,7 @@ import (
 	"context"
 
 	bizupgrade "github.com/VaalaCat/frp-panel/biz/common/upgrade"
+	"github.com/VaalaCat/frp-panel/defs"
 	"github.com/VaalaCat/frp-panel/pb"
 	"github.com/VaalaCat/frp-panel/services/app"
 	"github.com/VaalaCat/frp-panel/utils/logger"
@@ -26,23 +27,21 @@ func UpgradeFrpp(ctx *app.Context, req *pb.UpgradeFrppRequest) (*pb.UpgradeFrppR
 	if req.RestartService != nil {
 		restartService = req.GetRestartService()
 	}
-	useGithubProxy := true
-	if req.UseGithubProxy != nil {
-		useGithubProxy = req.GetUseGithubProxy()
-	}
 
+	// 安全审计 P1-11 + 决策点 B/G：节点侧执行参数不再信任请求值——
+	//   TargetPath/WorkDir 用节点本地默认（当前二进制位置），
+	//   ServiceName 用本机服务名常量（defs.DefaultServiceName），
+	//   DownloadURL 保留但受官方源白名单 + SHA-256 清单校验约束，
+	//   代理（GithubProxy/UseGithubProxy/HttpProxy）一律忽略请求值。
+	// 原 Opts 曾把请求中的 TargetPath/ServiceName/ServiceArgs 原样下发，
+	// 等于允许租户让节点以 root 覆盖任意路径并重启任意服务。
 	opts := bizupgrade.Options{
 		Version:        req.GetVersion(),
 		DownloadURL:    req.GetDownloadUrl(),
-		GithubProxy:    req.GetGithubProxy(),
-		UseGithubProxy: useGithubProxy,
-		HTTPProxy:      req.GetHttpProxy(),
-		TargetPath:     req.GetTargetPath(),
+		UseGithubProxy: false,
 		Backup:         backup,
-		ServiceName:    req.GetServiceName(),
+		ServiceName:    defs.DefaultServiceName,
 		RestartService: restartService,
-		WorkDir:        req.GetWorkdir(),
-		ServiceArgs:    req.GetServiceArgs(),
 	}
 
 	// 异步执行：确保能快速回 ACK，避免远程触发链路因重启/断连卡死

@@ -32,6 +32,7 @@ import { getClientsStatus } from '@/api/platform'
 import { ClientType, RespCode } from '@/lib/pb/common'
 import { ClientStatus, ClientStatus_Status } from '@/lib/pb/api_master'
 import { Badge } from '../ui/badge'
+import { ResourceNotifyDialog } from '@/components/platform/resource_notify_dialog'
 import { ClientDetail } from '../base/client_detail'
 import { useTranslation } from 'react-i18next'
 import { Input } from '@/components/ui/input'
@@ -420,6 +421,7 @@ export const ServerActions: React.FC<ServerItemProps> = ({ server, table, rowInd
   const { t } = useTranslation()
   const router = useRouter()
   const platformInfo = useStore($platformInfo)
+  const [notifyDialogOpen, setNotifyDialogOpen] = React.useState(false)
 
   const removeServer = useMutation({
     mutationFn: deleteServer,
@@ -560,6 +562,15 @@ export const ServerActions: React.FC<ServerItemProps> = ({ server, table, rowInd
           >
             {t('server.actions_menu.remote_terminal')}
           </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setNotifyDialogOpen(true)
+            }}
+          >
+            {t('settings.notifyResource.menuTitle')}
+          </DropdownMenuItem>
           <DialogTrigger asChild>
             <DropdownMenuItem className="text-destructive">{t('server.actions_menu.delete')}</DropdownMenuItem>
           </DialogTrigger>
@@ -584,6 +595,15 @@ export const ServerActions: React.FC<ServerItemProps> = ({ server, table, rowInd
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* 通知提醒设置：三段式（不提醒/全局配置/独立配置） */}
+    <ResourceNotifyDialog
+      open={notifyDialogOpen}
+      onOpenChange={setNotifyDialogOpen}
+      resourceType="server"
+      resourceId={server.id}
+      resourceLabel={server.comment || server.id}
+    />
     </div>
   )
 }

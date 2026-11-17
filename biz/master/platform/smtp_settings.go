@@ -14,52 +14,38 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// smtpSettingsDTO SMTP 配置的前端传输结构。
-// Password 读取时恒为空串，通过 HasPassword 命知前端是否已保存过密码；
+// maxOfflineDelaySeconds 下线通知防抖时长的上限（秒），0 表示使用内置默认 60s
+const maxOfflineDelaySeconds = 3600
+
+// smtpSettingsDTO SMTP 服务器连接配置（仅管理员可改）。
+// 通知开关已拆分为按用户独立配置，见 notify_prefs.go；
+// Password 读取时恒为空串，通过 HasPassword 告知前端是否已保存过密码；
 // 更新时 Password 为空表示保留原密码。
 type smtpSettingsDTO struct {
-	Host                string `json:"host"`
-	Port                int    `json:"port"`
-	Username            string `json:"username"`
-	Password            string `json:"password"`
-	HasPassword         bool   `json:"has_password"`
-	From                string `json:"from"`
-	FromName            string `json:"from_name"`
-	Encryption          string `json:"encryption"`
-	EnableServerOffline bool   `json:"enable_server_offline"`
-	EnableClientOffline bool   `json:"enable_client_offline"`
-	EnableProxyOffline  bool   `json:"enable_proxy_offline"`
-	EnableLoginNotify   bool   `json:"enable_login_notify"`
-	EnableServerOnline  bool   `json:"enable_server_online"`
-	EnableClientOnline  bool   `json:"enable_client_online"`
-	EnableProxyOnline   bool   `json:"enable_proxy_online"`
+	Host        string `json:"host"`
+	Port        int    `json:"port"`
+	Username    string `json:"username"`
+	Password    string `json:"password"`
+	HasPassword bool   `json:"has_password"`
+	From        string `json:"from"`
+	FromName    string `json:"from_name"`
+	Encryption  string `json:"encryption"`
 }
 
 type smtpTestRequest struct {
 	smtpSettingsDTO
 	To string `json:"to"`
-	// Template 为空（或 "test"）时发送通用连通性测试邮件；也可指定业务模板枚举
-	// （mailer.MailTemplateServerOffline/ClientOffline/ProxyOffline/Login），
-	// 使用样例数据渲染对应通知内容，便于逐个验证模板。
-	Template string `json:"template"`
 }
 
 func toSMTPDTO(s *models.SMTPSettings) smtpSettingsDTO {
 	return smtpSettingsDTO{
-		Host:                s.Host,
-		Port:                s.Port,
-		Username:            s.Username,
-		HasPassword:         s.Password != "",
-		From:                s.FromAddress,
-		FromName:            s.FromName,
-		Encryption:          s.Encryption,
-		EnableServerOffline: s.EnableServerOffline,
-		EnableClientOffline: s.EnableClientOffline,
-		EnableProxyOffline:  s.EnableProxyOffline,
-		EnableLoginNotify:   s.EnableLoginNotify,
-		EnableServerOnline:  s.EnableServerOnline,
-		EnableClientOnline:  s.EnableClientOnline,
-		EnableProxyOnline:   s.EnableProxyOnline,
+		Host:        s.Host,
+		Port:        s.Port,
+		Username:    s.Username,
+		HasPassword: s.Password != "",
+		From:        s.FromAddress,
+		FromName:    s.FromName,
+		Encryption:  s.Encryption,
 	}
 }
 
@@ -135,7 +121,8 @@ func UpdateSMTPSettings(appInstance app.Application) gin.HandlerFunc {
 			return
 		}
 
-		// 先构造新的完整实例再保存，密码留空表示保留原值
+		// 先构造新的完整实例再保存，密码留空表示保留原值；
+		// 历史全局开关字段原样保留（作为用户未配置通知开关时的默认值回退来源）
 		s := &models.SMTPSettings{
 			Host:                strings.TrimSpace(req.Host),
 			Port:                req.Port,
@@ -143,13 +130,16 @@ func UpdateSMTPSettings(appInstance app.Application) gin.HandlerFunc {
 			Password:            old.Password,
 			FromAddress:         strings.TrimSpace(req.From),
 			Encryption:          req.Encryption,
-			EnableServerOffline: req.EnableServerOffline,
-			EnableClientOffline: req.EnableClientOffline,
-			EnableProxyOffline:  req.EnableProxyOffline,
-			EnableLoginNotify:   req.EnableLoginNotify,
-			EnableServerOnline:  req.EnableServerOnline,
-			EnableClientOnline:  req.EnableClientOnline,
-			EnableProxyOnline:   req.EnableProxyOnline,
+			EnableServerOffline: old.EnableServerOffline,
+			EnableClientOffline: old.EnableClientOffline,
+			EnableProxyOffline:  old.EnableProxyOffline,
+			EnableLoginNotify:   old.EnableLoginNotify,
+			EnableServerOnline:  old.EnableServerOnline,
+			EnableClientOnline:  old.EnableClientOnline,
+			EnableProxyOnline:   old.EnableProxyOnline,
+			OfflineDelayServer:  old.OfflineDelayServer,
+			OfflineDelayClient:  old.OfflineDelayClient,
+			OfflineDelayProxy:   old.OfflineDelayProxy,
 			CreatedAt:           old.CreatedAt,
 			FromName:            strings.TrimSpace(req.FromName),
 		}
@@ -213,20 +203,8 @@ func SendTestEmail(appInstance app.Application) gin.HandlerFunc {
 			cfg.Password = saved.Password
 		}
 
-		// 按模板渲染内容：未指定模板（或 "test"）发送通用连通性测试邮件；
-		// 指定业务模板时用样例数据渲染对应通知（与真实通知共用同一文案构造函数，避免两处文案漂移）
-		var content mailer.MailContent
-		if req.Template == "" || req.Template == mailer.MailTemplateTest {
-			content = mailer.TestContent()
-		} else {
-			var ok bool
-			if content, ok = mailer.BuildSampleContent(req.Template); !ok {
-				c.JSON(http.StatusOK, common.Err("unknown template: "+req.Template))
-				return
-			}
-		}
-
-		if err := mailer.SendSync(context.Background(), cfg, []string{to}, content); err != nil {
+		// 通用连通性测试；通知模板的样例测试见 /notify/prefs/test（所有用户可用）
+		if err := mailer.SendSync(context.Background(), cfg, []string{to}, mailer.TestContent()); err != nil {
 			c.JSON(http.StatusOK, common.Err("send test email failed: "+err.Error()))
 			return
 		}

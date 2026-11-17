@@ -93,9 +93,12 @@ func trackProxyOffline(ctx *app.Context, srv *models.ServerEntity, infos []*pb.P
 		}
 		if !activeNames[cfg.Name] {
 			disappeared = append(disappeared, mailer.ProxyOfflineItem{
-				UserID:    srv.UserID,
-				ServerID:  srv.ServerID,
-				ProxyName: cfg.Name,
+				// 收件人与资源级开关判定必须锚定隧道自己的属主（cfg.UserID）：
+				// 同一节点可挂多个用户的隧道，用节点属主（srv.UserID）会把通知发给他人
+				UserID:        cfg.UserID,
+				ServerID:      srv.ServerID,
+				ProxyName:     cfg.Name,
+				ProxyConfigID: cfg.ID, // 通知覆盖配置按行主键关联（与改名无关）
 			})
 		}
 	}

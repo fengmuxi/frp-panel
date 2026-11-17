@@ -35,6 +35,8 @@ func buildMasterGroup(env *Env) ([]Checker, error) {
 			fixHint: "runMaster 中注册于 MasterRouter(GET /wsgrpc)；404 说明路由未挂载或请求打到了别的服务"}},
 		&masterNodeStatus{baseChecker{name: "node_status", group: "master", severity: LevelMajor,
 			fixHint: "提供 --login-user/--login-password 后可检查节点在线状态与 EVENT_PING 延迟；掉线节点请查看节点侧日志与网络"}},
+		&masterNodeVersionSkew{baseChecker{name: "node_version_skew", group: "master", severity: LevelMinor,
+			fixHint: "版本偏差的节点仍在跑旧二进制：对节点执行 frpp upgrade 或重新部署，OTA 灰度期间属正常"}},
 		&masterJSONCompat{baseChecker{name: "json_compat", group: "master", severity: LevelMinor,
 			fixHint: "项目 REST 层支持 protobuf 与 JSON 双协议（common.GetProtoRequest/OKResp）；JSON 失败影响部分老前端调用"}},
 	}, nil
@@ -239,6 +241,85 @@ func (c *masterNodeStatus) Run(ctx context.Context, env *Env) Result {
 		details = append(details, fmt.Sprintf("DB clients=%d > 运行时状态=%d：部分节点从未连接或注册表已摘除", dbTotal, online+offline+errored))
 	}
 	return Result{}.Pass("节点状态查询正常").WithDetails(details...).ConfigRefs(refs...)
+}
+
+// ---------------- master/node_version_skew ----------------
+
+type masterNodeVersionSkew struct{ baseChecker }
+
+// fetchClientStatus 查询某类节点的运行时状态（在线状态 + EVENT_PING 附带的版本信息）。
+func fetchClientStatus(ctx context.Context, env *Env, token string, clientType pb.ClientType) (*pb.GetClientsStatusResponse, error) {
+	code, _, body, err := env.PostProto(ctx, "/api/v1/platform/clientsstatus",
+		&pb.GetClientsStatusRequest{ClientType: clientType}, token)
+	if err != nil {
+		return nil, fmt.Errorf("请求失败: %w", err)
+	}
+	if code != http.StatusOK {
+		return nil, fmt.Errorf("http=%d", code)
+	}
+	resp := &pb.GetClientsStatusResponse{}
+	if err := proto.Unmarshal(body, resp); err != nil {
+		return nil, fmt.Errorf("响应解析失败: %w", err)
+	}
+	if resp.GetStatus().GetCode() != pb.RespCode_RESP_CODE_SUCCESS {
+		return nil, fmt.Errorf("业务失败: %s", resp.GetStatus().GetMessage())
+	}
+	return resp, nil
+}
+
+func (c *masterNodeVersionSkew) Run(ctx context.Context, env *Env) Result {
+	refs := []string{"/api/v1/platform/clientsstatus", "EVENT_PING ClientVersion", "frpp upgrade"}
+	if !env.HasCredentials() {
+		return Result{}.Skip("未提供登录凭证，无法对账节点版本").ConfigRefs(refs...)
+	}
+	token, err := env.Login(ctx)
+	if err != nil {
+		return Result{}.Skip(fmt.Sprintf("登录失败: %v", err)).ConfigRefs(refs...)
+	}
+
+	masterVersion := env.Version.GitVersion
+	var (
+		skewed, unknown []string
+		online          int
+	)
+	for _, clientType := range []pb.ClientType{pb.ClientType_CLIENT_TYPE_FRPC, pb.ClientType_CLIENT_TYPE_FRPS} {
+		resp, err := fetchClientStatus(ctx, env, token, clientType)
+		if err != nil {
+			return Result{}.Fail(fmt.Sprintf("clientsstatus(%s) %v", clientType, err)).ConfigRefs(refs...)
+		}
+		for id, st := range resp.GetClients() {
+			if !env.NodeFilter(id) {
+				continue
+			}
+			if st.GetStatus() != pb.ClientStatus_STATUS_ONLINE {
+				continue // 离线节点由 master/node_status 报告
+			}
+			online++
+			v := st.GetVersion().GetGitVersion()
+			switch {
+			case v == "":
+				unknown = append(unknown, id+"（未上报版本，节点二进制过旧）")
+			case v != masterVersion:
+				skewed = append(skewed, fmt.Sprintf("%s: %s != master %s", id, v, masterVersion))
+			}
+		}
+	}
+
+	details := []string{fmt.Sprintf("master=%s, 在线节点=%d, 版本一致=%d, 待升级=%d, 未上报=%d",
+		masterVersion, online, online-len(skewed)-len(unknown), len(skewed), len(unknown))}
+	if len(skewed) > 0 {
+		details = append(details, skewed...)
+	}
+	if len(unknown) > 0 {
+		details = append(details, unknown...)
+	}
+	if len(skewed) > 0 {
+		return Result{}.Warn(fmt.Sprintf("%d 个在线节点版本与 master 不一致", len(skewed))).WithDetails(details...).ConfigRefs(refs...)
+	}
+	if len(unknown) > 0 {
+		return Result{}.Warn(fmt.Sprintf("%d 个在线节点未上报版本（二进制过旧）", len(unknown))).WithDetails(details...).ConfigRefs(refs...)
+	}
+	return Result{}.Pass("在线节点版本与 master 一致").WithDetails(details...).ConfigRefs(refs...)
 }
 
 // ---------------- master/json_compat ----------------

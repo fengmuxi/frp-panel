@@ -99,9 +99,11 @@ export const FRPCFormCard: React.FC<FRPCFormCardProps> = ({
     <Card className="w-full">
       <CardHeader>
         <CardTitle>{t('frpc.form.title')}</CardTitle>
+        {/* CardDescription 渲染为 <p>，其中不能放块级 <div>（HTML 会强制闭合 <p>，
+            造成服务端/客户端 DOM 不一致 → hydration 失败），用 block span 保持分行 */}
         <CardDescription>
-          <div>{t('frpc.form.description.warning')}</div>
-          <div>{t('frpc.form.description.instruction')}</div>
+          <span className="block">{t('frpc.form.description.warning')}</span>
+          <span className="block">{t('frpc.form.description.instruction')}</span>
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -13,7 +13,6 @@ import (
 
 func AuthCtx(appInstance app.Application) func(*gin.Context) {
 	return func(c *gin.Context) {
-		var uid int64
 		var err error
 		var u *models.UserEntity
 		appCtx := app.NewContext(c, appInstance)
@@ -38,33 +37,24 @@ func AuthCtx(appInstance app.Application) func(*gin.Context) {
 			return
 		}
 
-		logger.Logger(c).Debugf("auth middleware authed user is: [%+v]", u)
+		// 不打印完整用户实体（安全审计 P2：实体含 bcrypt 口径与 frp Token）
+		logger.Logger(c).Debugf("auth middleware authed user id: [%d]", userID)
 
 		if u.Valid() {
 			logger.Logger(c).Debugf("set auth user to context, login success")
 			c.Set(defs.UserInfoKey, u)
 			c.Next()
 			return
-		} else {
-			if uid == 1 {
-				logger.Logger(c).Debugf("seems to be admin assign token login")
-				c.Next()
-				return
-			}
-			logger.Logger(c).Errorf("invalid authorization, auth ctx middleware login failed")
-			common.ErrUnAuthorized(c, "token invalid")
-			c.Abort()
-			return
 		}
+
+		// 原 else 分支中的 "uid == 1 admin assign token" 依赖一个从未赋值的变量，
+		// 属于死代码；若被"修复"将绕过被封禁用户的校验（安全审计已移除）
+		logger.Logger(c).Errorf("invalid authorization, auth ctx middleware login failed")
+		common.ErrUnAuthorized(c, "token invalid")
+		c.Abort()
 	}
 }
 
-func AuthAdmin(c *gin.Context) {
-	u := common.GetUserInfo(c)
-	if u != nil && u.GetRole() == defs.UserRole_Admin {
-		common.ErrUnAuthorized(c, "permission denied")
-		c.Abort()
-		return
-	}
-	c.Next()
-}
+// AuthAdmin 原实现逻辑反向（admin 反而 401）且无任何调用点，已删除；
+// 管理员门禁统一改用资源归属断言（services/dao.AssertClientOwnership 等）
+// 与 handler 内的角色判断（如 requireSMTPAdmin）。见 docs/security-remediation-plan.md 阶段 3。

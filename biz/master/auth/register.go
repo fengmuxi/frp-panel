@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/VaalaCat/frp-panel/defs"
 	"github.com/VaalaCat/frp-panel/models"
@@ -12,7 +13,15 @@ import (
 	"github.com/google/uuid"
 )
 
+// registerMu 串行化注册流程（安全审计 P2）：首个注册者会被提升为 admin，
+// "查用户数 + 建用户" 两步存在 TOCTOU 竞态 —— 并发注册可产生多个 admin。
+// master 为单进程，进程级互斥即可消除该竞态（用户名另有唯一索引兜底）。
+var registerMu sync.Mutex
+
 func RegisterHandler(c *app.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
+	registerMu.Lock()
+	defer registerMu.Unlock()
+
 	username := req.GetUsername()
 	password := req.GetPassword()
 	email := req.GetEmail()

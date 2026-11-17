@@ -9,6 +9,7 @@ import (
 	"github.com/VaalaCat/frp-panel/pb"
 	"github.com/VaalaCat/frp-panel/services/app"
 	"github.com/VaalaCat/frp-panel/services/dao"
+	"github.com/VaalaCat/frp-panel/services/mailer"
 	"github.com/VaalaCat/frp-panel/utils/logger"
 )
 
@@ -47,14 +48,21 @@ func ReconcileTunnelRules(appInstance app.Application) error {
 }
 
 func reconcileTunnelRule(ctx *app.Context, userCache map[int]*models.UserEntity, cfg *models.ProxyConfig, now time.Time) error {
-	// 1. 计算期望状态：定时窗口内 且 未超限额
+	// 1. 计算期望状态：定时窗口内 且 未超限额；并记录自动关闭的原因（定时到点 / 流量超额）
 	desiredOn := true
+	stopReason := stopReasonSchedule
+	var quotaUsed int64
 	if cfg.ScheduleEnabled {
-		desiredOn = ScheduleWindowOpen(now, cfg.ScheduleStart, cfg.ScheduleEnd, cfg.ScheduleDays)
+		if !ScheduleWindowOpen(now, cfg.ScheduleStart, cfg.ScheduleEnd, cfg.ScheduleDays) {
+			desiredOn = false
+			stopReason = stopReasonSchedule
+		}
 	}
 	if desiredOn && cfg.QuotaType != "" && cfg.QuotaLimit > 0 {
-		if CalcProxyQuotaUsed(ctx, cfg.ProxyConfigEntity) >= cfg.QuotaLimit {
+		if used := CalcProxyQuotaUsed(ctx, cfg.ProxyConfigEntity); used >= cfg.QuotaLimit {
 			desiredOn = false
+			stopReason = stopReasonQuota
+			quotaUsed = used
 		}
 	}
 
@@ -67,7 +75,7 @@ func reconcileTunnelRule(ctx *app.Context, userCache map[int]*models.UserEntity,
 		return nil
 	}
 	if !cfg.Stopped {
-		return autoStopProxy(ctx, userCache, cfg)
+		return autoStopProxy(ctx, userCache, cfg, stopReason, quotaUsed)
 	}
 	// 已关闭：无需动作
 	return nil
@@ -91,14 +99,20 @@ func buildProxyOwnerContext(ctx *app.Context, userCache map[int]*models.UserEnti
 	return app.NewContext(ownerCtx, ctx.GetApp()), nil
 }
 
-func autoStopProxy(ctx *app.Context, userCache map[int]*models.UserEntity, cfg *models.ProxyConfig) error {
+// 自动关闭原因（用于选择超额/定时提醒模板）
+const (
+	stopReasonSchedule = "schedule" // 定时窗口关闭
+	stopReasonQuota    = "quota"    // 流量超额
+)
+
+func autoStopProxy(ctx *app.Context, userCache map[int]*models.UserEntity, cfg *models.ProxyConfig, stopReason string, quotaUsed int64) error {
 	ownerCtx, err := buildProxyOwnerContext(ctx, userCache, cfg)
 	if err != nil {
 		return err
 	}
 
-	logger.Logger(ctx).Infof("auto stop tunnel by rules, proxy: [%s/%s], client: [%s], schedule: [%v %s-%s], quota: [%s/%d]",
-		cfg.ServerID, cfg.Name, cfg.ClientID, cfg.ScheduleEnabled, cfg.ScheduleStart, cfg.ScheduleEnd, cfg.QuotaType, cfg.QuotaLimit)
+	logger.Logger(ctx).Infof("auto stop tunnel by rules, proxy: [%s/%s], client: [%s], reason: [%s], schedule: [%v %s-%s], quota: [%s/%d]",
+		cfg.ServerID, cfg.Name, cfg.ClientID, stopReason, cfg.ScheduleEnabled, cfg.ScheduleStart, cfg.ScheduleEnd, cfg.QuotaType, cfg.QuotaLimit)
 
 	if _, err := StopProxy(ownerCtx, &pb.StopProxyRequest{
 		ClientId: &cfg.ClientID,
@@ -106,6 +120,17 @@ func autoStopProxy(ctx *app.Context, userCache map[int]*models.UserEntity, cfg *
 		Name:     &cfg.Name,
 	}); err != nil {
 		return err
+	}
+
+	// 状态切换成功后异步发送提醒（对账任务每分钟执行，同一状态切换只触发一次）；
+	// 通知先于标记发出，避免标记失败导致提醒丢失
+	switch stopReason {
+	case stopReasonQuota:
+		go mailer.NotifyTunnelQuotaExceeded(ctx, cfg, quotaUsed)
+	default:
+		if cfg.ScheduleEnabled {
+			go mailer.NotifyTunnelScheduleStopped(ctx, cfg)
+		}
 	}
 
 	// StopProxy 会把 auto_stopped 清为 false（手动语义），此处再标记回自动停用
@@ -122,10 +147,17 @@ func autoStartProxy(ctx *app.Context, userCache map[int]*models.UserEntity, cfg 
 		cfg.ServerID, cfg.Name, cfg.ClientID)
 
 	// StartProxy 内部会将 auto_stopped 置回 false
-	_, err = StartProxy(ownerCtx, &pb.StartProxyRequest{
+	if _, err := StartProxy(ownerCtx, &pb.StartProxyRequest{
 		ClientId: &cfg.ClientID,
 		ServerId: &cfg.ServerID,
 		Name:     &cfg.Name,
-	})
-	return err
+	}); err != nil {
+		return err
+	}
+
+	// 启用了定时开关的隧道恢复时发"定时开启"提醒（限额重置恢复不在提醒范围）
+	if cfg.ScheduleEnabled {
+		go mailer.NotifyTunnelScheduleStarted(ctx, cfg)
+	}
+	return nil
 }

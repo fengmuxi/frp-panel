@@ -7,6 +7,7 @@ import (
 	"github.com/VaalaCat/frp-panel/common"
 	"github.com/VaalaCat/frp-panel/pb"
 	"github.com/VaalaCat/frp-panel/services/app"
+	"github.com/VaalaCat/frp-panel/services/dao"
 	"github.com/VaalaCat/frp-panel/services/rpc"
 	"github.com/VaalaCat/frp-panel/utils/logger"
 	"github.com/samber/lo"
@@ -27,6 +28,24 @@ func GetClientsStatus(c *app.Context, req *pb.GetClientsStatusRequest) (*pb.GetC
 	)
 
 	for _, clientID := range clientIDs {
+		// 归属校验（安全审计 P0-1 关联面）：非本人节点与"不存在"返回同样的离线占位，
+		// 不产生控制通道流量，也不给出存在性 oracle
+		var ownershipErr error
+		if req.GetClientType() == pb.ClientType_CLIENT_TYPE_FRPS {
+			ownershipErr = dao.AssertServerOwnership(c, userInfo, clientID)
+		} else {
+			ownershipErr = dao.AssertClientOwnership(c, userInfo, clientID)
+		}
+		if ownershipErr != nil {
+			resps[clientID] = &pb.ClientStatus{
+				ClientType: req.GetClientType(),
+				ClientId:   clientID,
+				Status:     pb.ClientStatus_STATUS_OFFLINE,
+				Ping:       -1,
+			}
+			continue
+		}
+
 		mgr := c.GetApp().GetClientsManager()
 		conn := mgr.Get(clientID)
 		if conn == nil {

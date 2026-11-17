@@ -2,6 +2,7 @@ package dao
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/VaalaCat/frp-panel/models"
 	"github.com/VaalaCat/frp-panel/utils"
@@ -127,9 +128,26 @@ func (q *userQuery) CheckUserPassword(userNameOrEmail, password string) (bool, m
 			Email: userNameOrEmail,
 		},
 	}).First(&user).Error; err != nil {
-		return false, nil, err
+		// 反枚举（安全审计 P3）：未知用户也执行同代价的哈希比较，
+		// 并以 ok=false 返回而非把内部错误暴露给客户端
+		_ = utils.CheckPasswordHash(password, getDummyBcryptHash())
+		return false, nil, nil
 	}
 	return utils.CheckPasswordHash(password, user.Password), user, nil
+}
+
+// dummyHashOnce 懒生成一个与真实口令同代价（bcrypt cost 14）的哈希，
+// 用于未知用户的时序拉平。
+var (
+	dummyHashOnce sync.Once
+	dummyHash     string
+)
+
+func getDummyBcryptHash() string {
+	dummyHashOnce.Do(func() {
+		dummyHash, _ = utils.HashPassword("timing-equalizer-dummy-input")
+	})
+	return dummyHash
 }
 
 func (q *userQuery) CheckUserNameAndEmail(userName, email string) error {

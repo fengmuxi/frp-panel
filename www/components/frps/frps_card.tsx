@@ -53,15 +53,16 @@ export const FRPSFormCard: React.FC<FRPSFormCardProps> = ({ serverID: defaultSer
     <Card className="w-full">
       <CardHeader>
         <CardTitle>{t('server.configuration')}</CardTitle>
+        {/* CardDescription 渲染为 <p>，其中不能放块级 <div>（会导致 hydration 失败），改用 block span */}
         <CardDescription>
-          <div>
+          <span className="block">
             {t('server.warning.title')}
             <br />{t('server.warning.dockerHint')}
             <br />{t('server.warning.systemdHint')}
-          </div>
-          <div>
+          </span>
+          <span className="block">
             {t('server.selectHint')}
-          </div></CardDescription>
+          </span></CardDescription>
       </CardHeader>
       <CardContent>
         <div className=" flex items-center space-x-4 rounded-md border p-4">

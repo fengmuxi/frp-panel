@@ -3,7 +3,6 @@ package workerd
 import (
 	"context"
 	"os"
-	"strings"
 
 	"github.com/VaalaCat/frp-panel/defs"
 	"github.com/VaalaCat/frp-panel/pb"
@@ -53,10 +52,16 @@ func (w *workerdController) GetWorkerStatus(c *app.Context) defs.WorkerStatus {
 }
 
 func (w *workerdController) Init(c *app.Context) error {
+	// 路径安全断言（安全审计 P0-2）：建目录/写文件前先确认路径未逃逸
+	if err := EnsureWorkerPathsSafe(c, w.worker, w.workerdCwd); err != nil {
+		logger.Logger(c).Errorf("worker path validation failed, workerId: [%s], err: %v", w.worker.GetWorkerId(), err)
+		return err
+	}
+
 	workerCodePath := WorkerCodeRootPath(c, w.worker, w.workerdCwd)
 
-	// 1. 创建工作目录
-	if err := os.MkdirAll(workerCodePath, os.ModePerm); err != nil {
+	// 1. 创建工作目录（0700：目录内为租户代码与配置，安全审计 P3）
+	if err := os.MkdirAll(workerCodePath, 0o700); err != nil {
 		logger.Logger(c).WithError(err).Errorf("create work dir failed, path: [%s]", workerCodePath)
 		return err
 	}
@@ -74,6 +79,9 @@ func (w *workerdController) Init(c *app.Context) error {
 
 	logger.Logger(c).Infof("init worker success, workerId: [%s], code path: [%s]", w.worker.GetWorkerId(), workerCodePath)
 
+	// worker 目录与产物交给降权用户（安全审计 P1-12 / 决策点 F；windows 为 no-op）
+	chownTree(workerCodePath)
+
 	return nil
 }
 
@@ -82,8 +90,10 @@ func (w *workerdController) GarbageCollect() {
 
 	pathToRemove := WorkerCWDPath(ctx, w.worker, w.workerdCwd)
 
-	if !strings.HasPrefix(pathToRemove, "/tmp") {
-		logger.Logger(ctx).Errorf("path not start with /tmp, do not remove path: [%s]", pathToRemove)
+	// containment 断言（安全审计 P2：原实现按 "/tmp" 前缀判断，workdir 非 /tmp 时
+	// 形同虚设且存在绕过空间），仅允许删除 workerdCwd 内部的目录
+	if err := ensureUnderCwd(w.workerdCwd, pathToRemove); err != nil {
+		logger.Logger(ctx).Errorf("refuse to remove path outside workerd cwd, path: [%s], err: %v", pathToRemove, err)
 		return
 	}
 

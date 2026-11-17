@@ -16,6 +16,7 @@ import {
 import { ProxyConfigMutateForm } from './mutate_proxy_config'
 import { ProxyRulesDialog } from './proxy_rules_dialog'
 import { ProxyTrafficDetailDialog } from './proxy_traffic_detail_dialog'
+import { ResourceNotifyDialog } from '@/components/platform/resource_notify_dialog'
 import { useEffect, useMemo, useState } from 'react'
 import { Row } from '@tanstack/react-table'
 import { ProxyConfigTableSchema } from './proxy_config_item'
@@ -37,7 +38,10 @@ export function ProxyConfigActions({ serverID, clientID, name, row }: ProxyConfi
   const [deleteWarnDialogOpen, setDeleteWarnDialogOpen] = useState(false)
   const [rulesDialogOpen, setRulesDialogOpen] = useState(false)
   const [trafficDialogOpen, setTrafficDialogOpen] = useState(false)
+  const [notifyDialogOpen, setNotifyDialogOpen] = useState(false)
   const proxyConfig = row.original
+  // 资源级通知配置按 proxy_config 行主键关联（与隧道改名无关）
+  const proxyConfigId = row.original.originalProxyConfig.id
 
   const deleteProxyConfigMutation = useMutation({
     mutationKey: ['deleteProxyConfig', serverID, clientID, name],
@@ -119,6 +123,17 @@ export function ProxyConfigActions({ serverID, clientID, name, row }: ProxyConfi
           setTrafficDialogOpen(true)
         },
       },
+      // 行主键缺失（异常数据）时不提供通知设置入口，避免无效请求
+      ...(proxyConfigId
+        ? [
+            {
+              name: t('settings.notifyResource.menuTitle'),
+              onClick: () => {
+                setNotifyDialogOpen(true)
+              },
+            },
+          ]
+        : []),
       {
         name: t('proxy.action.delete'),
         onClick: () => {
@@ -173,6 +188,16 @@ export function ProxyConfigActions({ serverID, clientID, name, row }: ProxyConfi
         proxyName={name}
         proxyType={row.original.type}
       />
+      {/* 通知提醒设置：三段式（不提醒/全局配置/独立配置） */}
+      {proxyConfigId ? (
+        <ResourceNotifyDialog
+          open={notifyDialogOpen}
+          onOpenChange={setNotifyDialogOpen}
+          resourceType="proxy"
+          resourceId={String(proxyConfigId)}
+          resourceLabel={name}
+        />
+      ) : null}
       <Dialog open={deleteWarnDialogOpen} onOpenChange={setDeleteWarnDialogOpen}>
         <DialogContent>
           <DialogHeader>

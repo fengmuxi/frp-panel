@@ -27,11 +27,8 @@ var registry = map[string]groupBuilder{
 
 // CollectCheckers 汇总指定分组的 Checker。
 // 分组不存在或为空时返回错误，避免用户敲错命令却得到"全绿"报告。
-func CollectCheckers(env *Env, groups []string) ([]Checker, map[string]string, error) {
-	var (
-		all     []Checker
-		skipped = map[string]string{}
-	)
+func CollectCheckers(env *Env, groups []string) ([]Checker, error) {
+	var all []Checker
 	seen := map[string]bool{}
 	for _, name := range groups {
 		if seen[name] {
@@ -40,18 +37,45 @@ func CollectCheckers(env *Env, groups []string) ([]Checker, map[string]string, e
 		seen[name] = true
 		build, ok := registry[name]
 		if !ok {
-			return nil, nil, fmt.Errorf("unknown check group %q, valid: %v", name, GroupNames)
+			return nil, fmt.Errorf("unknown check group %q, valid: %v", name, GroupNames)
 		}
 		cs, err := build(env)
 		if err != nil {
-			return nil, nil, fmt.Errorf("build group %s: %w", name, err)
+			return nil, fmt.Errorf("build group %s: %w", name, err)
 		}
 		all = append(all, cs...)
 	}
 	if len(all) == 0 {
-		return nil, nil, errors.New("no checker collected")
+		return nil, errors.New("no checker collected")
 	}
-	return all, skipped, nil
+	return FilterCheckers(all, env.Opts), nil
+}
+
+// FilterCheckers 按 --only/--skip 过滤：模式为 "group"、"group/name" 或裸 "name"（匹配任意组的同名项）。
+// --only 命中才保留；--skip 命中则剔除；两者同时给定时先 only 后 skip。
+func FilterCheckers(checkers []Checker, opts Options) []Checker {
+	if len(opts.Only) == 0 && len(opts.Skip) == 0 {
+		return checkers
+	}
+	matched := func(c Checker, patterns []string) bool {
+		for _, p := range patterns {
+			if p == c.Group() || p == c.Group()+"/"+c.Name() || p == c.Name() {
+				return true
+			}
+		}
+		return false
+	}
+	var out []Checker
+	for _, c := range checkers {
+		if len(opts.Only) > 0 && !matched(c, opts.Only) {
+			continue
+		}
+		if matched(c, opts.Skip) {
+			continue
+		}
+		out = append(out, c)
+	}
+	return out
 }
 
 // AllCheckerNames 返回 (group, name) 清单，供 --list 输出。

@@ -748,6 +748,10 @@
       "quota_week": "Quota hebdomadaire",
       "quota_month": "Quota mensuel",
       "quota_limit": "Taille du quota",
+      "quota_direction": "Direction comptée",
+      "quota_dir_both": "Entrée + Sortie",
+      "quota_dir_in": "Entrée uniquement",
+      "quota_dir_out": "Sortie uniquement",
       "quota_used": "Utilisé sur la fenêtre actuelle",
       "quota_invalid": "Saisissez un quota supérieur à 0",
       "exceeded": "Quota atteint ; le tunnel reste arrêté et se réinitialise à la fenêtre suivante",
@@ -891,9 +895,32 @@
     "login": "Connexion"
   },
   "settings": {
+    "notifyResource": {
+      "menuTitle": "Paramètres de notification",
+      "title": "Paramètres de notification",
+      "description": "Contrôlez les alertes par ressource ; les paramètres indépendants priment sur les paramètres globaux",
+      "loading": "Chargement des paramètres de notification",
+      "modeOff": "Aucune alerte",
+      "modeInherit": "Global",
+      "modeOverride": "Personnalisé",
+      "hintOff": "Priorité maximale : aucune alerte ne sera envoyée pour cette ressource, quelles que soient les interrupteurs globaux.",
+      "hintInherit": "Suit les interrupteurs globaux des notifications par e-mail ; aucun contrôle par ressource.",
+      "hintOverride": "Utilise les interrupteurs propres à cette ressource, priorité sur les paramètres globaux ; les alertes non listées ne sont pas envoyées.",
+      "modeOffPanel": "Aucune alerte (hors ligne, en ligne, quota, planification, etc.) ne sera envoyée pour cette ressource.",
+      "globalPreviewTitle": "Interrupteurs globaux actuels (lecture seule)",
+      "stateOn": "Activé",
+      "stateOff": "Désactivé",
+      "delayLabel": "Anti-rebond hors ligne",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "saving": "Enregistrement...",
+      "saveSuccess": "Paramètres de notification enregistrés"
+    },
     "smtp": {
       "title": "Paramètres de notifications par e-mail",
-      "description": "Configurez le serveur SMTP et activez les notifications par e-mail selon vos besoins (toutes désactivées par défaut)",
+      "description": "Activez les notifications par e-mail selon vos besoins ; les paramètres ne s'appliquent qu'à votre compte (toutes désactivées par défaut)",
+      "serverTitle": "Configuration du serveur SMTP",
+      "serverDescription": "Configurez le serveur SMTP utilisé pour l'envoi (réservé aux administrateurs)",
       "loading": "Chargement des paramètres de messagerie",
       "form": {
         "host": "Serveur SMTP",
@@ -917,6 +944,21 @@
         "clientOfflineDescription": "Envoyer un e-mail au propriétaire lorsqu'un client se déconnecte",
         "proxyOfflineLabel": "Alerte de décrochage du tunnel",
         "proxyOfflineDescription": "Envoyer un e-mail au propriétaire lorsqu'un tunnel s'arrête",
+        "offlineDelaySection": "Anti-rebond des alertes hors ligne",
+        "offlineDelayHint": "L'alerte n'est envoyée que si l'indisponibilité dépasse la durée choisie ; par défaut, fenêtre intégrée de 60 s",
+        "offlineDelayServer": "Serveur",
+        "offlineDelayClient": "Client",
+        "offlineDelayProxy": "Tunnel",
+        "offlineDelayDefault": "Par défaut (60 s)",
+        "offlineDelay30s": "30 secondes",
+        "offlineDelay1m": "1 minute",
+        "offlineDelay2m": "2 minutes",
+        "offlineDelay5m": "5 minutes",
+        "offlineDelay10m": "10 minutes",
+        "quotaExceededLabel": "Alerte de quota du tunnel",
+        "quotaExceededDescription": "E-mail au propriétaire lors de l'arrêt automatique d'un tunnel ayant atteint son quota de trafic",
+        "scheduleToggleLabel": "Alerte de planification du tunnel",
+        "scheduleToggleDescription": "E-mail au propriétaire lors de l'ouverture ou de la fermeture automatique d'un tunnel selon son planification",
         "loginLabel": "Notification de connexion",
         "loginDescription": "Envoyer un e-mail à l'utilisateur après une connexion réussie"
       },
@@ -1129,7 +1171,8 @@
     "trafficStats": "Statistiques de Trafic",
     "realTimeLog": "Journal en Temps Réel",
     "console": "Console",
-    "workers": "Fonctions"
+    "workers": "Fonctions",
+    "mailSettings": "Alertes par e-mail"
   },
   "home": {
     "period": {

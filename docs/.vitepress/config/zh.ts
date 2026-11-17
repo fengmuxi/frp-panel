@@ -24,6 +24,8 @@ export const zhConfig: LocaleSpecificConfig<DefaultTheme.Config> = {
         link: "/wireguard",
         items: [
           { text: "WireGuard 多跳智能组网", link: "/wireguard" },
+          { text: "函数功能（边缘 Worker）", link: "/worker" },
+          { text: "邮件通知", link: "/mail-notification" },
         ],
       },
       {

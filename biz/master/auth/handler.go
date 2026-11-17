@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"crypto/subtle"
 	"net/http"
 
 	"github.com/VaalaCat/frp-panel/services/app"
@@ -75,7 +76,8 @@ func HandleLogin(ctx *app.Context) (interface{}, error) {
 		userToken = []byte(u.GetToken())
 	}
 
-	if string(userToken) == token {
+	// 常量时间比较（安全审计 P3）：避免逐字节时序泄露
+	if subtle.ConstantTimeCompare(userToken, []byte(token)) == 1 {
 		res.Unchange = true
 		return res, nil
 	}

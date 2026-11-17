@@ -12,7 +12,6 @@ import { SmtpSettings, getSmtpSettings, sendTestEmail, updateSmtpSettings } from
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
 import {
 	Select,
@@ -34,6 +33,7 @@ import {
 // 清空输入框时值为 ""，预处理为 undefined，避免 coerce 出 0 或阻塞必填校验（同 frps_form 惯例）
 const emptyToUndefined = (v: unknown) => (v === '' || v === null ? undefined : v)
 
+// SMTP 服务器连接配置（仅管理员）；通知开关按用户独立，见 notify-prefs.tsx
 const SmtpSchema = z.object({
 	host: z.string().trim().min(1),
 	port: z.preprocess(emptyToUndefined, z.coerce.number().min(1).max(65535).default(465)),
@@ -44,13 +44,6 @@ const SmtpSchema = z.object({
 	// 发件人显示名称（可选），留空则仅显示地址
 	fromName: z.string().trim().optional(),
 	encryption: z.enum(['none', 'starttls', 'ssl']),
-	enable_server_offline: z.boolean().default(false),
-	enable_client_offline: z.boolean().default(false),
-	enable_proxy_offline: z.boolean().default(false),
-	enable_login_notify: z.boolean().default(false),
-	enable_server_online: z.boolean().default(false),
-	enable_client_online: z.boolean().default(false),
-	enable_proxy_online: z.boolean().default(false),
 })
 
 type SmtpFormValues = z.infer<typeof SmtpSchema>
@@ -61,10 +54,10 @@ export function SmtpSettingsForm() {
 	const [initial, setInitial] = useState<SmtpFormValues | null>(null)
 	const [open, setOpen] = useState(false)
 	const [hasPassword, setHasPassword] = useState(false)
-	// testing 记录正在发送的测试模板（'test'=通用连通性测试），null=空闲
-	const [testing, setTesting] = useState<string | null>(null)
+	const [testing, setTesting] = useState(false)
 
 	const userInfo = useStore($userInfo)
+	// SMTP 服务器配置仅管理员可设置
 	const isAdmin = userInfo?.role === 'admin'
 
 	const form = useForm<SmtpFormValues>({
@@ -77,17 +70,10 @@ export function SmtpSettingsForm() {
 			from: '',
 			fromName: '',
 			encryption: 'none',
-			enable_server_offline: false,
-			enable_client_offline: false,
-			enable_proxy_offline: false,
-			enable_login_notify: false,
-			enable_server_online: false,
-			enable_client_online: false,
-			enable_proxy_online: false,
 		},
 	})
 
-	// 组件挂载时从服务端读取 SMTP 设置
+	// 组件挂载时从服务端读取 SMTP 配置
 	useEffect(() => {
 		if (!isAdmin) {
 			setLoading(false)
@@ -106,13 +92,6 @@ export function SmtpSettingsForm() {
 					from: s.from ?? '',
 					fromName: s.from_name ?? '',
 					encryption: (s.encryption || 'none') as SmtpFormValues['encryption'],
-					enable_server_offline: !!s.enable_server_offline,
-					enable_client_offline: !!s.enable_client_offline,
-					enable_proxy_offline: !!s.enable_proxy_offline,
-					enable_login_notify: !!s.enable_login_notify,
-					enable_server_online: !!s.enable_server_online,
-					enable_client_online: !!s.enable_client_online,
-					enable_proxy_online: !!s.enable_proxy_online,
 				}
 				setHasPassword(!!s.has_password)
 				form.reset(values)
@@ -137,13 +116,6 @@ export function SmtpSettingsForm() {
 		from: values.from,
 		from_name: values.fromName ?? '',
 		encryption: values.encryption,
-		enable_server_offline: values.enable_server_offline,
-		enable_client_offline: values.enable_client_offline,
-		enable_proxy_offline: values.enable_proxy_offline,
-		enable_login_notify: values.enable_login_notify,
-		enable_server_online: values.enable_server_online,
-		enable_client_online: values.enable_client_online,
-		enable_proxy_online: values.enable_proxy_online,
 	})
 
 	const onSubmit = async (values: SmtpFormValues) => {
@@ -159,38 +131,24 @@ export function SmtpSettingsForm() {
 		}
 	}
 
-	// onTest 发送测试邮件：template 为空 = 通用连通性测试；
-	// 传业务模板枚举时用样例数据渲染对应通知内容（每个通知开关都可单独测试）
-	const onTest = async (values: SmtpFormValues, template?: string) => {
-		const key = template || 'test'
-		setTesting(key)
+	// onTest 使用当前表单（未保存）值发送通用连通性测试邮件
+	const onTest = async (values: SmtpFormValues) => {
+		setTesting(true)
 		try {
-			await sendTestEmail({ ...buildPayload(values), template })
+			await sendTestEmail(buildPayload(values))
 			toast.success(t('settings.smtp.toast.testSent'))
 		} catch (err) {
 			toast.error(String(err))
 		} finally {
-			setTesting(null)
+			setTesting(false)
 		}
 	}
 
-	// 通知开关行的"测试"按钮：用当前表单值（未保存亦可）+ 指定模板发送样例邮件
-	const notifyTestButton = (template: string) => (
-		<Button
-			type="button"
-			variant="outline"
-			size="sm"
-			className="h-7 px-2 text-xs"
-			disabled={!!testing || form.formState.isSubmitting}
-			onClick={() => onTest(form.getValues(), template)}
-		>
-			{testing === template ? t('settings.smtp.toast.testSending') : t('settings.smtp.actions.test')}
-		</Button>
-	)
-
+	// 非管理员不显示 SMTP 服务器卡片（通知开关卡片对所有人可见）
 	if (!isAdmin) {
 		return null
 	}
+
 	if (loading || !initial) {
 		return (
 			<div className="flex items-center justify-center h-64">
@@ -202,8 +160,8 @@ export function SmtpSettingsForm() {
 	return (
 		<Card className="max-w-lg mx-auto">
 			<CardHeader className="border-b">
-				<CardTitle>{t('settings.smtp.title')}</CardTitle>
-				<CardDescription>{t('settings.smtp.description')}</CardDescription>
+				<CardTitle>{t('settings.smtp.serverTitle')}</CardTitle>
+				<CardDescription>{t('settings.smtp.serverDescription')}</CardDescription>
 			</CardHeader>
 			<CardContent>
 				<Form {...form}>
@@ -354,141 +312,12 @@ export function SmtpSettingsForm() {
 								</FormItem>
 							)}
 						/>
-
-						{/* 通知开关，默认全部关闭 */}
-						<FormField
-							control={form.control}
-							name="enable_server_offline"
-							render={({ field }) => (
-								<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-									<div className="space-y-0.5">
-										<FormLabel>{t('settings.smtp.form.serverOfflineLabel')}</FormLabel>
-										<FormDescription>{t('settings.smtp.form.serverOfflineDescription')}</FormDescription>
-									</div>
-									<FormControl>
-										<div className="flex items-center gap-2">
-											{notifyTestButton('server_offline')}
-											<Switch checked={field.value} onCheckedChange={field.onChange} />
-										</div>
-									</FormControl>
-								</FormItem>
-							)}
-						/>
-						<FormField
-							control={form.control}
-							name="enable_client_offline"
-							render={({ field }) => (
-								<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-									<div className="space-y-0.5">
-										<FormLabel>{t('settings.smtp.form.clientOfflineLabel')}</FormLabel>
-										<FormDescription>{t('settings.smtp.form.clientOfflineDescription')}</FormDescription>
-									</div>
-									<FormControl>
-										<div className="flex items-center gap-2">
-											{notifyTestButton('client_offline')}
-											<Switch checked={field.value} onCheckedChange={field.onChange} />
-										</div>
-									</FormControl>
-								</FormItem>
-							)}
-						/>
-						<FormField
-							control={form.control}
-							name="enable_proxy_offline"
-							render={({ field }) => (
-								<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-									<div className="space-y-0.5">
-										<FormLabel>{t('settings.smtp.form.proxyOfflineLabel')}</FormLabel>
-										<FormDescription>{t('settings.smtp.form.proxyOfflineDescription')}</FormDescription>
-									</div>
-									<FormControl>
-										<div className="flex items-center gap-2">
-											{notifyTestButton('proxy_offline')}
-											<Switch checked={field.value} onCheckedChange={field.onChange} />
-										</div>
-									</FormControl>
-								</FormItem>
-							)}
-						/>
-						{/* 上线提醒开关 */}
-						<FormField
-							control={form.control}
-							name="enable_server_online"
-							render={({ field }) => (
-								<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-									<div className="space-y-0.5">
-										<FormLabel>{t('settings.smtp.form.serverOnlineLabel')}</FormLabel>
-										<FormDescription>{t('settings.smtp.form.serverOnlineDescription')}</FormDescription>
-									</div>
-									<FormControl>
-										<div className="flex items-center gap-2">
-											{notifyTestButton('server_online')}
-											<Switch checked={field.value} onCheckedChange={field.onChange} />
-										</div>
-									</FormControl>
-								</FormItem>
-							)}
-						/>
-						<FormField
-							control={form.control}
-							name="enable_client_online"
-							render={({ field }) => (
-								<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-									<div className="space-y-0.5">
-										<FormLabel>{t('settings.smtp.form.clientOnlineLabel')}</FormLabel>
-										<FormDescription>{t('settings.smtp.form.clientOnlineDescription')}</FormDescription>
-									</div>
-									<FormControl>
-										<div className="flex items-center gap-2">
-											{notifyTestButton('client_online')}
-											<Switch checked={field.value} onCheckedChange={field.onChange} />
-										</div>
-									</FormControl>
-								</FormItem>
-							)}
-						/>
-						<FormField
-							control={form.control}
-							name="enable_proxy_online"
-							render={({ field }) => (
-								<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-									<div className="space-y-0.5">
-										<FormLabel>{t('settings.smtp.form.proxyOnlineLabel')}</FormLabel>
-										<FormDescription>{t('settings.smtp.form.proxyOnlineDescription')}</FormDescription>
-									</div>
-									<FormControl>
-										<div className="flex items-center gap-2">
-											{notifyTestButton('proxy_online')}
-											<Switch checked={field.value} onCheckedChange={field.onChange} />
-										</div>
-									</FormControl>
-								</FormItem>
-							)}
-						/>
-						<FormField
-							control={form.control}
-							name="enable_login_notify"
-							render={({ field }) => (
-								<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-									<div className="space-y-0.5">
-										<FormLabel>{t('settings.smtp.form.loginLabel')}</FormLabel>
-										<FormDescription>{t('settings.smtp.form.loginDescription')}</FormDescription>
-									</div>
-									<FormControl>
-										<div className="flex items-center gap-2">
-											{notifyTestButton('login')}
-											<Switch checked={field.value} onCheckedChange={field.onChange} />
-										</div>
-									</FormControl>
-								</FormItem>
-							)}
-						/>
 					</form>
 				</Form>
 			</CardContent>
 			<CardFooter className="flex justify-between gap-2">
 				{/* 发送测试邮件：使用当前表单（未保存）值，收件人为当前登录用户 */}
-				<Button variant="outline" disabled={!!testing || form.formState.isSubmitting} onClick={form.handleSubmit((v) => onTest(v))}>
+				<Button variant="outline" disabled={testing || form.formState.isSubmitting} onClick={form.handleSubmit(onTest)}>
 					{testing ? t('settings.smtp.toast.testSending') : t('settings.smtp.actions.sendTest')}
 				</Button>
 				<Dialog open={open} onOpenChange={setOpen}>

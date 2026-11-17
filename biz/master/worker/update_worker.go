@@ -97,8 +97,9 @@ func UpdateWorker(ctx *app.Context, req *pb.UpdateWorkerRequest) (*pb.UpdateWork
 			}
 		}
 
-		logger.Logger(ctx).Infof("update worker event send to client success, clients: [%s], worker name: [%s], remove old worker send to those clients: %s",
-			utils.MarshalForJson(clis), workerToUpdate.Name, utils.MarshalForJson(oldClientIds))
+		// 不序列化完整 client 行（含 ConnectSecret）入日志（安全审计 P2-6）
+		logger.Logger(ctx).Infof("update worker event send to client success, new clients count: %d, worker name: [%s], removed old clients count: %d",
+			len(clis), workerToUpdate.Name, len(oldClientIds))
 	}()
 
 	logger.Logger(ctx).Infof("update worker success, id: [%s], updated fields: %s", wrokerReq.GetWorkerId(), utils.MarshalForJson(updatedFields))

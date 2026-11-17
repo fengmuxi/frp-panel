@@ -100,6 +100,16 @@ Three rules for writing a migration:
 
 Migration status can be reconciled with the `data/db_migration` checker of `frpp check` (see [checker.md](/checker.md)).
 
+Migrations can also be managed directly without starting the master:
+
+```bash
+frpp migrate status   # view (read-only, sqlite opened with mode=ro)
+frpp migrate up       # apply pending migrations (stop master first; sqlite is backed up automatically)
+frpp migrate verify   # validate schema_migrations consistency (non-zero exit code on failure)
+```
+
+`up` shares the same runner as the master startup chain; before applying the first pending migration, a consistent snapshot `<db>.bak-migration-v<N>-<timestamp>` is created automatically for sqlite (rolling retention of the latest 5); for mysql/postgres only a manual-backup hint is printed.
+
 ### Core Configuration Explanation
 
 [settings.go](https://github.com/fengmuxi/frp-panel/blob/main/conf/settings.go)

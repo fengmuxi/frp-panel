@@ -47,6 +47,8 @@ const (
 	MailTemplateServerOnline  = "server_online"  // 服务端上线提醒
 	MailTemplateClientOnline  = "client_online"  // 客户端上线提醒
 	MailTemplateProxyOnline   = "proxy_online"   // 隧道上线提醒
+	MailTemplateQuotaExceeded = "quota_exceeded" // 隧道流量超额关闭提醒
+	MailTemplateScheduleToggle = "schedule_toggle" // 隧道定时开启/关闭提醒
 )
 
 // NodeOfflineContent 节点（服务端/客户端）掉线提醒。
@@ -152,6 +154,92 @@ func LoginContent(username, ip string, loginAt time.Time) MailContent {
 	}
 }
 
+// QuotaExceededContent 隧道流量超额关闭提醒。
+// quotaType/direction 为 defs.QuotaType*/QuotaDirection* 取值，limit/used 单位为字节。
+func QuotaExceededContent(proxyName, serverID, quotaType, quotaDirection string, limit, used int64, closedAt time.Time) MailContent {
+	p := contentParams{
+		Level:    levelAlert,
+		Kind:     "超额告警",
+		Title:    fmt.Sprintf("隧道「%s」因流量超额已关闭", proxyName),
+		Subtitle: "该隧道已达到本周期的流量限额，系统已自动关闭；统计窗口重置后将自动恢复（或由你手动开启）。",
+		Fields: []contentField{
+			{"隧道名称", proxyName},
+			{"服务端 ID", serverID},
+			{"限额周期", quotaTypeLabel(quotaType)},
+			{"统计方向", quotaDirectionLabel(quotaDirection)},
+			{"流量限额", formatByteSize(limit)},
+			{"已用流量", formatByteSize(used)},
+			{"关闭时间", formatMailTime(closedAt)},
+		},
+	}
+	return MailContent{
+		Subject: fmt.Sprintf("[frp-panel] 隧道「%s」流量超额关闭提醒", proxyName),
+		Text:    renderText(p),
+		HTML:    renderHTML(p),
+	}
+}
+
+// ScheduleToggleContent 隧道定时开启/关闭提醒。action 取"开启"/"关闭"。
+func ScheduleToggleContent(proxyName, serverID, action string, at time.Time) MailContent {
+	p := contentParams{
+		Level:    levelInfo,
+		Kind:     "定时任务",
+		Title:    fmt.Sprintf("隧道「%s」已按定时规则%s", proxyName, action),
+		Subtitle: fmt.Sprintf("到达预设的定时开关窗口，系统已自动%s该隧道。", action),
+		Fields: []contentField{
+			{"隧道名称", proxyName},
+			{"服务端 ID", serverID},
+			{"动作", action},
+			{"生效时间", formatMailTime(at)},
+		},
+	}
+	return MailContent{
+		Subject: fmt.Sprintf("[frp-panel] 隧道「%s」定时%s提醒", proxyName, action),
+		Text:    renderText(p),
+		HTML:    renderHTML(p),
+	}
+}
+
+// quotaTypeLabel 限额周期枚举转展示文案
+func quotaTypeLabel(quotaType string) string {
+	switch quotaType {
+	case "day":
+		return "每日"
+	case "week":
+		return "每周"
+	case "month":
+		return "每月"
+	default:
+		return "总量"
+	}
+}
+
+// quotaDirectionLabel 统计方向枚举转展示文案（空与 both 均为双向）
+func quotaDirectionLabel(direction string) string {
+	switch direction {
+	case "inbound":
+		return "仅入站"
+	case "outbound":
+		return "仅出站"
+	default:
+		return "入站+出站"
+	}
+}
+
+// formatByteSize 字节数转人类可读大小（邮件展示用）
+func formatByteSize(n int64) string {
+	const unit = 1024
+	if n < unit {
+		return fmt.Sprintf("%d B", n)
+	}
+	div, exp := int64(unit), 0
+	for m := n / unit; m >= unit; m /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.2f %cB", float64(n)/float64(div), "KMGTPE"[exp])
+}
+
 // TestContent 通用连通性测试邮件。
 func TestContent() MailContent {
 	p := contentParams{
@@ -165,6 +253,26 @@ func TestContent() MailContent {
 	}
 	return MailContent{
 		Subject: "[frp-panel] 测试邮件",
+		Text:    renderText(p),
+		HTML:    renderHTML(p),
+	}
+}
+
+// Field 是 CustomContent 的键值字段行（导出给外部模块构造内容）。
+type Field struct {
+	Key   string
+	Value string
+}
+
+// CustomContent 用统一品牌模板构造自定义邮件（外部模块如 frpp check 告警复用）。
+// level: alert（红）/ info（蓝）/ online（绿）/ 其他按灰色处理。
+func CustomContent(level, kind, title, subtitle, notice string, fields []Field) MailContent {
+	p := contentParams{Level: level, Kind: kind, Title: title, Subtitle: subtitle, Notice: notice}
+	for _, f := range fields {
+		p.Fields = append(p.Fields, contentField{Key: f.Key, Value: f.Value})
+	}
+	return MailContent{
+		Subject: fmt.Sprintf("[frp-panel] %s", title),
 		Text:    renderText(p),
 		HTML:    renderHTML(p),
 	}
@@ -189,6 +297,10 @@ func BuildSampleContent(template string) (content MailContent, ok bool) {
 		return NodeOnlineContent("客户端", "test-client", "cli-example-001", now), true
 	case MailTemplateProxyOnline:
 		return TunnelOnlineContent("test-tunnel", "srv-example-001", now), true
+	case MailTemplateQuotaExceeded:
+		return QuotaExceededContent("test-tunnel", "srv-example-001", "month", "both", 100*1024*1024*1024, 100*1024*1024*1024, now), true
+	case MailTemplateScheduleToggle:
+		return ScheduleToggleContent("test-tunnel", "srv-example-001", "关闭", now), true
 	}
 	return MailContent{}, false
 }

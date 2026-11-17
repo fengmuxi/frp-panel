@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"crypto/subtle"
 	"fmt"
 
 	"github.com/VaalaCat/frp-panel/defs"
@@ -116,7 +117,8 @@ func (q *serverQuery) ValidateServerSecret(serverID string, secret string) (*mod
 	if err != nil {
 		return nil, err
 	}
-	if c.ConnectSecret != secret {
+	// 常量时间比较（安全审计 P2）
+	if subtle.ConstantTimeCompare([]byte(c.ConnectSecret), []byte(secret)) != 1 {
 		return nil, fmt.Errorf("invalid secret")
 	}
 	return c.ServerEntity, nil
@@ -176,7 +178,7 @@ func (m *serverMutation) DeleteServer(userInfo models.UserInfo, serverID string)
 		return fmt.Errorf("invalid server id")
 	}
 	db := m.ctx.GetApp().GetDBManager().GetDefaultDB()
-	return db.Unscoped().Where(
+	if err := db.Unscoped().Where(
 		&models.Server{
 			ServerEntity: &models.ServerEntity{
 				TenantID: userInfo.GetTenantID(),
@@ -187,7 +189,11 @@ func (m *serverMutation) DeleteServer(userInfo models.UserInfo, serverID string)
 		ServerEntity: &models.ServerEntity{
 			ServerID: serverID,
 		},
-	}).Error
+	}).Error; err != nil {
+		return err
+	}
+	// 级联清理该节点的通知覆盖配置，避免孤儿记录
+	return deleteResourceNotifyPrefs(m.ctx, models.NotifyResTypeServer, serverID)
 }
 
 func (m *serverMutation) UpdateServer(userInfo models.UserInfo, server *models.ServerEntity) error {

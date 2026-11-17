@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
 	"github.com/VaalaCat/frp-panel/common"
 	"github.com/VaalaCat/frp-panel/pb"
 	"github.com/VaalaCat/frp-panel/services/app"
+	"github.com/VaalaCat/frp-panel/services/dao"
 	"github.com/VaalaCat/frp-panel/services/rpc"
 	"github.com/VaalaCat/frp-panel/utils/logger"
 	"github.com/fatedier/golib/log"
@@ -30,18 +32,25 @@ func ptyHandler(c *gin.Context, appInstance app.Application) {
 	connectionErrorLimit := 10
 	keepalivePingTimeout := 10 * time.Second
 
+	// 归属校验（安全审计 P0-1）：PTY 是节点上的交互式 shell（frpp 以高权限运行），
+	// 必须在 WebSocket 升级前确认 client 属于当前用户（admin 放行），否则升级后只能裸断连
+	clientID := c.Param("clientID")
+	if len(clientID) == 0 {
+		logger.Logger(c).Errorf("invalid client id")
+		c.JSON(http.StatusBadRequest, common.Err("invalid client id"))
+		return
+	}
+	if err := dao.AssertClientOwnership(app.NewContext(c, appInstance), common.GetUserInfo(c), clientID); err != nil {
+		logger.Logger(c).Warnf("pty ownership check failed, clientID: [%s], err: %v", clientID, err)
+		c.JSON(http.StatusForbidden, common.Err("permission denied"))
+		return
+	}
+
 	upgrader := getUpgrader(c)
 	webConn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		logger.Logger(c).WithError(err).Infof("websocket connect error")
 		c.JSON(http.StatusBadRequest, common.Err("websocket connect error"))
-		return
-	}
-
-	clientID := c.Param("clientID")
-	if len(clientID) == 0 {
-		logger.Logger(c).Errorf("invalid client id")
-		webConn.Close()
 		return
 	}
 
@@ -233,9 +242,18 @@ func ptyHandler(c *gin.Context, appInstance app.Application) {
 
 func getUpgrader(c *gin.Context) websocket.Upgrader {
 	return websocket.Upgrader{
-		// cross origin domain
+		// 安全审计 P2：跨站 WebSocket（CSWSH）校验——非浏览器客户端（无 Origin）放行，
+		// 浏览器 Origin 必须与请求 Host 一致
 		CheckOrigin: func(r *http.Request) bool {
-			return true
+			origin := r.Header.Get("Origin")
+			if origin == "" {
+				return true
+			}
+			u, err := url.Parse(origin)
+			if err != nil {
+				return false
+			}
+			return u.Host == r.Host
 		},
 		// 处理 Sec-WebSocket-Protocol Header
 		Subprotocols: []string{c.GetHeader("Sec-WebSocket-Protocol")},

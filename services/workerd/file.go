@@ -10,6 +10,10 @@ import (
 )
 
 func WriteWorkerCodeToFile(ctx context.Context, worker *pb.Worker, workerdCWD string) error {
+	// 路径安全断言（安全审计 P0-2）：写入前确认路径合法且未逃逸出 workerd 目录
+	if err := EnsureWorkerPathsSafe(ctx, worker, workerdCWD); err != nil {
+		return err
+	}
 	return utils.WriteFile(
 		CodeFilePath(ctx, worker, workerdCWD),
 		string(worker.GetCode()))

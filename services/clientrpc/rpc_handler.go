@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/VaalaCat/frp-panel/pb"
@@ -42,6 +43,11 @@ func registClientToMaster(appInstance app.Application, recvStream pb.Master_Serv
 		resp, err := recvStream.Recv()
 		if err != nil {
 			return fmt.Errorf("cannot receive register response: %w", err)
+		}
+
+		// master 拒绝注册时回包 Data 携带错误说明（event 与请求相同，不能只看 event 判成功）
+		if msg := string(resp.GetData()); strings.Contains(msg, "invalid") {
+			return fmt.Errorf("master refused register, id: [%s], reason: %s", clientID, msg)
 		}
 
 		if resp.GetEvent() == event {

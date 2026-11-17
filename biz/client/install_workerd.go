@@ -2,7 +2,6 @@ package client
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/VaalaCat/frp-panel/pb"
 	"github.com/VaalaCat/frp-panel/services/app"
@@ -17,12 +16,10 @@ func InstallWorkerd(ctx *app.Context, req *pb.InstallWorkerdRequest) (*pb.Instal
 
 	workersMgr := ctx.GetApp().GetWorkersManager()
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		logger.Logger(ctx).Errorf("failed to get current working directory: %v, will install workerd in /usr/local/bin", err)
-	}
+	// installDir 传空 → 安装到 /usr/local/bin（安全审计 P3：
+	// 原实现装进 frpp 工作目录，cwd 下同名可执行文件会被劫持执行）
 
-	binPath, err := workersMgr.InstallWorkerd(ctx, req.GetDownloadUrl(), cwd)
+	binPath, err := workersMgr.InstallWorkerd(ctx, req.GetDownloadUrl(), "")
 	if err != nil {
 		logger.Logger(ctx).Errorf("failed to install workerd: %v", err)
 		return nil, fmt.Errorf("failed to install workerd: %v", err)

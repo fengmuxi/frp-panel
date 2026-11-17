@@ -2,6 +2,7 @@ package master
 
 import (
 	"embed"
+	"time"
 
 	"github.com/VaalaCat/frp-panel/biz/master/auth"
 	"github.com/VaalaCat/frp-panel/biz/master/client"
@@ -27,12 +28,15 @@ func NewRouter(fs embed.FS, appInstance app.Application) *gin.Engine {
 }
 
 func ConfigureRouter(appInstance app.Application, router *gin.Engine) {
-	router.POST("/auth", auth.MakeGinHandlerFunc(appInstance, auth.HandleLogin))
+	// 限流（安全审计 P1-5）：登录/注册/证书/认证插件端点此前零限流，可无限爆破
+	authLimiter := middleware.NewRateLimiter(15*time.Minute, 20, 15*time.Minute)
+
+	router.POST("/auth", authLimiter.Middleware(), auth.MakeGinHandlerFunc(appInstance, auth.HandleLogin))
 
 	api := router.Group("/api")
-	api.POST("/v1/auth/cert", app.Wrapper(appInstance, auth.GetClientCert))
-	api.POST("/v1/auth/login", app.Wrapper(appInstance, auth.LoginHandler))
-	api.POST("/v1/auth/register", app.Wrapper(appInstance, auth.RegisterHandler))
+	api.POST("/v1/auth/cert", authLimiter.Middleware(), app.Wrapper(appInstance, auth.GetClientCert))
+	api.POST("/v1/auth/login", authLimiter.Middleware(), app.Wrapper(appInstance, auth.LoginHandler))
+	api.POST("/v1/auth/register", authLimiter.Middleware(), app.Wrapper(appInstance, auth.RegisterHandler))
 	api.GET("/v1/auth/logout", auth.RemoveJWTHandler(appInstance))
 
 	v1 := api.Group("/v1", middleware.JWTAuth(appInstance), middleware.AuthCtx(appInstance), middleware.RBAC(appInstance))
@@ -50,6 +54,16 @@ func ConfigureRouter(appInstance app.Application, router *gin.Engine) {
 			platformRouter.POST("/smtp/get", platform.GetSMTPSettings(appInstance))
 			platformRouter.POST("/smtp/update", platform.UpdateSMTPSettings(appInstance))
 			platformRouter.POST("/smtp/test", platform.SendTestEmail(appInstance))
+		}
+		notifyRouter := v1.Group("/notify")
+		{
+			// 通知开关：所有登录用户读写自己的配置（无需管理员）
+			notifyRouter.POST("/prefs/get", platform.GetNotifyPrefs(appInstance))
+			notifyRouter.POST("/prefs/update", platform.UpdateNotifyPrefs(appInstance))
+			notifyRouter.POST("/prefs/test", platform.SendNotifyTest(appInstance))
+			// 资源级通知覆盖：三段式（不提醒/全局配置/独立配置），限本人资源或 admin
+			notifyRouter.POST("/resource/get", platform.GetResourceNotifyPrefsHandler(appInstance))
+			notifyRouter.POST("/resource/update", platform.UpdateResourceNotifyPrefsHandler(appInstance))
 		}
 		clientRouter := v1.Group("/client")
 		{

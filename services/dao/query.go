@@ -8,7 +8,9 @@ type Query interface {
 	EndpointQuery
 	LinkQuery
 	NetworkQuery
+	NotifyPrefsQuery
 	ProxyQuery
+	ResourceNotifyPrefsQuery
 	ServerQuery
 	SMTPSettingsQuery
 	StatsQuery
@@ -23,7 +25,9 @@ type Mutation interface {
 	EndpointMutation
 	LinkMutation
 	NetworkMutation
+	NotifyPrefsMutation
 	ProxyMutation
+	ResourceNotifyPrefsMutation
 	ServerMutation
 	SMTPSettingsMutation
 	StatsMutation
@@ -49,7 +53,9 @@ type compositeQuery struct {
 	EndpointQuery
 	LinkQuery
 	NetworkQuery
+	NotifyPrefsQuery
 	ProxyQuery
+	ResourceNotifyPrefsQuery
 	ServerQuery
 	SMTPSettingsQuery
 	StatsQuery
@@ -64,7 +70,9 @@ type compositeMutation struct {
 	EndpointMutation
 	LinkMutation
 	NetworkMutation
+	NotifyPrefsMutation
 	ProxyMutation
+	ResourceNotifyPrefsMutation
 	ServerMutation
 	SMTPSettingsMutation
 	StatsMutation
@@ -82,7 +90,9 @@ func NewQuery(ctx *app.Context) Query {
 		EndpointQuery:  newEndpointQuery(base),
 		LinkQuery:      newLinkQuery(base),
 		NetworkQuery:   newNetworkQuery(base),
+		NotifyPrefsQuery: newNotifyPrefsQuery(base),
 		ProxyQuery:     newProxyQuery(base),
+		ResourceNotifyPrefsQuery: newResourceNotifyPrefsQuery(base),
 		ServerQuery:    newServerQuery(base),
 		SMTPSettingsQuery: newSMTPSettingsQuery(base),
 		StatsQuery:     newStatsQuery(base),
@@ -100,7 +110,9 @@ func NewMutation(ctx *app.Context) Mutation {
 		EndpointMutation:  newEndpointMutation(base),
 		LinkMutation:      newLinkMutation(base),
 		NetworkMutation:   newNetworkMutation(base),
+		NotifyPrefsMutation: newNotifyPrefsMutation(base),
 		ProxyMutation:     newProxyMutation(base),
+		ResourceNotifyPrefsMutation: newResourceNotifyPrefsMutation(base),
 		ServerMutation:    newServerMutation(base),
 		SMTPSettingsMutation: newSMTPSettingsMutation(base),
 		StatsMutation:     newStatsMutation(base),

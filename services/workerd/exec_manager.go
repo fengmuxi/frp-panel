@@ -70,6 +70,9 @@ func (m *workerExecManager) RunCmd(uid string, cwd string, argv []string) {
 			cmd := exec.CommandContext(ctx, m.binaryPath, args...)
 			cmd.Dir = cwd
 			cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: false}
+			// 安全审计 P1-12（决策点 F）：workerd 执行租户 JS 代码，unix 下降权运行
+			//（专用 frpp-worker 用户）；降权不可用时保留原行为并告警
+			applyLowerPrivilege(cmd)
 			cmd.Stdout = logger.LoggerWriter("workerd", logrus.InfoLevel)
 			cmd.Stderr = logger.LoggerWriter("workerd", logrus.ErrorLevel)
 			if err := cmd.Run(); err != nil {

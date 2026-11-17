@@ -250,6 +250,12 @@ function ProxyRulesCell({ row }: { row: Row<ProxyConfigTableSchema> }) {
   const quotaLimit = Number(cfg.quotaLimit ?? 0n)
   const quotaUsed = Number(cfg.quotaUsed ?? 0n)
   const exceeded = quotaOn && quotaLimit > 0 && quotaUsed >= quotaLimit
+  // 限额统计方向：空/both 为双向（旧数据兼容口径），不额外展示
+  const quotaDirection = cfg.quotaDirection || ''
+  const quotaDirLabel =
+    quotaDirection === 'inbound' || quotaDirection === 'outbound'
+      ? t(`proxy.rules.quota_dir_${quotaDirection === 'inbound' ? 'in' : 'out'}`)
+      : ''
 
   if (!scheduleOn && !quotaOn) {
     return <span className="text-muted-foreground text-sm">—</span>
@@ -269,7 +275,9 @@ function ProxyRulesCell({ row }: { row: Row<ProxyConfigTableSchema> }) {
       )}
       {quotaOn && (
         <div className={`font-mono ${exceeded ? 'font-medium text-red-500' : ''}`}>
-          {t(`proxy.rules.quota_${quotaType}`)} {formatBytes(quotaUsed)} / {formatBytes(quotaLimit)}
+          {t(`proxy.rules.quota_${quotaType}`)}
+          {quotaDirLabel && <span className="text-muted-foreground">（{quotaDirLabel}）</span>}{' '}
+          {formatBytes(quotaUsed)} / {formatBytes(quotaLimit)}
           {exceeded && <span className="ml-1">· {t('proxy.rules.exceeded_short')}</span>}
         </div>
       )}

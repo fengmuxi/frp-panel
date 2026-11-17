@@ -17,7 +17,7 @@ import (
 
 // Options 承载 `frpp check` 的命令行参数。
 type Options struct {
-	Format          string        // text | json | markdown
+	Format          string        // text | json | markdown | prometheus
 	Out             string        // 报告输出文件路径；空则仅打印终端
 	FailOn          Level         // 达到该级别的 Fail 时退出码非 0
 	Timeout         time.Duration // 全局超时
@@ -31,6 +31,11 @@ type Options struct {
 	PerfConcurrency int           // perf 压测并发
 	NoColor         bool          // 关闭终端彩色输出
 	List            bool          // 仅列出 Checker 清单
+	Only            []string      // 仅运行匹配项（group 或 group/name）
+	Skip            []string      // 跳过匹配项（同 Only 粒度）
+	NotifyMail      []string      // 检查结束后把失败/告警摘要发往这些邮箱
+	HistoryDir      string        // 报告历史目录（对比上次、通知去重），空则不启用
+	Fix             bool          // 运行一键修复（默认仅列出动作，--destructive 才实际执行）
 }
 
 // Env 是 Checker 的运行环境：配置、HTTP 客户端、懒加载数据库连接与登录态。

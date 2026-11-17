@@ -25,6 +25,7 @@ type ProxyQuery interface {
 	AdminGetTenantProxyStats(tenantID int) ([]*models.ProxyStatsEntity, error)
 	AdminGetAllProxyStats(tx *gorm.DB) ([]*models.ProxyStatsEntity, error)
 	AdminGetProxyConfigByClientIDAndName(clientID string, name string) (*models.ProxyConfig, error)
+	AdminGetProxyConfigByID(id uint) (*models.ProxyConfig, error)
 	GetProxyConfigsByClientID(userInfo models.UserInfo, clientID string) ([]*models.ProxyConfigEntity, error)
 	GetProxyConfigByFilter(userInfo models.UserInfo, proxyConfig *models.ProxyConfigEntity) (*models.ProxyConfig, error)
 	ListProxyConfigsWithFilters(userInfo models.UserInfo, page, pageSize int, filters *models.ProxyConfigEntity) ([]*models.ProxyConfig, error)
@@ -526,6 +527,16 @@ func (q *proxyQuery) AdminGetProxyConfigByClientIDAndName(clientID string, name 
 	return proxyCfg, nil
 }
 
+// AdminGetProxyConfigByID 按行主键读取隧道配置（admin 语义，不校验归属）
+func (q *proxyQuery) AdminGetProxyConfigByID(id uint) (*models.ProxyConfig, error) {
+	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
+	proxyCfg := &models.ProxyConfig{}
+	if err := db.First(proxyCfg, id).Error; err != nil {
+		return nil, err
+	}
+	return proxyCfg, nil
+}
+
 func (q *proxyQuery) GetProxyConfigsByClientID(userInfo models.UserInfo, clientID string) ([]*models.ProxyConfigEntity, error) {
 	if clientID == "" {
 		return nil, fmt.Errorf("invalid client id")
@@ -724,14 +735,27 @@ func (m *proxyMutation) DeleteProxyConfig(userInfo models.UserInfo, clientID, na
 		return fmt.Errorf("invalid client id or name")
 	}
 	db := m.ctx.GetApp().GetDBManager().GetDefaultDB()
-	return db.Unscoped().
-		Where(&models.ProxyConfig{ProxyConfigEntity: &models.ProxyConfigEntity{
-			UserID:   userInfo.GetUserID(),
-			TenantID: userInfo.GetTenantID(),
-			ClientID: clientID,
-			Name:     name,
-		}}).
-		Delete(&models.ProxyConfig{}).Error
+	filter := &models.ProxyConfig{ProxyConfigEntity: &models.ProxyConfigEntity{
+		UserID:   userInfo.GetUserID(),
+		TenantID: userInfo.GetTenantID(),
+		ClientID: clientID,
+		Name:     name,
+	}}
+
+	// 先取行主键（通知覆盖配置按 proxy_config.ID 关联），用于删除后级联清理
+	proxyConfigID := ""
+	var cfg models.ProxyConfig
+	if err := db.Unscoped().Where(filter).First(&cfg).Error; err == nil && cfg.ID != 0 {
+		proxyConfigID = fmt.Sprint(cfg.ID)
+	}
+
+	if err := db.Unscoped().Where(filter).Delete(&models.ProxyConfig{}).Error; err != nil {
+		return err
+	}
+	if proxyConfigID != "" {
+		return deleteResourceNotifyPrefs(m.ctx, models.NotifyResTypeProxy, proxyConfigID)
+	}
+	return nil
 }
 
 func (m *proxyMutation) DeleteProxyConfigsByClientIDOrOriginClientID(userInfo models.UserInfo, clientID string) error {

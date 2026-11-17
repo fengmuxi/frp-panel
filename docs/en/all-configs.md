@@ -16,16 +16,19 @@ The application loads configuration in the following order:
 > Documentation may be somewhat outdated…  
 >  
 > For the complete and latest configuration reference, see: [settings.go](https://github.com/fengmuxi/frp-panel/blob/main/conf/settings.go)
+>
+> **Required variables and deployment-specific guidance: [Master deployment](./deploy-master.md).** The `APP_` / `MASTER_` / `DB_` / `CLIENT_`
+> prefixes are mandatory — the program concatenates the `env-prefix` tag, so a variable without its prefix is silently ignored.
 
 | Type   | Environment Variable                    | Default             | Description                                                                                                    |
 |:-------|:---------------------------------------|:--------------------|:---------------------------------------------------------------------------------------------------------------|
 | string | `APP_SECRET`                           | –                   | Application secret used to encrypt communication between Client, Server, and Master                             |
-| string | `APP_GLOBAL_SECRET`                    | `frp-panel`         | Global secret used to generate keys. Keep this value secure.                                                   |
+| string | `APP_GLOBAL_SECRET`                    | `frp-panel` (rejected) | **Required**: >=16 random chars (`openssl rand -hex 32`). The master refuses to start when empty, too short, or still the default. Derives the JWT signing key and node secrets; changing it after ciphertext exists requires `frpp migrate rekey` |
 | int    | `APP_COOKIE_AGE`                       | `86400`             | Cookie lifetime in seconds (default: 1 day)                                                                    |
 | string | `APP_COOKIE_NAME`                      | `frp-panel-cookie`  | Cookie name                                                                                                    |
 | string | `APP_COOKIE_PATH`                      | `/`                 | Cookie path                                                                                                    |
 | string | `APP_COOKIE_DOMAIN`                    | –                   | Cookie domain                                                                                                  |
-| bool   | `APP_COOKIE_SECURE`                    | `false`             | Whether the cookie is marked Secure                                                                            |
+| bool   | `APP_COOKIE_SECURE`                    | `true`              | Whether the cookie is marked Secure; plain HTTP deployments (no TLS proxy) must set it to `false` or login sessions break |
 | bool   | `APP_COOKIE_HTTP_ONLY`                 | `true`              | Whether the cookie is HTTP-only                                                                                |
 | bool   | `APP_ENABLE_REGISTER`                  | `false`             | Enable user registration. Only the first user can register (administrator).                                    |
 | int    | `MASTER_API_PORT`                      | `9000`              | Master API port                                                                                                |

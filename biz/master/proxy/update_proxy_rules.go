@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"github.com/VaalaCat/frp-panel/common"
+	"github.com/VaalaCat/frp-panel/defs"
 	"github.com/VaalaCat/frp-panel/models"
 	"github.com/VaalaCat/frp-panel/pb"
 	"github.com/VaalaCat/frp-panel/services/app"
@@ -46,6 +47,19 @@ func UpdateProxyRules(c *app.Context, req *pb.UpdateProxyRulesRequest) (*pb.Upda
 			Status: &pb.Status{Code: pb.RespCode_RESP_CODE_INVALID, Message: "quota limit must be positive"},
 		}, nil
 	}
+	quotaDirection := req.GetQuotaDirection()
+	if !QuotaDirectionValid(quotaDirection) {
+		return &pb.UpdateProxyRulesResponse{
+			Status: &pb.Status{Code: pb.RespCode_RESP_CODE_INVALID, Message: "invalid quota direction, expect both/inbound/outbound"},
+		}, nil
+	}
+	if quotaType == "" {
+		// 未启用限额时方向一并清空，避免残留半配置
+		quotaDirection = ""
+	} else if quotaDirection == "" {
+		// 启用限额但未指定方向：按双向合计（与旧版本行为一致）
+		quotaDirection = defs.QuotaDirectionBoth
+	}
 
 	var scheduleDays []int
 	if req.GetScheduleEnabled() {
@@ -85,6 +99,7 @@ func UpdateProxyRules(c *app.Context, req *pb.UpdateProxyRulesRequest) (*pb.Upda
 	proxyConfig.ScheduleEnd = req.GetScheduleEnd()
 	proxyConfig.ScheduleDays = scheduleDays
 	proxyConfig.QuotaType = quotaType
+	proxyConfig.QuotaDirection = quotaDirection
 	if quotaType == "" {
 		proxyConfig.QuotaLimit = 0
 	} else {

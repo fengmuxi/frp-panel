@@ -31,3 +31,4 @@ pnpm-global
 TODOs.md
 *.timestamp-*.mjs
 .zed
+check-history/

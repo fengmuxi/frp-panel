@@ -79,10 +79,9 @@ export const ClientStatsCard: React.FC<ClientStatsCardProps> = ({ clientID: defa
     <Card className="w-full">
       <CardHeader>
         <CardTitle>{t('client.stats.title')}</CardTitle>
+        {/* CardDescription 渲染为 <p>，其中不能放块级 <div>（会导致 hydration 失败），直接放文本 */}
         <CardDescription>
-          <div>
-            {t('client.stats.description')}
-          </div>
+          {t('client.stats.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className='space-y-4 flex flex-col flex-1'>

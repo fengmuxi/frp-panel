@@ -37,6 +37,9 @@ type ProxyConfigEntity struct {
 	// 自动规则：流量限额（QuotaType 非空且 QuotaLimit > 0 时生效），达到限额自动停用
 	QuotaType  string `json:"quota_type" gorm:"index"` // defs.QuotaType* 取值，空=未启用
 	QuotaLimit int64  `json:"quota_limit"`             // 限额字节数
+	// QuotaDirection 是限额的统计方向（defs.QuotaDirection* 取值）；
+	// 空=双向合计（历史数据兼容口径）
+	QuotaDirection string `json:"quota_direction" gorm:"default:''"`
 	// 是否被自动规则（定时窗口/流量限额）停用，用于区分手动暂停：
 	// 手动停用的隧道不会被自动规则拉起，自动停用的隧道在规则允许时会被自动恢复
 	AutoStopped bool `json:"auto_stopped" gorm:"index"`

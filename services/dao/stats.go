@@ -18,7 +18,7 @@ type StatsQuery interface {
 	GetHistoryStatsByClientID(userInfo models.UserInfo, clientID string) ([]*models.HistoryProxyStats, error)
 	GetHistoryStatsByServerID(userInfo models.UserInfo, serverID string) ([]*models.HistoryProxyStats, error)
 	GetHistoryStatsInRange(userInfo models.UserInfo, from, to time.Time) ([]*models.HistoryProxyStats, error)
-	AdminGetQuotaHistoryBaseline(proxyID int, windowStart time.Time) (int64, bool, error)
+	AdminGetQuotaHistoryBaseline(proxyID int, windowStart time.Time) (baselineIn, baselineOut int64, found bool, err error)
 }
 
 type StatsMutation interface {
@@ -110,22 +110,23 @@ func (q *statsQuery) GetHistoryStatsInRange(userInfo models.UserInfo, from, to t
 	return stats, nil
 }
 
-// AdminGetQuotaHistoryBaseline 返回限额统计窗口内最早一次每日快照的累计流量（TrafficIn+TrafficOut）。
+// AdminGetQuotaHistoryBaseline 返回限额统计窗口内最早一次每日快照的累计流量，
+// 入站/出站分开返回（限额支持按方向统计后，基线也需要分方向做差分）。
 // found=false 表示窗口开始后尚无快照（调用方应回退为当前 History 作为基线）。
 // 快照记录的是“截至快照时刻的历史累计值”，因此取窗口内最早的快照作为窗口起点基线最接近真实值。
-func (q *statsQuery) AdminGetQuotaHistoryBaseline(proxyID int, windowStart time.Time) (int64, bool, error) {
+func (q *statsQuery) AdminGetQuotaHistoryBaseline(proxyID int, windowStart time.Time) (baselineIn, baselineOut int64, found bool, err error) {
 	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
 
 	var snap models.HistoryProxyStats
-	err := db.Where("proxy_id = ?", proxyID).
+	e := db.Where("proxy_id = ?", proxyID).
 		Where("created_at >= ?", windowStart).
 		Order("created_at ASC").
 		First(&snap).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return 0, false, nil
+	if errors.Is(e, gorm.ErrRecordNotFound) {
+		return 0, 0, false, nil
 	}
-	if err != nil {
-		return 0, false, err
+	if e != nil {
+		return 0, 0, false, e
 	}
-	return snap.TrafficIn + snap.TrafficOut, true, nil
+	return snap.TrafficIn, snap.TrafficOut, true, nil
 }

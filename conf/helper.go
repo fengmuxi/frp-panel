@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"net"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/VaalaCat/frp-panel/defs"
@@ -16,8 +17,20 @@ import (
 	v1 "github.com/fatedier/frp/pkg/config/v1"
 )
 
+// listenIP 兜底：监听 IP 未配置（空串）时按 0.0.0.0 监听所有网卡（与历史行为一致）；
+// 配置了具体 IP（如 127.0.0.1）则只绑定该地址
+func listenIP(cfgIP string) string {
+	ip := strings.TrimSpace(cfgIP)
+	if ip == "" {
+		return "0.0.0.0"
+	}
+	return ip
+}
+
+// RPCListenAddr 节点 RPC（wsgrpc）监听地址：IP 由 MASTER_RPC_LISTEN_IP 控制，
+// 默认 0.0.0.0 监听所有网卡；节点全走反代时可改 127.0.0.1 收紧
 func RPCListenAddr(cfg Config) string {
-	return fmt.Sprintf(":%d", cfg.Master.RPCPort)
+	return fmt.Sprintf("%s:%d", listenIP(cfg.Master.RPCListenIP), cfg.Master.RPCPort)
 }
 
 func rpcCallAddr(cfg Config) string {
@@ -28,12 +41,16 @@ func JWTSecret(cfg Config) string {
 	return utils.SHA1(fmt.Sprintf("%s:%d:%s", cfg.Master.APIHost, cfg.Master.APIPort, cfg.App.GlobalSecret))
 }
 
+// MasterAPIListenAddr 面板 API/WebUI 监听地址：IP 由 MASTER_API_LISTEN_IP 控制，
+// 默认 0.0.0.0 监听所有网卡；仅本机反代访问时可改 127.0.0.1 收紧
 func MasterAPIListenAddr(cfg Config) string {
-	return fmt.Sprintf(":%d", cfg.Master.APIPort)
+	return fmt.Sprintf("%s:%d", listenIP(cfg.Master.APIListenIP), cfg.Master.APIPort)
 }
 
 func ServerAPIListenAddr(cfg Config) string {
-	return fmt.Sprintf(":%d", cfg.Server.APIPort)
+	// 安全审计 P1-9：server API 仅承载本机 frps 的 /auth 插件回源（宿主固定 127.0.0.1），
+	// 默认绑定回环地址，不再暴露公网
+	return fmt.Sprintf("127.0.0.1:%d", cfg.Server.APIPort)
 }
 
 func FRPsAuthOption(cfg Config) v1.HTTPPluginOptions {
@@ -53,9 +70,28 @@ func FRPsAuthOption(cfg Config) v1.HTTPPluginOptions {
 
 func GetJWTWithPayload(cfg Config, uid int, payload map[string]interface{}) (string, error) {
 	payload[defs.UserIDKey] = uid
+	// jti（安全审计 P2）：登出/改密时可用其做服务端吊销
+	payload["jti"] = utils.GenerateUUID()
 	return utils.GetJwtTokenFromMap(JWTSecret(cfg),
 		time.Now().Unix(),
 		int64(cfg.App.CookieAge),
+		payload)
+}
+
+// GetJWTWithPayloadAndExpiry 以指定有效期签发 JWT（供续签场景使用：
+// 续签必须沿用原 token 的过期时间，不得滑动延长 —— 安全审计 P2）。
+// payload 中已有的 jti 会保留，用于吊销链路。
+func GetJWTWithPayloadAndExpiry(cfg Config, uid int, payload map[string]interface{}, expirySeconds int64) (string, error) {
+	payload[defs.UserIDKey] = uid
+	if payload == nil {
+		payload = map[string]interface{}{}
+	}
+	if jti, _ := payload["jti"].(string); jti == "" {
+		payload["jti"] = utils.GenerateUUID()
+	}
+	return utils.GetJwtTokenFromMap(JWTSecret(cfg),
+		time.Now().Unix(),
+		expirySeconds,
 		payload)
 }
 
@@ -105,11 +141,13 @@ func GetCertTemplate(cfg Config) *x509.Certificate {
 			Organization:       []string{"frp-panel"},
 			OrganizationalUnit: []string{"frp-panel"},
 		},
-		SignatureAlgorithm:    x509.SHA512WithRSA,
-		DNSNames:              []string{cfg.Master.APIHost},
-		IPAddresses:           []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")},
-		NotBefore:             now,
-		NotAfter:              now.AddDate(10, 0, 0),
+		SignatureAlgorithm: x509.SHA512WithRSA,
+		DNSNames:           []string{cfg.Master.APIHost},
+		IPAddresses:        []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")},
+		NotBefore:          now,
+		// 自签 CA 有效期 3 年（安全审计 P3：原 10 年过长，私钥入库泄露半径大；
+		// 轮换方式见 docs/deploy-master.md「证书轮换」）
+		NotAfter:              now.AddDate(3, 0, 0),
 		SubjectKeyId:          []byte{102, 114, 112, 45, 112, 97, 110, 101, 108},
 		BasicConstraintsValid: true,
 		IsCA:                  true,

@@ -2,33 +2,31 @@ package middleware
 
 import (
 	"regexp"
+	"sync"
 
 	"github.com/VaalaCat/frp-panel/common"
 	"github.com/VaalaCat/frp-panel/pb"
 	"github.com/VaalaCat/frp-panel/services/app"
-	"github.com/VaalaCat/frp-panel/utils"
 	"github.com/VaalaCat/frp-panel/utils/logger"
 	"github.com/gin-gonic/gin"
 )
 
 func RBAC(appInstance app.Application) func(*gin.Context) {
 	return func(c *gin.Context) {
-		// appCtx := app.NewContext(c, appInstance)
 		perms, err := common.GetTokenPermission(c)
-		userInfo := common.GetUserInfo(c)
-		token := common.GetTokenString(c)
 		path := c.Request.URL.Path
 		method := c.Request.Method
 
 		if err != nil {
-			logger.Logger(c).WithError(err).Errorf("get token permission error, token: [%s], userInfo:[%s]", token, utils.MarshalForJson(userInfo.GetSafeUserInfo()))
+			// 不记录 token 与完整用户实体（安全审计 P2：JWT/凭证入日志 = 会话泄露）
+			logger.Logger(c).WithError(err).Errorf("get token permission error")
 			common.ErrResp(c, &pb.CommonResponse{Status: &pb.Status{Code: pb.RespCode_RESP_CODE_INVALID, Message: err.Error()}}, err.Error())
 			c.Abort()
 			return
 		}
 
 		if len(perms) == 0 {
-			logger.Logger(c).WithError(err).Errorf("user has no permission, token: [%s], userInfo:[%s]", token, utils.MarshalForJson(userInfo.GetSafeUserInfo()))
+			logger.Logger(c).WithError(err).Errorf("user has no permission")
 			common.ErrResp(c, &pb.CommonResponse{Status: &pb.Status{Code: pb.RespCode_RESP_CODE_INVALID, Message: "user has no permission"}}, "user has no permission")
 			c.Abort()
 			return
@@ -47,7 +45,8 @@ func RBAC(appInstance app.Application) func(*gin.Context) {
 			}
 		}
 
-		logger.Logger(c).Errorf("user has no permission, perms: %s, userInfo: [%s], ", utils.MarshalForJson(perms), utils.MarshalForJson(userInfo.GetSafeUserInfo()))
+		// 不记录完整权限 claim（安全审计 P2：其内容由用户可签发的 token 决定）
+		logger.Logger(c).Errorf("user has no permission, path: [%s]", path)
 		common.ErrResp(c, &pb.CommonResponse{Status: &pb.Status{Code: pb.RespCode_RESP_CODE_INVALID, Message: "user has no permission"}}, "user has no permission")
 		c.Abort()
 		return
@@ -61,6 +60,10 @@ type ruleMatchParam struct {
 	RequestMethod string
 }
 
+// rulePathCache 缓存编译后的路径规则（安全审计 P2：
+// 原实现对用户可控的 RulePath 每次 MustCompile —— 非法正则直接 panic，恶意正则可 ReDoS）
+var rulePathCache sync.Map
+
 func ruleMatched(param ruleMatchParam) bool {
 	methodMatch := false
 	if param.RuleMethod == param.RequestMethod || param.RuleMethod == "*" {
@@ -71,12 +74,19 @@ func ruleMatched(param ruleMatchParam) bool {
 		return false
 	}
 
-	pathMatch := false
 	if param.RulePath == "*" {
-		pathMatch = true
-	} else {
-		pathMatch = regexp.MustCompile(param.RulePath).MatchString(param.RequestPath)
+		return true
 	}
 
-	return pathMatch
+	re, ok := rulePathCache.Load(param.RulePath)
+	if !ok {
+		compiled, err := regexp.Compile(param.RulePath)
+		if err != nil {
+			// 非法正则降级为字面量匹配，绝不 panic
+			compiled = regexp.MustCompile(regexp.QuoteMeta(param.RulePath))
+		}
+		rulePathCache.Store(param.RulePath, compiled)
+		re = compiled
+	}
+	return re.(*regexp.Regexp).MatchString(param.RequestPath)
 }

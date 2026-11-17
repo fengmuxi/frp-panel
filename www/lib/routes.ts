@@ -27,6 +27,7 @@ export const PAGE_PARENTS: Record<string, string> = {
 	'/canvas': '/console',
 	'/user-info': ROUTES.home,
 	'/platform-settings': ROUTES.home,
+	'/mail-settings': ROUTES.home,
 }
 
 /** 一级页面路径 → i18n 标题键（用于返回按钮上的文案） */

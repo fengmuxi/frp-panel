@@ -35,10 +35,15 @@ type runMasterParam struct {
 	TaskManager         watcher.Client       `name:"masterTaskManager"`
 	WsListener          *wsgrpc.WSListener
 	DefaultServerConfig conf.Config `name:"defaultServerConfig"`
-	PermManager         app.PermissionManager
 }
 
 func runMaster(param runMasterParam) {
+	// 安全基线（安全审计 P1-4）：默认/弱 GLOBAL_SECRET 会派生出可离线推导的 JWT 签名密钥，
+	// 任何知道面板域名的人都能伪造管理员 token —— 必须拒绝启动
+	cfg := param.AppInstance.GetConfig()
+	if err := cfg.ValidateGlobalSecret(); err != nil {
+		logger.Logger(context.Background()).Fatalf("security check failed: %v (set a strong APP_GLOBAL_SECRET and restart)", err)
+	}
 
 	param.AppInstance.SetClientLogManager(param.ClientLogManager)
 	param.MasterRouter.GET("/wsgrpc", param.WsGrpcHandler)

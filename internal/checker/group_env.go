@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -41,7 +43,30 @@ func buildEnvGroup(env *Env) ([]Checker, error) {
 			fixHint: "调大 MASTER_CACHE_SIZE（MB）；/auth 插件的 token 缓存依赖它"}},
 		&envNodeIdentity{baseChecker{name: "node_identity", group: "env", severity: LevelMajor,
 			fixHint: "节点侧需要 CLIENT_ID/CLIENT_SECRET；首次接入请使用 `frpp join -j <token>` 自动写入 /etc/frpp/.env"}},
+		&envDiskWatermark{baseChecker{name: "disk_watermark", group: "env", severity: LevelMajor,
+			fixHint: "磁盘写满会导致 sqlite 写入失败与统计丢失；清理数据目录或扩容，WAL 过大时用 sqlite 执行 PRAGMA wal_checkpoint(TRUNCATE)"}},
+		&envFilePermissions{baseChecker{name: "file_permissions", group: "env", severity: LevelMajor,
+			fixHint: ".env 含全局密钥、data.db 含租户数据：chmod 600 收紧；全局可写属于高危"}},
+		&envTLSVerify{baseChecker{name: "tls_verify", group: "env", severity: LevelMajor,
+			fixHint: "TLS_INSECURE_SKIP_VERIFY=true 时节点→master 链路可被 MITM 劫持并喂假 CA；将 master CA 纳入节点信任后关闭该项（安全审计 P1-10）"}},
 	}, nil
+}
+
+// ---------------- env/tls_verify ----------------
+
+type envTLSVerify struct{ baseChecker }
+
+func (c *envTLSVerify) Run(ctx context.Context, env *Env) Result {
+	refs := []string{"CLIENT_TLS_INSECURE_SKIP_VERIFY", "API_SCHEME"}
+	if env.Cfg.Client.TLSInsecureSkipVerify {
+		details := "节点到 master 的 RPC/API 链路不校验服务端证书：同网段攻击者可劫持流量、伪造配置下发与 OTA 响应"
+		if strings.EqualFold(env.Cfg.Master.APIScheme, "http") {
+			details += "；API_SCHEME=http 时面板 API 链路完全明文，凭证与 Cookie 可被嗅探"
+		}
+		return Result{}.Warn("TLS_INSECURE_SKIP_VERIFY=true：TLS 证书校验已关闭").
+			WithDetails(details).ConfigRefs(refs...)
+	}
+	return Result{}.Pass("节点→master 链路启用 TLS 证书校验").ConfigRefs(refs...)
 }
 
 // ---------------- env/config_source ----------------
@@ -75,11 +100,23 @@ type envGlobalSecret struct{ baseChecker }
 
 func (c *envGlobalSecret) Run(ctx context.Context, env *Env) Result {
 	s := env.Cfg.App.GlobalSecret
-	refs := []string{"APP_GLOBAL_SECRET", "conf.JWTSecret = SHA1(MASTER_API_HOST:MASTER_API_PORT:APP_GLOBAL_SECRET)"}
+	refs := []string{"APP_GLOBAL_SECRET", "REQUIRE_STRONG_SECRET", "conf.JWTSecret = SHA1(MASTER_API_HOST:MASTER_API_PORT:APP_GLOBAL_SECRET)"}
+
+	// 弱钥判定与主校验（conf.ValidateGlobalSecret）保持同一口径
+	weak := s == "frp-panel" || len(s) < 16
+
+	// 用户已显式放宽（REQUIRE_STRONG_SECRET=false）时降级为警告：
+	// 风险依然存在（弱钥派生的 JWT 签名密钥可被离线推导），但属于知情选择，
+	// 提示轮换路径而不是每次 check 都红灯阻断。
+	if weak && !env.Cfg.App.RequireStrongSecret {
+		return Result{}.Warn("APP_GLOBAL_SECRET 为弱值（强钥校验已通过 REQUIRE_STRONG_SECRET=false 显式关闭），建议 `frpp migrate rekey` 轮换后重新开启").
+			WithDetails(fmt.Sprintf("当前长度 %d", len(s))).ConfigRefs(refs...)
+	}
 
 	if s == "frp-panel" {
 		return Result{}.Fail("APP_GLOBAL_SECRET 仍为默认值 frp-panel，节点 secret 与 JWT 均可被推导").
-			WithDetails("该密钥派生 JWT 签名密钥与客户端证书签发链路，默认值等于完全暴露控制面").ConfigRefs(refs...)
+			WithDetails("该密钥派生 JWT 签名密钥与客户端证书签发链路，默认值等于完全暴露控制面；" +
+				"过渡兼容可设 APP_REQUIRE_STRONG_SECRET=false，但应尽快轮换").ConfigRefs(refs...)
 	}
 	if len(s) < 8 {
 		return Result{}.Fail(fmt.Sprintf("APP_GLOBAL_SECRET 长度仅 %d，强度不足", len(s))).ConfigRefs(refs...)
@@ -413,4 +450,105 @@ func (c *envNodeIdentity) Run(ctx context.Context, env *Env) Result {
 		}
 	}
 	return Result{}.Pass("节点身份已配置").WithDetails(details...).ConfigRefs(refs...)
+}
+
+// ---------------- env/disk_watermark ----------------
+
+type envDiskWatermark struct{ baseChecker }
+
+func (c *envDiskWatermark) Run(ctx context.Context, env *Env) Result {
+	refs := []string{"DB_DSN（数据目录）", "sqlite -wal 文件"}
+	isSQLite := env.Cfg.DB.Type == defs.DBTypeSQLite3 || env.Cfg.DB.Type == defs.DBTypeSqlite
+	if !isSQLite {
+		return Result{}.Skip("DB 为远端 mysql/postgres，请在 DB 宿主机检查磁盘水位").ConfigRefs(refs...)
+	}
+	dbPath := sqliteFilePath(env.Cfg.DB.DSN)
+	if dbPath == "" {
+		return Result{}.Skip("内存库无磁盘水位").ConfigRefs(refs...)
+	}
+
+	total, free, err := diskUsage(filepath.Dir(dbPath))
+	if err != nil {
+		return Result{}.Skip(fmt.Sprintf("读取磁盘用量失败: %v", err)).ConfigRefs(refs...)
+	}
+	if total == 0 {
+		return Result{}.Skip("文件系统容量为 0，跳过").ConfigRefs(refs...)
+	}
+	freePct := float64(free) / float64(total) * 100
+	details := []string{
+		fmt.Sprintf("数据目录: %s", filepath.Dir(dbPath)),
+		fmt.Sprintf("磁盘: 总 %s / 剩余 %s（剩 %.1f%%）", humanBytes(int64(total)), humanBytes(int64(free)), freePct),
+	}
+
+	// sqlite 库与 WAL 体积
+	var dbSize, walSize int64
+	if st, err := os.Stat(dbPath); err == nil {
+		dbSize = st.Size()
+		details = append(details, fmt.Sprintf("库文件: %s", humanBytes(dbSize)))
+	}
+	if st, err := os.Stat(dbPath + "-wal"); err == nil {
+		walSize = st.Size()
+		details = append(details, fmt.Sprintf("WAL: %s", humanBytes(walSize)))
+	}
+	if walSize > 256<<20 {
+		details = append(details, "WAL 超过 256MB：长期未 checkpoint，执行 PRAGMA wal_checkpoint(TRUNCATE) 回收")
+		return Result{}.Warn("sqlite WAL 文件过大").WithDetails(details...).ConfigRefs(refs...)
+	}
+
+	switch {
+	case free < 1<<30 || freePct < 10:
+		return Result{}.Fail(fmt.Sprintf("磁盘剩余 %s（%.1f%%），即将写满", humanBytes(int64(free)), freePct)).WithDetails(details...).ConfigRefs(refs...)
+	case free < 5<<30 || freePct < 20:
+		return Result{}.Warn(fmt.Sprintf("磁盘剩余 %s（%.1f%%），建议关注", humanBytes(int64(free)), freePct)).WithDetails(details...).ConfigRefs(refs...)
+	}
+	return Result{}.Pass("磁盘水位健康").WithDetails(details...).ConfigRefs(refs...)
+}
+
+// ---------------- env/file_permissions ----------------
+
+type envFilePermissions struct{ baseChecker }
+
+func (c *envFilePermissions) Run(ctx context.Context, env *Env) Result {
+	refs := []string{".env 文件", "DB_DSN 指向的库文件"}
+	if runtime.GOOS == "windows" {
+		return Result{}.Skip("Windows 无 POSIX 权限模型，跳过").ConfigRefs(refs...)
+	}
+	if env.Cfg.DB.Type != defs.DBTypeSQLite3 && env.Cfg.DB.Type != defs.DBTypeSqlite {
+		return Result{}.Skip("仅 sqlite 库文件可本地检查；mysql/postgres 请在 DB 宿主机核查").ConfigRefs(refs...)
+	}
+
+	var candidates []string
+	candidates = append(candidates, defs.CurEnvPath, defs.SysEnvPath)
+	if p := sqliteFilePath(env.Cfg.DB.DSN); p != "" {
+		candidates = append(candidates, p)
+	}
+
+	var worldWritable, readable, missing []string
+	checked := 0
+	for _, p := range candidates {
+		st, err := os.Stat(p)
+		if err != nil {
+			missing = append(missing, p)
+			continue
+		}
+		checked++
+		mode := st.Mode().Perm()
+		switch {
+		case mode&0o002 != 0:
+			worldWritable = append(worldWritable, fmt.Sprintf("%s 全局可写（%s）—— 高危，立即 chmod 600", p, mode))
+		case mode&(0o040|0o004) != 0:
+			readable = append(readable, fmt.Sprintf("%s 组/其他用户可读（%s）—— 建议 chmod 600", p, mode))
+		}
+	}
+	if checked == 0 {
+		return Result{}.Skip("未找到可检查的 .env/库文件（库可能未初始化）").WithDetails(missing...).ConfigRefs(refs...)
+	}
+	if len(worldWritable) > 0 {
+		return Result{}.Fail(fmt.Sprintf("%d 个敏感文件全局可写", len(worldWritable))).
+			WithDetails(append(worldWritable, readable...)...).ConfigRefs(refs...)
+	}
+	if len(readable) > 0 {
+		return Result{}.Warn(fmt.Sprintf("%d 个敏感文件组/其他用户可读", len(readable))).WithDetails(readable...).ConfigRefs(refs...)
+	}
+	return Result{}.Pass(fmt.Sprintf("%d 个敏感文件权限收紧（0600）", checked)).ConfigRefs(refs...)
 }

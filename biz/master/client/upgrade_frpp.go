@@ -32,10 +32,7 @@ func UpgradeFrppHandler(ctx *app.Context, req *pb.UpgradeFrppRequest) (*pb.Upgra
 	if req.RestartService != nil {
 		restartService = req.GetRestartService()
 	}
-	useGithubProxy := true
-	if req.UseGithubProxy != nil {
-		useGithubProxy = req.GetUseGithubProxy()
-	}
+	// 代理与节点执行参数不再下发（安全审计 P1-11 / 决策点 G），节点使用本地真实值
 
 	// 并发下发，提高多 client 批量升级速度
 	var (
@@ -61,19 +58,14 @@ func UpgradeFrppHandler(ctx *app.Context, req *pb.UpgradeFrppRequest) (*pb.Upgra
 			}
 
 			// 每次只给单个 client 下发（减少 payload 混淆）
+			// 安全审计 P1-11：不再转发请求中的节点侧执行参数（DownloadUrl/GithubProxy/
+			// TargetPath/ServiceName/Workdir/ServiceArgs 曾被节点原样执行），
+			// 节点使用本地真实值；URL 由节点侧官方源白名单 + SHA-256 校验约束
 			reqForClient := &pb.UpgradeFrppRequest{
 				ClientIds:      []string{clientId},
 				Version:        req.Version,
-				DownloadUrl:    req.DownloadUrl,
-				GithubProxy:    req.GithubProxy,
-				UseGithubProxy: &useGithubProxy,
-				HttpProxy:      req.HttpProxy,
-				TargetPath:     req.TargetPath,
 				Backup:         &backup,
-				ServiceName:    req.ServiceName,
 				RestartService: &restartService,
-				Workdir:        req.Workdir,
-				ServiceArgs:    req.GetServiceArgs(),
 			}
 
 			resp := &pb.UpgradeFrppResponse{}

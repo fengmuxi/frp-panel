@@ -12,6 +12,11 @@ import (
 
 func GetPlatformInfo(appInstance app.Application) func(*gin.Context) {
 	return func(c *gin.Context) {
+		// 安全审计 P3：平台信息含 master RPC 地址/端口等内部拓扑，仅管理员可见
+		if u := common.GetUserInfo(c); u == nil || !u.IsAdmin() {
+			common.ErrResp(c, &pb.CommonResponse{Status: &pb.Status{Code: pb.RespCode_RESP_CODE_INVALID, Message: "permission denied"}}, "permission denied")
+			return
+		}
 		resp, err := getPlatformInfo(appInstance, c)
 		if err != nil {
 			common.ErrResp(c, &pb.CommonResponse{Status: &pb.Status{Code: pb.RespCode_RESP_CODE_INVALID, Message: err.Error()}}, err.Error())

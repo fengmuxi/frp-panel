@@ -3,6 +3,7 @@
 import {
   ChevronsUpDown,
   LogOut,
+  Mail,
   SettingsIcon,
   User as UserIcon, // 别名避免和 User 类型冲突
 } from 'lucide-react'
@@ -74,6 +75,15 @@ export function NavUser({ user }: NavUserProps) {
                 <span>{t('common.userInfo')}</span>
               </Link>
             </DropdownMenuItem>
+            {/* 邮件通知设置仅管理员可见，排在平台设置上方 */}
+            {user?.role === 'admin' && (
+              <DropdownMenuItem asChild>
+                <Link href="/mail-settings" className="w-full flex items-center space-x-2">
+                  <Mail className="h-4 w-4" />
+                  <span>{t('nav.mailSettings')}</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem asChild>
               <Link href="/platform-settings" className="w-full flex items-center space-x-2">
                 <SettingsIcon className="h-4 w-4" />

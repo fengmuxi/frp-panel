@@ -212,6 +212,11 @@ type EndpointEntity struct {
 
 	WireGuardID uint   `gorm:"index"`
 	ClientID    string `gorm:"type:varchar(255);uniqueIndex:idx_client_id_host_port_type"`
+
+	// 归属列（安全审计 P1-6：endpoint 的 CRUD/列表此前完全无租户过滤）。
+	// 由迁移 002 按 client_id 关联 clients 回填；0 表示未知归属（仅 admin 可见）。
+	TenantID int `json:"tenant_id" gorm:"index;default:0"`
+	UserID   int `json:"user_id" gorm:"index;default:0"`
 }
 
 func (*Endpoint) TableName() string {

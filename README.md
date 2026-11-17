@@ -79,6 +79,8 @@ The full documentation lives in [`docs/`](./docs) (built as a VitePress site):
 - [Quick Start](./docs/quick-start.md)
 - Deployment Guides: [Master](./docs/deploy-master.md) · [Server](./docs/deploy-server.md) · [Client](./docs/deploy-client.md)
 - [WireGuard Multi-Hop Smart Networking](./docs/wireguard.md)
+- [Functions (Edge Worker)](./docs/en/worker.md)
+- [Email Notifications](./docs/en/mail-notification.md)
 - [All Configuration Options](./docs/all-configs.md)
 - [CI/CD and Release Process](./docs/en/ci-cd.md)
 - [Contribution Guide](./docs/contribute.md)
@@ -106,12 +108,18 @@ cp .env.sample .env
 Common local overrides:
 
 ```dotenv
-APP_GLOBAL_SECRET="change-me"   # global secret for token/credential generation
+# 必填：>=16 位强随机串，生成 `openssl rand -hex 32`；为空或默认值 frp-panel 时 master 拒绝启动
+APP_GLOBAL_SECRET="dev-only-0123456789abcdef"
 MASTER_RPC_HOST=127.0.0.1       # address for client/server RPC connections
+# 本地纯 HTTP 调试必填（默认 true，浏览器不会回传 Cookie 导致登录态异常）；生产走 HTTPS 反代请省略
+APP_COOKIE_SECURE=false
 DB_TYPE=sqlite3                 # default, no separate DB service needed
 DB_DSN=./data.db?_pragma=journal_mode(WAL)   # default is /data/data.db, point it to a local path
 IS_DEBUG=true                   # debug mode: trace-level logs + pprof profiler (port 6961)
 ```
+
+> 变量名前缀（`APP_` / `MASTER_` / `DB_` / `CLIENT_`）不能省略，程序按 `env-prefix` 拼接读取，漏写前缀会被静默忽略。
+> 完整的必填项与默认值见 [docs/deploy-master.md](./docs/deploy-master.md) 与 [docs/all-configs.md](./docs/all-configs.md)。
 
 ### Start the Master (control plane)
 

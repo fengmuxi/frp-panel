@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/VaalaCat/frp-panel/biz/common/upgrade"
@@ -35,6 +36,8 @@ type CommonArgs struct {
 	ApiPort   *int
 	ApiScheme *string
 	JoinToken *string
+	// TokenFile（安全审计 P3）：从文件读取 join token，避免命令行参数进入 shell 历史
+	TokenFile *string
 
 	Ephemeral *bool
 }
@@ -53,6 +56,7 @@ func BuildCommand(fs embed.FS) *cobra.Command {
 		NewClientCmd(cfg),
 		NewServerCmd(cfg),
 		NewCheckCmd(cfg),
+		NewMigrateCmd(cfg),
 		NewJoinCmd(),
 		NewInstallServiceCmd(),
 		NewUninstallServiceCmd(),
@@ -71,6 +75,8 @@ func AddCommonFlags(commonCmd *cobra.Command) {
 	commonCmd.Flags().String("rpc-url", "", "rpc url, master rpc url, scheme can be grpc/ws/wss://hostname:port")
 	commonCmd.Flags().String("api-url", "", "api url, master api url, scheme can be http/https://hostname:port")
 	commonCmd.Flags().StringP("join-token", "j", "", "your token from master, auto join with out webui")
+	// --token-file（安全审计 P3）：命令行参数会进入 shell 历史，推荐从文件读 token
+	commonCmd.Flags().String("token-file", "", "path to a file containing the join token (avoids leaking it into shell history)")
 	commonCmd.Flags().Bool("ephemeral", true, "auto join with join-token, whether the client is ephemeral, change flag to --ephemeral=false to disable")
 
 	// deprecated start
@@ -124,6 +130,17 @@ func GetCommonArgs(cmd *cobra.Command) CommonArgs {
 
 	if joinToken, err := cmd.Flags().GetString("join-token"); err == nil {
 		commonArgs.JoinToken = &joinToken
+	}
+
+	// --token-file：文件内容（去首尾空白）作为 join token，优先级低于显式 -j
+	if tokenFile, err := cmd.Flags().GetString("token-file"); err == nil && tokenFile != "" {
+		commonArgs.TokenFile = &tokenFile
+		if raw, readErr := os.ReadFile(tokenFile); readErr == nil {
+			token := strings.TrimSpace(string(raw))
+			if token != "" && (commonArgs.JoinToken == nil || *commonArgs.JoinToken == "") {
+				commonArgs.JoinToken = &token
+			}
+		}
 	}
 
 	if ephemeral, err := cmd.Flags().GetBool("ephemeral"); err == nil {

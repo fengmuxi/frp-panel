@@ -70,5 +70,14 @@ func validateCreateWorker(req *pb.CreateWorkerRequest) error {
 		return fmt.Errorf("invalid worker")
 	}
 
+	// 路径安全（安全审计 P0-2）：WorkerId/CodeEntry 会用于构造节点上的文件路径，
+	// 原样接受即可穿越写入任意文件；空值由 workerd.FillWorkerValue 服务端生成
+	if req.GetWorker().GetWorkerId() != "" && !workerd.ValidateWorkerPathSegment(req.GetWorker().GetWorkerId()) {
+		return fmt.Errorf("invalid worker id")
+	}
+	if req.GetWorker().GetCodeEntry() != "" && !workerd.ValidateWorkerPathSegment(req.GetWorker().GetCodeEntry()) {
+		return fmt.Errorf("invalid worker code entry")
+	}
+
 	return nil
 }

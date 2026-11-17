@@ -95,6 +95,15 @@ func QuotaTypeValid(quotaType string) bool {
 	return false
 }
 
+// QuotaDirectionValid 校验限额统计方向取值（空串表示双向合计，兼容旧数据）
+func QuotaDirectionValid(direction string) bool {
+	switch direction {
+	case "", defs.QuotaDirectionBoth, defs.QuotaDirectionInbound, defs.QuotaDirectionOutbound:
+		return true
+	}
+	return false
+}
+
 // NormalizeScheduleDays 规范化周几列表：过滤 0-6 以外的值并去重
 func NormalizeScheduleDays(days []int) []int {
 	seen := make(map[int]bool, len(days))

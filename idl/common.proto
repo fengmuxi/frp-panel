@@ -101,6 +101,7 @@ message ProxyConfig {
   optional int64 quota_limit = 14;       // 限额字节数
   optional int64 quota_used = 15;        // 当前统计窗口已用字节数（仅返回，不可修改）
   optional bool auto_stopped = 16;       // 是否被自动规则（定时/限额）停用
+  optional string quota_direction = 17;  // 限额统计方向：both/inbound/outbound，空=双向
 }
 
 message ProxyWorkingStatus {

@@ -23,6 +23,8 @@ export const enConfig: LocaleSpecificConfig<DefaultTheme.Config> = {
         link: "/en/wireguard",
         items: [
           { text: "WireGuard Multi-Hop Networking", link: "/en/wireguard" },
+          { text: "Functions (Edge Worker)", link: "/en/worker" },
+          { text: "Email Notifications", link: "/en/mail-notification" },
         ],
       },
       {

@@ -169,6 +169,7 @@ message UpdateProxyRulesRequest {
   repeated int32 schedule_days = 7;     // 生效周几，0=周日 ~ 6=周六，多选
   optional string quota_type = 8;       // day/week/month，空=未启用
   optional int64 quota_limit = 9;       // 限额字节数，0=未启用
+  optional string quota_direction = 10; // 限额统计方向：both/inbound/outbound，空=双向
 }
 
 message UpdateProxyRulesResponse {

@@ -37,6 +37,7 @@ func fillProxyRulesInfo(ctx *app.Context, pbCfg *pb.ProxyConfig, item *models.Pr
 	pbCfg.ScheduleDays = lo.Map(item.ScheduleDays, func(day int, _ int) int32 { return int32(day) })
 	pbCfg.QuotaType = lo.ToPtr(item.QuotaType)
 	pbCfg.QuotaLimit = lo.ToPtr(item.QuotaLimit)
+	pbCfg.QuotaDirection = lo.ToPtr(item.QuotaDirection)
 	pbCfg.AutoStopped = lo.ToPtr(item.AutoStopped)
 	pbCfg.QuotaUsed = lo.ToPtr(CalcProxyQuotaUsed(ctx, item.ProxyConfigEntity))
 }

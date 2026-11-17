@@ -67,10 +67,15 @@ export const QuickProxyCreateDialog: React.FC<QuickProxyCreateDialogProps> = ({
 
   useEffect(() => {
     if (open) {
-      setProxyType('tcp')
-      setProxyName(genDefaultName('tcp', clientProxyConfigs))
+      const initType: ProxyType = 'tcp'
+      const initName = genDefaultName(initType, clientProxyConfigs)
+      setProxyType(initType)
+      setProxyName(initName)
       setNameTouched(false)
-      setDraftConfigs([])
+      // 打开时必须同步建好草稿：默认名与上次相同（proxyName/proxyType 未变）时，
+      // 下方按 name/type 重建草稿的 effect 不会触发，草稿会停在空数组，
+      // 导致 defaultProxyConfig 为 undefined、配置区整块不渲染
+      setDraftConfigs([{ name: initName, type: initType } as TypedProxyConfig])
     }
     // 仅在弹窗打开时基于当时的隧道列表生成一次默认名，列表后续变化不打扰用户输入
     // eslint-disable-next-line react-hooks/exhaustive-deps

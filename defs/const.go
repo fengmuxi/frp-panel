@@ -120,6 +120,16 @@ const (
 	QuotaTypeMonth = "month" // 月限额：本月 1 日 00:00 起
 )
 
+// 隧道流量限额的统计方向（proxy_config.quota_direction 取值，空字符串表示双向合计）。
+// 方向口径与面板"今日入站/出站"一致（frps 视角）：
+//   - inbound  = 访问者 → 服务器（访问者的上传）
+//   - outbound = 服务器 → 访问者（访问者的下载，即 VPS 的上行）
+const (
+	QuotaDirectionBoth     = "both"     // 入站+出站 合计
+	QuotaDirectionInbound  = "inbound"  // 仅入站
+	QuotaDirectionOutbound = "outbound" // 仅出站
+)
+
 const (
 	UserRole_Admin  = "admin"
 	UserRole_Normal = "normal"

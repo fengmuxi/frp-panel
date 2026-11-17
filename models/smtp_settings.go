@@ -22,8 +22,16 @@ type SMTPSettings struct {
 	EnableServerOnline  bool   `gorm:"default:false"`                         // 服务端上线提醒
 	EnableClientOnline  bool   `gorm:"default:false"`                         // 客户端上线提醒
 	EnableProxyOnline   bool   `gorm:"default:false"`                         // 隧道上线提醒
-	CreatedAt           time.Time
-	UpdatedAt           time.Time
+	// 历史全局开关（已拆分为 user_notify_settings 按用户独立），仅作为新用户默认值回退来源
+	EnableQuotaExceeded  bool `gorm:"default:false"` // 隧道流量超额关闭提醒
+	EnableScheduleToggle bool `gorm:"default:false"` // 隧道定时开启/关闭提醒
+	// 下线通知防误触发时长（秒）：离线持续超过该时长才发送下线提醒；
+	// 0 表示使用内置默认（defs.OfflineCheckDelay，60 秒），负值非法
+	OfflineDelayServer int `gorm:"default:0"` // 服务端下线通知防抖（秒）
+	OfflineDelayClient int `gorm:"default:0"` // 客户端下线通知防抖（秒）
+	OfflineDelayProxy  int `gorm:"default:0"` // 隧道下线通知防抖（秒）
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 }
 
 func (*SMTPSettings) TableName() string {

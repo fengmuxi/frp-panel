@@ -107,6 +107,16 @@
 
 迁移状态可通过 `frpp check` 的 `data/db_migration` 检查项对账（见 [checker.md](/checker.md)）。
 
+迁移也可不经 master 启动直接管理：
+
+```bash
+frpp migrate status   # 查看（只读，sqlite 以 mode=ro 打开）
+frpp migrate up       # 应用待执行迁移（先停 master；sqlite 自动先备份）
+frpp migrate verify   # 校验 schema_migrations 一致性（失败退出码非 0）
+```
+
+`up` 与 master 启动链共用同一 runner；sqlite 库在应用首个待迁移前会自动生成一致性快照 `<db>.bak-migration-v<N>-<时间戳>`（滚动保留最近 5 份），mysql/postgres 仅输出人工备份提示。
+
 ### 本体配置说明
 
 [settings.go](https://github.com/fengmuxi/frp-panel/blob/main/conf/settings.go)

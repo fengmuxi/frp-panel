@@ -456,6 +456,10 @@ export interface UpdateProxyRulesRequest {
      * @generated from protobuf field: optional int64 quota_limit = 9;
      */
     quotaLimit?: bigint; // 限额字节数，0=未启用
+    /**
+     * @generated from protobuf field: optional string quota_direction = 10;
+     */
+    quotaDirection?: string; // 限额统计方向：both/inbound/outbound，空=双向
 }
 /**
  * @generated from protobuf message api_client.UpdateProxyRulesResponse
@@ -2526,7 +2530,8 @@ class UpdateProxyRulesRequest$Type extends MessageType<UpdateProxyRulesRequest> 
             { no: 6, name: "schedule_end", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 7, name: "schedule_days", kind: "scalar", repeat: 1 /*RepeatType.PACKED*/, T: 5 /*ScalarType.INT32*/ },
             { no: 8, name: "quota_type", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
-            { no: 9, name: "quota_limit", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
+            { no: 9, name: "quota_limit", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 10, name: "quota_direction", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<UpdateProxyRulesRequest>): UpdateProxyRulesRequest {
@@ -2572,6 +2577,9 @@ class UpdateProxyRulesRequest$Type extends MessageType<UpdateProxyRulesRequest> 
                 case /* optional int64 quota_limit */ 9:
                     message.quotaLimit = reader.int64().toBigInt();
                     break;
+                case /* optional string quota_direction */ 10:
+                    message.quotaDirection = reader.string();
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -2615,6 +2623,9 @@ class UpdateProxyRulesRequest$Type extends MessageType<UpdateProxyRulesRequest> 
         /* optional int64 quota_limit = 9; */
         if (message.quotaLimit !== undefined)
             writer.tag(9, WireType.Varint).int64(message.quotaLimit);
+        /* optional string quota_direction = 10; */
+        if (message.quotaDirection !== undefined)
+            writer.tag(10, WireType.LengthDelimited).string(message.quotaDirection);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

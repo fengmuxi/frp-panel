@@ -95,15 +95,18 @@ func newMasterCli(appInstance app.Application) pb.MasterClient {
 	return pb.NewMasterClient(conn)
 }
 
-func httpCli() *req.Client {
+// httpCli 构造节点→master 的 REST 客户端。
+// 安全审计 P1-10：此前无条件 InsecureSkipVerify=true —— CA 引导与节点初始化
+// 全部走可被 MITM 的通道；现遵循配置（默认 false，收紧为验证模式）。
+func httpCli(insecureSkipVerify bool) *req.Client {
 	c := req.C()
-	c.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	c.TLSClientConfig = &tls.Config{InsecureSkipVerify: insecureSkipVerify}
 	return c
 }
 
 func GetClientCert(appInstance app.Application, clientID, clientSecret string, clientType pb.ClientType) []byte {
 	apiEndpoint := conf.GetAPIURL(appInstance.GetConfig())
-	c := httpCli()
+	c := httpCli(appInstance.GetConfig().Client.TLSInsecureSkipVerify)
 
 	rawReq, err := proto.Marshal(&pb.GetClientCertRequest{
 		ClientId:     clientID,
@@ -130,7 +133,7 @@ func GetClientCert(appInstance app.Application, clientID, clientSecret string, c
 func InitClient(cfg conf.Config, clientID, joinToken string, ephemeral *bool) (*pb.InitClientResponse, error) {
 	apiEndpoint := conf.GetAPIURL(cfg)
 
-	c := httpCli()
+	c := httpCli(cfg.Client.TLSInsecureSkipVerify)
 
 	if ephemeral == nil {
 		ephemeral = lo.ToPtr(true) // default to ephemeral
@@ -161,7 +164,7 @@ func InitClient(cfg conf.Config, clientID, joinToken string, ephemeral *bool) (*
 
 func GetClient(cfg conf.Config, clientID, joinToken string) (*pb.GetClientResponse, error) {
 	apiEndpoint := conf.GetAPIURL(cfg)
-	c := httpCli()
+	c := httpCli(cfg.Client.TLSInsecureSkipVerify)
 
 	rawReq, err := proto.Marshal(&pb.GetClientRequest{
 		ClientId: &clientID,

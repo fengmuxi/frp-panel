@@ -52,5 +52,17 @@ EXPOSE 9000
 EXPOSE 9001
 
 ENV DB_DSN=/data/data.db?_pragma=journal_mode(WAL)
+
+# ---- 环境变量（镜像内不写死密钥，全部由 docker run -e / compose environment 注入）----
+# 必填：
+#   APP_GLOBAL_SECRET  >=16 位强随机串；为空或仍是默认值 frp-panel 时 master 拒绝启动。
+#                      生成：openssl rand -hex 32 。它派生 JWT 签名密钥与节点 secret，泄漏即失守，
+#                      库内已有密文后更换必须走 frpp migrate rekey，否则节点会掉线。
+# 可选（下方为默认值，按需 -e 覆盖）：
+#   APP_COOKIE_SECURE 纯 HTTP（无 TLS 反代）部署必须显式改为 false，否则登录态异常
+#   APP_ENABLE_REGISTER 首个管理员注册不受此开关限制，开放后续注册时才改为 true
+ENV APP_COOKIE_SECURE=true
+ENV APP_ENABLE_REGISTER=false
+
 ENTRYPOINT ["/app/frp-panel"]
 CMD ["master"]

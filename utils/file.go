@@ -17,13 +17,16 @@ const (
 )
 
 func WriteFile(path string, content string) error {
-	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
+	// 0700/0600（安全审计 P2-7）：写入的可能是 worker 代码、升级计划等敏感内容，
+	// 不能以默认 0666 落盘
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
-	f, err := os.Create(path)
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 	_, err = f.WriteString(content)
 	if err != nil {
 		return err

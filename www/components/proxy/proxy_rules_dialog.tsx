@@ -58,6 +58,7 @@ export function ProxyRulesDialog({ open, onOpenChange, proxy }: ProxyRulesDialog
       quotaType: proxy.quotaType && proxy.quotaType !== '' ? proxy.quotaType : '__none__',
       quotaValue: value === '' ? '' : String(Number(value.toFixed(2))),
       quotaUnit: unit,
+      quotaDirection: proxy.quotaDirection || 'both',
     }
   }, [proxy])
 
@@ -68,6 +69,7 @@ export function ProxyRulesDialog({ open, onOpenChange, proxy }: ProxyRulesDialog
   const [quotaType, setQuotaType] = useState(initial.quotaType)
   const [quotaValue, setQuotaValue] = useState(String(initial.quotaValue))
   const [quotaUnit, setQuotaUnit] = useState<QuotaUnit>(initial.quotaUnit)
+  const [quotaDirection, setQuotaDirection] = useState(initial.quotaDirection)
 
   useEffect(() => {
     if (open) {
@@ -78,6 +80,7 @@ export function ProxyRulesDialog({ open, onOpenChange, proxy }: ProxyRulesDialog
       setQuotaType(initial.quotaType)
       setQuotaValue(String(initial.quotaValue))
       setQuotaUnit(initial.quotaUnit)
+      setQuotaDirection(initial.quotaDirection)
     }
   }, [open, initial])
 
@@ -102,7 +105,8 @@ export function ProxyRulesDialog({ open, onOpenChange, proxy }: ProxyRulesDialog
     JSON.stringify([...scheduleDays].sort((a, b) => a - b)) === JSON.stringify(initial.scheduleDays) &&
     quotaType === initial.quotaType &&
     (!quotaActive || quotaValue === String(initial.quotaValue)) &&
-    (!quotaActive || quotaUnit === initial.quotaUnit)
+    (!quotaActive || quotaUnit === initial.quotaUnit) &&
+    (!quotaActive || quotaDirection === initial.quotaDirection)
 
   const toggleDay = (day: number) => {
     setScheduleDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort((a, b) => a - b)))
@@ -129,6 +133,7 @@ export function ProxyRulesDialog({ open, onOpenChange, proxy }: ProxyRulesDialog
         scheduleDays,
         quotaType: quotaActive ? quotaType : '',
         quotaLimit: BigInt(quotaActive ? quotaLimitBytes : 0),
+        quotaDirection: quotaActive ? quotaDirection : '',
       })
       if (resp.status?.code !== RespCode.SUCCESS) {
         throw new Error(resp.status?.message ?? 'unknown error')
@@ -264,6 +269,23 @@ export function ProxyRulesDialog({ open, onOpenChange, proxy }: ProxyRulesDialog
                 </Select>
               </div>
             </div>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="rules-quota-direction">{t('proxy.rules.quota_direction')}</Label>
+            <Select
+              value={quotaDirection}
+              onValueChange={setQuotaDirection}
+              disabled={!quotaActive}
+            >
+              <SelectTrigger id="rules-quota-direction">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="both">{t('proxy.rules.quota_dir_both')}</SelectItem>
+                <SelectItem value="inbound">{t('proxy.rules.quota_dir_in')}</SelectItem>
+                <SelectItem value="outbound">{t('proxy.rules.quota_dir_out')}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           {quotaInvalid && <p className="text-xs text-destructive">{t('proxy.rules.quota_invalid')}</p>}
         </div>

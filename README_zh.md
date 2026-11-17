@@ -79,6 +79,8 @@ frp-panel/
 - [快速开始](./docs/quick-start.md)
 - 部署指南：[Master](./docs/deploy-master.md) · [Server](./docs/deploy-server.md) · [Client](./docs/deploy-client.md)
 - [WireGuard 多跳智能组网](./docs/wireguard.md)
+- [函数功能（边缘 Worker）](./docs/worker.md)
+- [邮件通知](./docs/mail-notification.md)
 - [全部配置项说明](./docs/all-configs.md)
 - [CI/CD 与发布流程](./docs/ci-cd.md)
 - [贡献指南](./docs/contribute.md)
@@ -106,12 +108,18 @@ cp .env.sample .env
 本地常用配置示例：
 
 ```dotenv
-APP_GLOBAL_SECRET="change-me"   # 全局密钥，用于生成 token/凭证，务必妥善保管
+# 必填：>=16 位强随机串，生成 `openssl rand -hex 32`；为空或默认值 frp-panel 时 master 拒绝启动
+APP_GLOBAL_SECRET="dev-only-0123456789abcdef"
 MASTER_RPC_HOST=127.0.0.1       # Client/Server 连接 Master 的 RPC 地址
+# 本地纯 HTTP 调试必填（默认 true，浏览器不会回传 Cookie 导致登录态异常）；生产走 HTTPS 反代请省略
+APP_COOKIE_SECURE=false
 DB_TYPE=sqlite3                 # 默认 SQLite，无需独立数据库服务
 DB_DSN=./data.db?_pragma=journal_mode(WAL)   # 默认为 /data/data.db，请改成本地路径
 IS_DEBUG=true                   # 调试模式：trace 级日志 + pprof 性能分析（端口 6961）
 ```
+
+> 变量名前缀（`APP_` / `MASTER_` / `DB_` / `CLIENT_`）不能省略，程序按 `env-prefix` 拼接读取，漏写前缀会被静默忽略。
+> 完整的必填项与默认值见 [docs/deploy-master.md](./docs/deploy-master.md) 与 [docs/all-configs.md](./docs/all-configs.md)。
 
 ### 启动 Master（控制平面）
 

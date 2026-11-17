@@ -285,6 +285,10 @@ export interface ProxyConfig {
      * @generated from protobuf field: optional bool auto_stopped = 16;
      */
     autoStopped?: boolean; // 是否被自动规则（定时/限额）停用
+    /**
+     * @generated from protobuf field: optional string quota_direction = 17;
+     */
+    quotaDirection?: string; // 限额统计方向：both/inbound/outbound，空=双向
 }
 /**
  * @generated from protobuf message common.ProxyWorkingStatus
@@ -1016,7 +1020,8 @@ class ProxyConfig$Type extends MessageType<ProxyConfig> {
             { no: 13, name: "quota_type", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
             { no: 14, name: "quota_limit", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 15, name: "quota_used", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 16, name: "auto_stopped", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ }
+            { no: 16, name: "auto_stopped", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
+            { no: 17, name: "quota_direction", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<ProxyConfig>): ProxyConfig {
@@ -1083,6 +1088,9 @@ class ProxyConfig$Type extends MessageType<ProxyConfig> {
                 case /* optional bool auto_stopped */ 16:
                     message.autoStopped = reader.bool();
                     break;
+                case /* optional string quota_direction */ 17:
+                    message.quotaDirection = reader.string();
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -1147,6 +1155,9 @@ class ProxyConfig$Type extends MessageType<ProxyConfig> {
         /* optional bool auto_stopped = 16; */
         if (message.autoStopped !== undefined)
             writer.tag(16, WireType.Varint).bool(message.autoStopped);
+        /* optional string quota_direction = 17; */
+        if (message.quotaDirection !== undefined)
+            writer.tag(17, WireType.LengthDelimited).string(message.quotaDirection);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

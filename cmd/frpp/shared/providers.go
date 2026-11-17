@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sync"
@@ -19,7 +20,6 @@ import (
 	"github.com/VaalaCat/frp-panel/services/dao"
 	"github.com/VaalaCat/frp-panel/services/master"
 	"github.com/VaalaCat/frp-panel/services/mux"
-	"github.com/VaalaCat/frp-panel/services/rbac"
 	"github.com/VaalaCat/frp-panel/services/rpc"
 	"github.com/VaalaCat/frp-panel/services/watcher"
 	"github.com/VaalaCat/frp-panel/services/wg"
@@ -27,7 +27,6 @@ import (
 	"github.com/VaalaCat/frp-panel/utils"
 	"github.com/VaalaCat/frp-panel/utils/logger"
 	"github.com/VaalaCat/frp-panel/utils/wsgrpc"
-	"github.com/casbin/casbin/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"github.com/gorilla/websocket"
@@ -146,6 +145,9 @@ func NewDBManager(ctx *app.Context, appInstance app.Application) app.DBManager {
 	appInstance.GetDBManager().SetDB(defs.DBTypeSQLite3, defs.DBRoleRam, memoryDB)
 	logger.Logger(ctx).Infof("init memory database success")
 
+	// 敏感字段静态加密密钥（安全审计 P2 / 迁移 003）：必须在迁移之前注入
+	models.InitSecretEncryption(appInstance.GetConfig().App.GlobalSecret)
+
 	appInstance.GetDBManager().Init()
 	return mgr
 }
@@ -197,7 +199,18 @@ func NewWSGrpcHandler(ctx *app.Context, ws *wsgrpc.WSListener, upgrader *websock
 
 func NewWSUpgrader(ctx *app.Context, cfg conf.Config) *websocket.Upgrader {
 	return &websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool { return true },
+		// 安全审计 P2：CheckOrigin 恒 true 会放行任意网页发起的跨站 WebSocket（CSWSH）
+		CheckOrigin: func(r *http.Request) bool {
+			origin := r.Header.Get("Origin")
+			if origin == "" {
+				return true // 非浏览器客户端（节点/wsgrpc 拨号器）不带 Origin
+			}
+			u, err := url.Parse(origin)
+			if err != nil {
+				return false
+			}
+			return u.Host == r.Host
+		},
 	}
 }
 
@@ -277,7 +290,11 @@ func NewConfigPrinter(param struct {
 		ctx    = param.Ctx
 		config = param.Config
 	)
-	logger.Logger(ctx).Infof("%srunning config is: %s%s", splitter, config.PrintStr(), splitter)
+	// 安全审计 P2：完整配置含 Client.Secret 与 GlobalSecret，不能原样入日志
+	printCfg := config
+	printCfg.Client.Secret = "***"
+	printCfg.App.GlobalSecret = "***"
+	logger.Logger(ctx).Infof("%srunning config is: %s%s", splitter, printCfg.PrintStr(), splitter)
 	logger.Logger(ctx).Infof("%scurrent version: \n%s%s", splitter, conf.GetVersion().String(), splitter)
 }
 
@@ -319,7 +336,7 @@ func NewAutoJoin(param struct {
 	}
 
 	if autoJoin {
-		logger.Logger(ctx).Infof("start to try join master, clientID: [%s], clientSecret: [%s]", clientID, clientSecret)
+		logger.Logger(ctx).Infof("start to try join master, clientID: [%s]", clientID)
 		cli, err := JoinMaster(param.Cfg, param.CommonArgs)
 		if err != nil {
 			logger.Logger(ctx).Fatalf("join master failed: %s", err.Error())
@@ -333,31 +350,8 @@ func NewAutoJoin(param struct {
 	return appInstance.GetConfig()
 }
 
-func NewPermissionManager(param struct {
-	fx.In
-
-	Enforcer    *casbin.Enforcer
-	AppInstance app.Application
-}) app.PermissionManager {
-	permMgr := rbac.NewPermManager(param.Enforcer)
-	param.AppInstance.SetPermManager(permMgr)
-	return permMgr
-}
-
-func NewEnforcer(param struct {
-	fx.In
-
-	Ctx         *app.Context
-	DBmanager   app.DBManager
-	AppInstance app.Application
-}) *casbin.Enforcer {
-	e, err := rbac.InitializeCasbin(param.Ctx, param.DBmanager.GetDefaultDB())
-	if err != nil {
-		logger.Logger(param.Ctx).WithError(err).Fatal("initialize casbin failed")
-	}
-	param.AppInstance.SetEnforcer(e)
-	return e
-}
+// 安全审计 P2（决策点 E）：casbin/RBAC 为从未启用的死代码（中间件零 Enforce 调用），
+// 已整体移除；权限语义由资源归属断言（services/dao/ownership.go）与服务端角色推导承担。
 
 func NewWorkersManager(lx fx.Lifecycle, mgr app.WorkerExecManager, appInstance app.Application) app.WorkersManager {
 	if !appInstance.GetConfig().Client.Features.EnableFunctions {

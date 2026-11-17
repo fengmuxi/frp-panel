@@ -9,6 +9,7 @@ import (
 	"github.com/VaalaCat/frp-panel/common"
 	"github.com/VaalaCat/frp-panel/pb"
 	"github.com/VaalaCat/frp-panel/services/app"
+	"github.com/VaalaCat/frp-panel/services/dao"
 	"github.com/VaalaCat/frp-panel/services/rpc"
 	"github.com/VaalaCat/frp-panel/utils/logger"
 	"github.com/gin-gonic/gin"
@@ -29,6 +30,13 @@ func getLogHander(c *gin.Context, appInstance app.Application) {
 
 	if id == "" {
 		c.JSON(http.StatusBadRequest, common.Err("id is empty"))
+		return
+	}
+
+	// 归属校验（安全审计 P0-1）：日志流此前可被任意租户指向其他租户的节点
+	if err := dao.AssertClientOwnership(app.NewContext(c, appInstance), common.GetUserInfo(c), id); err != nil {
+		logger.Logger(c).Warnf("log stream ownership check failed, id: [%s], err: %v", id, err)
+		c.JSON(http.StatusForbidden, common.Err("permission denied"))
 		return
 	}
 
@@ -62,7 +70,8 @@ func getLogHander(c *gin.Context, appInstance app.Application) {
 	c.Writer.Header().Set("Content-Type", "text/event-stream")
 	c.Writer.Header().Set("Cache-Control", "no-cache")
 	c.Writer.Header().Set("Connection", "keep-alive")
-	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	// 不再设置 Access-Control-Allow-Origin: *（安全审计 P1-7：与 ?id= 无归属校验叠加
+	// 会把任意节点日志暴露给任意网页；同源面板不受影响）
 	c.Writer.Header().Set("Content-Encoding", "none")
 	c.Writer.Flush()
 

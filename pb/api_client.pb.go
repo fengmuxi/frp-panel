@@ -1603,6 +1603,7 @@ type UpdateProxyRulesRequest struct {
 	ScheduleDays    []int32                `protobuf:"varint,7,rep,packed,name=schedule_days,json=scheduleDays,proto3" json:"schedule_days,omitempty"`         // 生效周几，0=周日 ~ 6=周六，多选
 	QuotaType       *string                `protobuf:"bytes,8,opt,name=quota_type,json=quotaType,proto3,oneof" json:"quota_type,omitempty"`                    // day/week/month，空=未启用
 	QuotaLimit      *int64                 `protobuf:"varint,9,opt,name=quota_limit,json=quotaLimit,proto3,oneof" json:"quota_limit,omitempty"`                // 限额字节数，0=未启用
+	QuotaDirection  *string                `protobuf:"bytes,10,opt,name=quota_direction,json=quotaDirection,proto3,oneof" json:"quota_direction,omitempty"`    // 限额统计方向：both/inbound/outbound，空=双向
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1698,6 +1699,13 @@ func (x *UpdateProxyRulesRequest) GetQuotaLimit() int64 {
 		return *x.QuotaLimit
 	}
 	return 0
+}
+
+func (x *UpdateProxyRulesRequest) GetQuotaDirection() string {
+	if x != nil && x.QuotaDirection != nil {
+		return *x.QuotaDirection
+	}
+	return ""
 }
 
 type UpdateProxyRulesResponse struct {
@@ -3651,7 +3659,7 @@ const file_api_client_proto_rawDesc = "" +
 	"\a_config\"S\n" +
 	"\x19UpdateProxyConfigResponse\x12+\n" +
 	"\x06status\x18\x01 \x01(\v2\x0e.common.StatusH\x00R\x06status\x88\x01\x01B\t\n" +
-	"\a_status\"\xe6\x03\n" +
+	"\a_status\"\xa8\x04\n" +
 	"\x17UpdateProxyRulesRequest\x12 \n" +
 	"\tclient_id\x18\x01 \x01(\tH\x00R\bclientId\x88\x01\x01\x12 \n" +
 	"\tserver_id\x18\x02 \x01(\tH\x01R\bserverId\x88\x01\x01\x12\x17\n" +
@@ -3663,7 +3671,9 @@ const file_api_client_proto_rawDesc = "" +
 	"\n" +
 	"quota_type\x18\b \x01(\tH\x06R\tquotaType\x88\x01\x01\x12$\n" +
 	"\vquota_limit\x18\t \x01(\x03H\aR\n" +
-	"quotaLimit\x88\x01\x01B\f\n" +
+	"quotaLimit\x88\x01\x01\x12,\n" +
+	"\x0fquota_direction\x18\n" +
+	" \x01(\tH\bR\x0equotaDirection\x88\x01\x01B\f\n" +
 	"\n" +
 	"_client_idB\f\n" +
 	"\n" +
@@ -3673,7 +3683,8 @@ const file_api_client_proto_rawDesc = "" +
 	"\x0f_schedule_startB\x0f\n" +
 	"\r_schedule_endB\r\n" +
 	"\v_quota_typeB\x0e\n" +
-	"\f_quota_limit\"R\n" +
+	"\f_quota_limitB\x12\n" +
+	"\x10_quota_direction\"R\n" +
 	"\x18UpdateProxyRulesResponse\x12+\n" +
 	"\x06status\x18\x01 \x01(\v2\x0e.common.StatusH\x00R\x06status\x88\x01\x01B\t\n" +
 	"\a_status\"\x99\x01\n" +

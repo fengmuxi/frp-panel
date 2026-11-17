@@ -81,8 +81,9 @@ func RedeployWorker(ctx *app.Context, req *pb.RedeployWorkerRequest) (*pb.Redepl
 			}
 		}
 
-		logger.Logger(ctx).Infof("redeploy worker event send to client success, clients: [%s], worker name: [%s], remove old worker send to those clients: %s",
-			utils.MarshalForJson(clis), workerToUpdate.Name, utils.MarshalForJson(oldClientIds))
+		// 不序列化完整 client 行（含 ConnectSecret）入日志（安全审计 P2-6）
+		logger.Logger(ctx).Infof("redeploy worker event send to client success, clients count: %d, worker name: [%s], removed clients count: %d",
+			len(clis), workerToUpdate.Name, len(oldClientIds))
 	}()
 
 	logger.Logger(ctx).Infof("redeploy worker success, id: [%s], clients: %s", workerId, utils.MarshalForJson(clientIds))

@@ -19,7 +19,11 @@ func LoginHandler(ctx *app.Context, req *pb.LoginRequest) (*pb.LoginResponse, er
 	password := req.GetPassword()
 	ok, user, err := dao.NewQuery(ctx).CheckUserPassword(username, password)
 	if err != nil {
-		return nil, err
+		// 统一失败响应（安全审计 P3 反枚举）：不把内部错误原文泄露给客户端
+		logger.Logger(ctx).WithError(err).Warn("login failed, uniform response returned")
+		return &pb.LoginResponse{
+			Status: &pb.Status{Code: pb.RespCode_RESP_CODE_INVALID, Message: "invalid username or password"},
+		}, nil
 	}
 
 	if !ok {

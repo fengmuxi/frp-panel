@@ -1,0 +1,98 @@
+name: DB Migration Check
+
+# 数据库层自动化测试：
+#   - sqlite job：models/checker 全量单测（内存库，无外部依赖）
+#   - mysql / postgres jobs：迁移 runner 与版本表的真实方言回归
+#     （models/migrate_dialect_test.go，通过 TEST_*_DSN 注入 service 容器连接串；
+#      本地无该环境变量时自动 skip）
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "models/**"
+      - "internal/checker/**"
+      - "cmd/frpp/shared/migrate.go"
+      - ".github/workflows/db-migration-check.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "models/**"
+      - "internal/checker/**"
+      - "cmd/frpp/shared/migrate.go"
+      - ".github/workflows/db-migration-check.yml"
+  workflow_dispatch:
+
+jobs:
+  sqlite:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24.x'
+
+      - name: Run unit tests
+        run: |
+          go test ./models/ ./internal/checker/ -v -count=1
+
+  mysql:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: frp_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -proot"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24.x'
+
+      - name: Run migration dialect tests (MySQL)
+        run: go test ./models/ -run TestMigrateDialectMySQL -v -count=1
+        env:
+          TEST_MYSQL_DSN: "root:root@tcp(127.0.0.1:3306)/frp_test?parseTime=true&loc=Local"
+
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: frp_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24.x'
+
+      - name: Run migration dialect tests (PostgreSQL)
+        run: go test ./models/ -run TestMigrateDialectPostgres -v -count=1
+        env:
+          TEST_POSTGRES_DSN: "postgres://postgres:postgres@127.0.0.1:5432/frp_test?sslmode=disable"

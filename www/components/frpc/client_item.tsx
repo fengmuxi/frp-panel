@@ -33,6 +33,7 @@ import { Client, ClientType, RespCode } from '@/lib/pb/common'
 import { ClientStatus, ClientStatus_Status } from '@/lib/pb/api_master'
 import { startFrpc, stopFrpc } from '@/api/frp'
 import { Badge } from '../ui/badge'
+import { ResourceNotifyDialog } from '@/components/platform/resource_notify_dialog'
 import { ClientDetail } from '../base/client_detail'
 import { Input } from '../ui/input'
 import { useTranslation } from 'react-i18next'
@@ -441,6 +442,7 @@ export const ClientActions: React.FC<ClientItemProps> = ({ client, table, rowInd
   const platformInfo = useStore($platformInfo)
   const frontendPreference = useStore($frontendPreference)
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false)
+  const [notifyDialogOpen, setNotifyDialogOpen] = useState(false)
 
   const removeClient = useMutation({
     mutationFn: deleteClient,
@@ -538,6 +540,15 @@ export const ClientActions: React.FC<ClientItemProps> = ({ client, table, rowInd
         onDispatched={() => {
           $clientTableRefetchTrigger.set(Math.random())
         }}
+      />
+
+      {/* 通知提醒设置：三段式（不提醒/全局配置/独立配置） */}
+      <ResourceNotifyDialog
+        open={notifyDialogOpen}
+        onOpenChange={setNotifyDialogOpen}
+        resourceType="client"
+        resourceId={client.id}
+        resourceLabel={client.comment || client.id}
       />
 
       <div className="flex items-center justify-end gap-1">
@@ -655,6 +666,15 @@ export const ClientActions: React.FC<ClientItemProps> = ({ client, table, rowInd
             }}
           >
             {t('client.actions_menu.remote_terminal')}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setNotifyDialogOpen(true)
+            }}
+          >
+            {t('settings.notifyResource.menuTitle')}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem

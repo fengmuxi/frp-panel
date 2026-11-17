@@ -735,12 +735,13 @@ type ProxyConfig struct {
 	ScheduleEnd     *string `protobuf:"bytes,11,opt,name=schedule_end,json=scheduleEnd,proto3,oneof" json:"schedule_end,omitempty"`             // HH:MM 关闭时间，start > end 表示跨天（如 22:00-06:00）
 	ScheduleDays    []int32 `protobuf:"varint,12,rep,packed,name=schedule_days,json=scheduleDays,proto3" json:"schedule_days,omitempty"`        // 生效周几，0=周日 ~ 6=周六，多选
 	// 自动规则：流量限额
-	QuotaType     *string `protobuf:"bytes,13,opt,name=quota_type,json=quotaType,proto3,oneof" json:"quota_type,omitempty"`        // day/week/month，空=未启用
-	QuotaLimit    *int64  `protobuf:"varint,14,opt,name=quota_limit,json=quotaLimit,proto3,oneof" json:"quota_limit,omitempty"`    // 限额字节数
-	QuotaUsed     *int64  `protobuf:"varint,15,opt,name=quota_used,json=quotaUsed,proto3,oneof" json:"quota_used,omitempty"`       // 当前统计窗口已用字节数（仅返回，不可修改）
-	AutoStopped   *bool   `protobuf:"varint,16,opt,name=auto_stopped,json=autoStopped,proto3,oneof" json:"auto_stopped,omitempty"` // 是否被自动规则（定时/限额）停用
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	QuotaType      *string `protobuf:"bytes,13,opt,name=quota_type,json=quotaType,proto3,oneof" json:"quota_type,omitempty"`                // day/week/month，空=未启用
+	QuotaLimit     *int64  `protobuf:"varint,14,opt,name=quota_limit,json=quotaLimit,proto3,oneof" json:"quota_limit,omitempty"`            // 限额字节数
+	QuotaUsed      *int64  `protobuf:"varint,15,opt,name=quota_used,json=quotaUsed,proto3,oneof" json:"quota_used,omitempty"`               // 当前统计窗口已用字节数（仅返回，不可修改）
+	AutoStopped    *bool   `protobuf:"varint,16,opt,name=auto_stopped,json=autoStopped,proto3,oneof" json:"auto_stopped,omitempty"`         // 是否被自动规则（定时/限额）停用
+	QuotaDirection *string `protobuf:"bytes,17,opt,name=quota_direction,json=quotaDirection,proto3,oneof" json:"quota_direction,omitempty"` // 限额统计方向：both/inbound/outbound，空=双向
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *ProxyConfig) Reset() {
@@ -883,6 +884,13 @@ func (x *ProxyConfig) GetAutoStopped() bool {
 		return *x.AutoStopped
 	}
 	return false
+}
+
+func (x *ProxyConfig) GetQuotaDirection() string {
+	if x != nil && x.QuotaDirection != nil {
+		return *x.QuotaDirection
+	}
+	return ""
 }
 
 type ProxyWorkingStatus struct {
@@ -1273,7 +1281,7 @@ const file_common_proto_rawDesc = "" +
 	"\x13_history_traffic_inB\x16\n" +
 	"\x14_history_traffic_outB\r\n" +
 	"\v_first_syncB\r\n" +
-	"\v_stats_date\"\x9b\x06\n" +
+	"\v_stats_date\"\xdd\x06\n" +
 	"\vProxyConfig\x12\x13\n" +
 	"\x02id\x18\x01 \x01(\rH\x00R\x02id\x88\x01\x01\x12\x17\n" +
 	"\x04name\x18\x02 \x01(\tH\x01R\x04name\x88\x01\x01\x12\x17\n" +
@@ -1295,7 +1303,8 @@ const file_common_proto_rawDesc = "" +
 	"quotaLimit\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"quota_used\x18\x0f \x01(\x03H\rR\tquotaUsed\x88\x01\x01\x12&\n" +
-	"\fauto_stopped\x18\x10 \x01(\bH\x0eR\vautoStopped\x88\x01\x01B\x05\n" +
+	"\fauto_stopped\x18\x10 \x01(\bH\x0eR\vautoStopped\x88\x01\x01\x12,\n" +
+	"\x0fquota_direction\x18\x11 \x01(\tH\x0fR\x0equotaDirection\x88\x01\x01B\x05\n" +
 	"\x03_idB\a\n" +
 	"\x05_nameB\a\n" +
 	"\x05_typeB\f\n" +
@@ -1313,7 +1322,8 @@ const file_common_proto_rawDesc = "" +
 	"\v_quota_typeB\x0e\n" +
 	"\f_quota_limitB\r\n" +
 	"\v_quota_usedB\x0f\n" +
-	"\r_auto_stopped\"\xd5\x01\n" +
+	"\r_auto_stoppedB\x12\n" +
+	"\x10_quota_direction\"\xd5\x01\n" +
 	"\x12ProxyWorkingStatus\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tH\x00R\x04name\x88\x01\x01\x12\x17\n" +
 	"\x04type\x18\x02 \x01(\tH\x01R\x04type\x88\x01\x01\x12\x1b\n" +

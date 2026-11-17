@@ -13,6 +13,7 @@ import (
 	"github.com/VaalaCat/frp-panel/models"
 	"github.com/VaalaCat/frp-panel/pb"
 	"github.com/VaalaCat/frp-panel/utils"
+	"github.com/samber/lo"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -36,7 +37,82 @@ func buildAuthGroup(env *Env) ([]Checker, error) {
 			fixHint: "需要数据库可读；确认 users 表存在且用户 token 非空（user.token 用于 frps 认证）"}},
 		&authCertReject{baseChecker{name: "cert_reject", group: "auth", severity: LevelMajor,
 			fixHint: "/api/v1/auth/cert 用错误 secret 必须拒绝，否则任意节点可伪造证书接入 gRPC"}},
+		&authWSGRPCOrigin{baseChecker{name: "wsgrpc_auth", group: "auth", severity: LevelMajor,
+			fixHint: "/wsgrpc 是节点的 gRPC-over-WebSocket 通道；CheckOrigin 必须校验 Origin 与 Host 一致，否则任意网页可发起跨站 WS 连接探测节点（安全审计 P2-9）"}},
+		&authTokenInURL{baseChecker{name: "token_in_url", group: "auth", severity: LevelMinor,
+			fixHint: "?token= 查询参数会落入反代/Referer 日志；建议逐步迁移到 Header/Cookie 通道（ws-transport 节点当前仍依赖，保留观测）"}},
+		&authRateLimit{baseChecker{name: "rate_limit", group: "auth", severity: LevelMajor,
+			fixHint: "登录/注册/cert 插件路径必须挂限流中间件，否则可无限爆破口令与节点 secret（安全审计 P1-5）"}},
 	}, nil
+}
+
+// ---------------- auth/wsgrpc_auth（静态配置面检查：CheckOrigin 校验是否在位） ----------------
+
+type authWSGRPCOrigin struct{ baseChecker }
+
+func (c *authWSGRPCOrigin) Run(ctx context.Context, env *Env) Result {
+	refs := []string{"/wsgrpc", "cmd/frpp/shared/providers.go NewWSUpgrader", "biz/master/shell/handler.go getUpgrader"}
+	// 本项检查的是部署的二进制是否携带修复：间接以登录可用性为前提探测升级面。
+	// 匿名 POST /wsgrpc：修复后的实现要求 WebSocket 升级头 + Origin 校验，
+	// 普通 HTTP 请求返回 400/426/401 等即视为升级面有门禁；200 或 101 之外的静默 0 字节响应可疑。
+	code, _, _, err := env.PostProto(ctx, "/wsgrpc", &pb.LoginRequest{})
+	if err != nil {
+		// 网络层错误但端口可达（连接被升级逻辑中断等）视为有门禁
+		return Result{}.Pass("/wsgrpc 拒绝普通 HTTP 请求（升级面有门禁）").ConfigRefs(refs...)
+	}
+	switch code {
+	case http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden,
+		http.StatusMethodNotAllowed, http.StatusUpgradeRequired, http.StatusNotFound:
+		return Result{}.Pass(fmt.Sprintf("/wsgrpc 对非 WS 请求返回 %d，升级面有门禁", code)).ConfigRefs(refs...)
+	default:
+		return Result{}.Warn(fmt.Sprintf("/wsgrpc 对匿名 POST 返回 http=%d，请人工确认 CheckOrigin 与升级鉴权在位", code)).
+			ConfigRefs(refs...)
+	}
+}
+
+// ---------------- auth/token_in_url（配置观测项：?token= 通道是否启用） ----------------
+
+type authTokenInURL struct{ baseChecker }
+
+func (c *authTokenInURL) Run(ctx context.Context, env *Env) Result {
+	refs := []string{"middleware/jwt.go ?token= 查询参数通道", "defs.TokenKey"}
+	// 该通道当前被 ws-transport 节点与前端兼容依赖，无法直接从配置关闭；
+	// 观测项：提示其日志泄露面。用无效 token 探测仅验证中间件不崩。
+	probe := "/api/v1/user/info?token=invalid-probe-token"
+	code, _, _, err := env.Get(ctx, probe)
+	if err != nil {
+		return Result{}.Skip(fmt.Sprintf("master API 不可达: %v", err)).ConfigRefs(refs...)
+	}
+	if code == http.StatusUnauthorized {
+		return Result{}.Warn("?token= 查询参数认证通道处于启用状态（无效 token 已正确拒绝）").
+			WithDetails("URL 中的 token 会落入反代访问日志与 Referer 头；ws-transport 节点迁移到 Header/Cookie 后可移除该通道").ConfigRefs(refs...)
+	}
+	return Result{}.Warn(fmt.Sprintf("?token= 探测返回 http=%d（预期 401），请人工核对该通道行为", code)).ConfigRefs(refs...)
+}
+
+// ---------------- auth/rate_limit（部署面检查：登录爆破限流是否生效） ----------------
+
+type authRateLimit struct{ baseChecker }
+
+func (c *authRateLimit) Run(ctx context.Context, env *Env) Result {
+	refs := []string{"middleware/ratelimit.go", "/api/v1/auth/login"}
+	// 连发 N 次错误口令登录：挂了限流的部署在窗口内应出现 429。
+	const attempts = 8
+	var lastCode int
+	for i := 0; i < attempts; i++ {
+		code, _, _, err := env.PostProto(ctx, "/api/v1/auth/login", &pb.LoginRequest{
+			Username: lo.ToPtr("checker-rate-limit-probe"), Password: lo.ToPtr("wrong-password"),
+		})
+		if err != nil {
+			return Result{}.Skip(fmt.Sprintf("master API 不可达: %v", err)).ConfigRefs(refs...)
+		}
+		lastCode = code
+		if code == http.StatusTooManyRequests {
+			return Result{}.Pass(fmt.Sprintf("第 %d 次失败登录被 429 限流", i+1)).ConfigRefs(refs...)
+		}
+	}
+	return Result{}.Warn(fmt.Sprintf("连续 %d 次失败登录未被限流（最后 http=%d）：登录口令可被无限爆破", attempts, lastCode)).
+		ConfigRefs(refs...)
 }
 
 // ---------------- auth/register_gate ----------------
@@ -169,6 +245,14 @@ func checkCookieAttrs(setCookies []string, env *Env) []string {
 	if matched.maxAge > 0 && matched.maxAge != env.Cfg.App.CookieAge {
 		problems = append(problems, fmt.Sprintf("Max-Age=%d 期望 %d", matched.maxAge, env.Cfg.App.CookieAge))
 	}
+	// SameSite 为 CSRF 纵深防御属性（master 自 2026-11 起显式下发 SameSite=Lax）；
+	// 缺失时浏览器按各版本默认值兜底，跨站防线不保证，因此提示而非放行
+	if matched.sameSite == "" {
+		problems = append(problems, "缺少 SameSite 属性（建议后端 SetSameSite(http.SameSiteLaxMode) 显式下发）")
+	}
+	if strings.EqualFold(matched.sameSite, "none") && !matched.secure {
+		problems = append(problems, "SameSite=None 必须配合 Secure=true，否则现代浏览器将拒绝该 Cookie")
+	}
 	return problems
 }
 
@@ -179,6 +263,7 @@ type parsedCookie struct {
 	secure   bool
 	httpOnly bool
 	maxAge   int
+	sameSite string
 }
 
 // parseSetCookie 解析单条 Set-Cookie 头（足够覆盖本项目的属性集）。
@@ -206,6 +291,8 @@ func parseSetCookie(raw string) *parsedCookie {
 			pc.domain = strings.TrimPrefix(pc.domain, "domain=")
 		case strings.HasPrefix(lower, "max-age="):
 			fmt.Sscanf(lower, "max-age=%d", &pc.maxAge)
+		case strings.HasPrefix(lower, "samesite="):
+			pc.sameSite = strings.TrimPrefix(strings.TrimPrefix(attr, "SameSite="), "samesite=")
 		}
 	}
 	return pc

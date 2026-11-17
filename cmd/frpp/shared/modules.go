@@ -27,8 +27,6 @@ var (
 	))
 
 	masterMod = fx.Module("cmd.master", fx.Provide(
-		NewPermissionManager,
-		NewEnforcer,
 		conf.GetListener,
 		NewDBManager,
 		NewWSListener,
