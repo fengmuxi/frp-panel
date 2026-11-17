@@ -333,10 +333,18 @@ func encryptSecretsAtRest(db *gorm.DB) error {
 
 // dropLegacyEndpointIndex 清理 endpoints 表上被 idx_client_id_host_port_type 取代的旧唯一索引。
 // 旧索引按 (client_id, host, port) 唯一，与按 type 区分的多实例 endpoint 冲突，且
-// AutoMigrate 不会主动删除已存在的索引；索引不存在（新库/已清理）时 DropIndex 报错，
-// 视为已处理，与收编前 Init() 中每次启动无条件尝试删除的行为保持一致。
+// AutoMigrate 不会主动删除已存在的索引；索引不存在（新库/已清理）时直接跳过，
+// 与收编前 Init() 中每次启动尝试删除的行为保持一致。
 func dropLegacyEndpointIndex(db *gorm.DB) error {
 	const legacyIndexName = "idx_client_id_host_port"
+	// 必须先用 Migrator 判断索引是否存在，再执行删除：
+	// PostgreSQL 中任何报错语句都会中止所在事务（后续版本表写入将报 25P02
+	// "current transaction is aborted"），不能依赖"执行失败再吞错"的写法；
+	// HasIndex 走系统目录查询，索引/表不存在时只是返回 false，不会污染事务。
+	if !db.Migrator().HasIndex(&Endpoint{}, legacyIndexName) {
+		logger.Logger(context.Background()).Infof("drop legacy index [%s] skipped, index not found", legacyIndexName)
+		return nil
+	}
 	if err := db.Migrator().DropIndex(&Endpoint{}, legacyIndexName); err != nil {
 		logger.Logger(context.Background()).Infof("drop legacy index [%s] skipped, maybe already dropped: %v",
 			legacyIndexName, err)

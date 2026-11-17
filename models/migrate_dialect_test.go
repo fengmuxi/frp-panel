@@ -16,6 +16,10 @@ import (
 // CI 通过 .github/workflows/db-migration-check.yml 注入 TEST_MYSQL_DSN / TEST_POSTGRES_DSN。
 
 func runDialectMigrateTest(t *testing.T, db *gorm.DB) {
+	// 迁移 003（敏感字段加密）依赖加密密钥；本测试在 CI 中以 -run 单独执行，
+	// 不会经过 sqlite 测试里的初始化，先注入与 sqlite 测试一致的固定值
+	models.InitSecretEncryption("test-global-secret")
+
 	// 幂等：清理上一次 CI 运行遗留的版本表
 	assert.NoError(t, db.Exec("DROP TABLE IF EXISTS schema_migrations").Error)
 
