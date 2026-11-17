@@ -31,7 +31,7 @@ jobs:
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Compile server
         run: bash ./build.sh
       # 为每个发布产物生成 SHA-256 清单（升级链路的完整性校验依赖此文件，
