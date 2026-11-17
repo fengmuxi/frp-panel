@@ -1,6 +1,6 @@
 import React from 'react'
 import { Control } from 'react-hook-form'
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { useTranslation } from 'react-i18next'
 import StringListInput from './list-input'
@@ -9,12 +9,14 @@ export const HostField = ({
   control,
   name,
   label,
+  hint,
   placeholder,
   defaultValue,
 }: {
   control: Control<any>
   name: string
   label: string
+  hint?: string
   placeholder?: string
   defaultValue?: string
 }) => {
@@ -29,6 +31,7 @@ export const HostField = ({
           <FormControl>
             <Input className='text-sm' placeholder={placeholder || '127.0.0.1'} {...field} />
           </FormControl>
+          {hint && <FormDescription>{t(hint)}</FormDescription>}
           <FormMessage />
         </FormItem>
       )}
@@ -40,12 +43,14 @@ export const PortField = ({
   control,
   name,
   label,
+  hint,
   placeholder,
   defaultValue,
 }: {
   control: Control<any>
   name: string
   label: string
+  hint?: string
   placeholder?: string
   defaultValue?: number
 }) => {
@@ -60,6 +65,7 @@ export const PortField = ({
           <FormControl>
             <Input className='text-sm' placeholder={placeholder || '1234'} {...field} />
           </FormControl>
+          {hint && <FormDescription>{t(hint)}</FormDescription>}
           <FormMessage />
         </FormItem>
       )}

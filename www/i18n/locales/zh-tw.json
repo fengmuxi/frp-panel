@@ -797,7 +797,17 @@
       "vhost_http_port": "HTTP 監聽端口",
       "subdomain_host": "域名後綴",
       "quic_bind_port": "Quic 監聽端口",
-      "kcp_bind_port": "KCP 監聽端口"
+      "kcp_bind_port": "KCP 監聽端口",
+      "public_host_hint": "用戶端連接服務端時使用的公網 IP 或域名（不是監聽地址），必須是用戶端真實可達的地址",
+      "bind_port_hint": "frps 的 TCP 接入端口：用戶端接入與各隧道數據經此與 frpc 互通，需在防火牆放行 TCP（預設 7000）",
+      "bind_addr_hint": "frpc 控制連接的監聽 IP（不是隧道端口的監聽），預設 0.0.0.0 監聽所有網卡；多網卡機器可改為指定內網 IP",
+      "proxy_bind_addr_hint": "隧道端口（remotePort）在服務端的監聽 IP。留空 = 跟隨上方主監聽地址（主監聽為公網 IP 時本機 127.0.0.1 反代將不可用）；0.0.0.0 = 監聽所有網卡（公網與 127.0.0.1 反代均可用）；指定 IP = 僅監聽該地址",
+      "vhost_http_port_hint": "http 類型隧道按域名訪問時的入口端口，使用 http 隧道需放行 TCP，不用可留空",
+      "subdomain_host_hint": "http 隧道子域名的根域名，如 example.com；填寫後隧道 subdomain 為 abc 即對應 abc.example.com，留空則隧道中需填寫完整域名",
+      "quic_bind_port_hint": "frps 的 QUIC 監聽端口（UDP），用戶端協議選 quic 時連接此端口，需放行 UDP，留空則不啟用",
+      "kcp_bind_port_hint": "frps 的 KCP 監聽端口（UDP），用戶端協議選 kcp 時連接此端口，需放行 UDP，留空則不啟用",
+      "sync_clients": "自動同步下游隧道連接配置",
+      "sync_clients_hint": "服務端 IP/端口變化時，自動重建該服務端下所有隧道的連接配置並熱更新（跳過已配置 frps_url 的用戶端）；關閉則需逐個重新保存隧道"
     },
     "create": {
       "submitting": "正在創建服務端...",

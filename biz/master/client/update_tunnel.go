@@ -138,7 +138,12 @@ func UpdateFrpcHander(c *app.Context, req *pb.UpdateFRPCRequest) (*pb.UpdateFRPC
 
 		cliCfg.ServerAddr = parsedFrpsUrl.Hostname()
 		cliCfg.ServerPort = cast.ToInt(parsedFrpsUrl.Port())
-		cliCfg.Transport.Protocol = parsedFrpsUrl.Scheme
+		// 协议以配置（界面协议选择器）优先：只有配置为默认 tcp、
+		// 而 URL 显式指定了其他协议时才用 scheme 覆盖，
+		// 否则填了 tcp:// 覆盖地址后，界面选 quic/kcp 保存会被静默改回 tcp
+		if cliCfg.Transport.Protocol == "tcp" && parsedFrpsUrl.Scheme != "tcp" {
+			cliCfg.Transport.Protocol = parsedFrpsUrl.Scheme
+		}
 		cli.FrpsUrl = urlToParse
 	}
 
@@ -188,8 +193,11 @@ func UpdateFrpcHander(c *app.Context, req *pb.UpdateFRPCRequest) (*pb.UpdateFRPC
 	cli.ServerID = serverID
 	if req.Comment != nil {
 		newComment := strings.TrimSpace(req.GetComment())
-		// 名称不允许重复（排除自身）
-		dupCount, dupErr := q.CountClientsByComment(userInfo, newComment, cli.ClientID)
+		// 名称不允许重复（排除自身）。此处 cli 可能是影子子副本，
+		// 而影子本体与其 comment 相同且在查重过滤器内，必须一并排除，
+		// 否则影子客户端在高级模式下保存会误报 "client name already exists"
+		excludeIDs := []string{cli.ClientID, cli.OriginClientID}
+		dupCount, dupErr := q.CountClientsByComment(userInfo, newComment, excludeIDs...)
 		if dupErr != nil {
 			logger.Logger(c).WithError(dupErr).Errorf("count clients by comment failed, comment: [%s]", newComment)
 			return nil, dupErr

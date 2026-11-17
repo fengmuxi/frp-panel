@@ -24,7 +24,7 @@ type ClientQuery interface {
 	GetAllClients(userInfo models.UserInfo) ([]*models.ClientEntity, error)
 	CountClients(userInfo models.UserInfo) (int64, error)
 	CountClientsWithKeyword(userInfo models.UserInfo, keyword string) (int64, error)
-	CountClientsByComment(userInfo models.UserInfo, comment string, excludeClientID string) (int64, error)
+	CountClientsByComment(userInfo models.UserInfo, comment string, excludeClientIDs ...string) (int64, error)
 	CountConfiguredClients(userInfo models.UserInfo) (int64, error)
 	CountClientsInShadow(userInfo models.UserInfo, clientID string) (int64, error)
 	GetClientIDsInShadowByClientID(userInfo models.UserInfo, clientID string) ([]string, error)
@@ -378,23 +378,26 @@ func (q *clientQuery) CountClients(userInfo models.UserInfo) (int64, error) {
 }
 
 // CountClientsByComment 统计同一用户可见范围内名称（comment）相同的客户端数量，
-// 用于名称唯一性校验；excludeClientID 用于改名时排除自身，空名称不参与查重。
-func (q *clientQuery) CountClientsByComment(userInfo models.UserInfo, comment string, excludeClientID string) (int64, error) {
+// 用于名称唯一性校验；excludeClientIDs 用于改名时排除自身（可同时排除影子本体与
+// 其子副本，二者 comment 相同），空名称不参与查重。
+func (q *clientQuery) CountClientsByComment(userInfo models.UserInfo, comment string, excludeClientIDs ...string) (int64, error) {
 	if len(comment) == 0 {
 		return 0, nil
 	}
 	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
-	var count int64
-	err := db.Model(&models.Client{}).
+	query := db.Model(&models.Client{}).
 		Where(&models.Client{ClientEntity: &models.ClientEntity{
 			UserID:   userInfo.GetUserID(),
 			TenantID: userInfo.GetTenantID(),
 		}}).
 		Where("comment = ?", comment).
-		Where("client_id != ?", excludeClientID).
-		Where(normalClientFilter(db)).
-		Count(&count).Error
-	if err != nil {
+		Where(normalClientFilter(db))
+	exclude := lo.Filter(excludeClientIDs, func(id string, _ int) bool { return len(id) > 0 })
+	if len(exclude) > 0 {
+		query = query.Where("client_id NOT IN ?", exclude)
+	}
+	var count int64
+	if err := query.Count(&count).Error; err != nil {
 		return 0, err
 	}
 	return count, nil

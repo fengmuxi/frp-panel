@@ -38,6 +38,10 @@ func UpdateFrpsHander(c *app.Context, req *pb.UpdateFRPSRequest) (*pb.UpdateFRPS
 		return nil, err
 	}
 
+	// 记录连接相关字段的旧值（变更门控：无变化则不做下游同步）
+	oldServerIP := srv.ServerIP
+	oldCfg, _ := srv.GetConfigContent()
+
 	srvCfg, err := utils.LoadServerConfig(configStr, true)
 	if srvCfg == nil || err != nil {
 		logger.Logger(context.Background()).WithError(err).Errorf("cannot load server config")
@@ -91,14 +95,48 @@ func UpdateFrpsHander(c *app.Context, req *pb.UpdateFRPSRequest) (*pb.UpdateFRPS
 		return nil, err
 	}
 
+	// 后台串行执行三步，任一步失败即中止下游同步（配置已保存，可重新保存触发）：
+	//  1. 等待 frps 节点确认应用新配置（顺序保证：下游先等 frps 生效再切地址）
+	//  2. 预检新控制地址可达（防火墙/DNS 未就绪时中止，避免下游连向死地址）
+	//  3. 按需重建并热更新下游客户端连接配置（变更门控 + 逐客户端 diff + 限流）
 	go func() {
-		resp, err := rpc.CallClient(app.NewContext(context.Background(), c.GetApp()), req.GetServerId(), pb.Event_EVENT_UPDATE_FRPS, req)
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Logger(context.Background()).Errorf("server update downstream sync panic: %v", r)
+			}
+		}()
+
+		ctx := app.NewContext(context.Background(), c.GetApp())
+
+		resp, err := rpc.CallClient(ctx, req.GetServerId(), pb.Event_EVENT_UPDATE_FRPS, req)
 		if err != nil {
-			logger.Logger(context.Background()).WithError(err).Errorf("update event send to server error, server id: [%s]", req.GetServerId())
+			logger.Logger(ctx).WithError(err).Errorf("update event send to server error, server id: [%s]", req.GetServerId())
 		}
 		if resp == nil {
-			logger.Logger(c).Errorf("cannot get response, server id: [%s]", req.GetServerId())
+			logger.Logger(ctx).Errorf("cannot get response, server id: [%s], skip downstream client sync", req.GetServerId())
+			return
 		}
+		if !req.GetSyncClients() {
+			logger.Logger(ctx).Infof("sync_clients disabled, skip downstream client sync, server id: [%s]", req.GetServerId())
+			return
+		}
+		if !connFieldsChanged(oldServerIP, oldCfg, srv.ServerIP, srvCfg) {
+			logger.Logger(ctx).Infof("server connection fields unchanged, skip downstream client sync, server id: [%s]", req.GetServerId())
+			return
+		}
+		if srv.ServerIP == "" {
+			logger.Logger(ctx).Warnf("server ip is empty, skip downstream client sync, server id: [%s]", req.GetServerId())
+			return
+		}
+		if err := checkTCPReachable(srv.ServerIP, srvCfg.BindPort); err != nil {
+			logger.Logger(ctx).WithError(err).Errorf("new frps control address %s:%d unreachable, skip downstream client sync, server id: [%s] (fix network/firewall then re-save server config)",
+				srv.ServerIP, srvCfg.BindPort, req.GetServerId())
+			return
+		}
+
+		res := SyncDownstreamClientConfigs(ctx, srv, srvCfg)
+		logger.Logger(ctx).Infof("downstream client sync done, server id: [%s], total: %d, updated: %d, pushed: %d, push_failed: %d, skipped(frps_url): %d, skipped(same): %d, skipped(invalid): %d",
+			req.GetServerId(), res.Total, res.Updated, res.Pushed, res.PushFailed, res.SkippedFrpsURL, res.SkippedSame, res.SkippedInvalid)
 	}()
 
 	logger.Logger(c).Infof("update frps success, id: [%s]", serverID)

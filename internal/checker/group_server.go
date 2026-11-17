@@ -22,6 +22,8 @@ func buildServerGroup(env *Env) ([]Checker, error) {
 			fixHint: "修正冲突的 bindPort/vhost 端口；多 frps 假设部署在不同主机，同机部署请保证端口互斥"}},
 		&serverAuthPlugin{baseChecker{name: "auth_plugin", group: "server", severity: LevelMajor,
 			fixHint: "SERVER_API_PORT 上的 /auth 是 frps multiuser 认证插件宿主，必须可达且拒绝空请求"}},
+		&serverProxyBindAddr{baseChecker{name: "proxy_bind_addr", group: "server", severity: LevelMinor,
+			fixHint: "proxyBindAddr 留空会继承 bindAddr（主监听为公网/指定 IP 时隧道端口无法被本机 127.0.0.1 反代访问）；在服务端编辑页把「代理监听地址」设为 0.0.0.0"}},
 		&serverStatsFresh{baseChecker{name: "stats_fresh", group: "server", severity: LevelMinor,
 			fixHint: "PushProxyInfo 周期为 30s（defs.PushProxyInfoDuration）；长时间未更新说明 server 侧上报中断"}},
 		&serverStatsMonotonic{baseChecker{name: "stats_monotonic", group: "server", severity: LevelMajor,
@@ -130,6 +132,48 @@ func maskSecret(s string) string {
 		return "<空>"
 	}
 	return "<len=" + strconv.Itoa(len(s)) + ">"
+}
+
+// ---------------- server/proxy_bind_addr ----------------
+
+type serverProxyBindAddr struct{ baseChecker }
+
+// Run 检查各服务端的代理监听地址（隧道 remotePort 端口的绑定地址）。
+// frp 在 proxyBindAddr 为空时会继承 bindAddr——若主监听是公网/指定 IP 且未显式
+// 设置代理监听地址，隧道端口将只监听该地址，本机 127.0.0.1 反代无法连通。
+func (c *serverProxyBindAddr) Run(ctx context.Context, env *Env) Result {
+	refs := []string{"servers.config_content(proxyBindAddr)", "服务端编辑页「代理监听地址」"}
+	parsed, _, err := loadServers(ctx, env)
+	if err != nil {
+		return Result{}.Skip(fmt.Sprintf("数据库不可用: %v", err))
+	}
+	if len(parsed) == 0 {
+		return Result{}.Skip("servers 表为空")
+	}
+
+	isWildcard := func(ip string) bool { return ip == "" || ip == "0.0.0.0" || ip == "::" }
+
+	var hits []string
+	for _, s := range parsed {
+		// 与 frp ServerConfig.Complete 的继承语义一致：proxyBindAddr 空时取 bindAddr，
+		// 两者都空时 frp 默认 0.0.0.0
+		effective := s.Cfg.ProxyBindAddr
+		if effective == "" {
+			effective = s.Cfg.BindAddr
+		}
+		if effective == "" {
+			effective = "0.0.0.0"
+		}
+		if isWildcard(effective) {
+			continue
+		}
+		hits = append(hits, fmt.Sprintf("%s: 隧道端口将只监听 %s，本机 127.0.0.1 反代不可用；建议把「代理监听地址」设为 0.0.0.0", s.ID, effective))
+	}
+	if len(hits) == 0 {
+		return Result{}.Pass("所有服务端的代理监听地址均可被本机反代访问").ConfigRefs(refs...)
+	}
+	return Result{}.Warn(fmt.Sprintf("%d 个服务端的隧道端口未监听通配地址", len(hits))).
+		WithDetails(hits...).ConfigRefs(refs...)
 }
 
 // ---------------- server/bindport_conflict ----------------

@@ -71,6 +71,7 @@ message UpdateFRPSRequest {
   optional string comment = 3;
   optional string server_ip = 4;
   repeated string frps_urls = 5;
+  optional bool sync_clients = 6; // 保存后自动重建并热更新下游客户端连接配置（ServerAddr/ServerPort），缺省=不同步
 }
 
 message UpdateFRPSResponse {

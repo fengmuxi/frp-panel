@@ -811,7 +811,17 @@
       "vhost_http_port": "HTTP Listen Port",
       "subdomain_host": "Subdomain Host",
       "quic_bind_port": "Quic Bind Port",
-      "kcp_bind_port": "KCP Bind Port"
+      "kcp_bind_port": "KCP Bind Port",
+      "public_host_hint": "Public IP or domain that clients use to connect to this server (not a listen address). Must be reachable from clients.",
+      "bind_port_hint": "TCP access port of frps: client connections and tunnel traffic flow through it. Open TCP in your firewall (default 7000).",
+      "bind_addr_hint": "IP frps binds for the frpc control connection (not the tunnel ports). 0.0.0.0 listens on all interfaces; set a specific IP on multi-NIC hosts.",
+      "proxy_bind_addr_hint": "IP where tunnel ports (remotePort) listen on the server. Empty = follow the main listen address above (if it is a public IP, 127.0.0.1 reverse proxy from localhost will NOT work); 0.0.0.0 = all interfaces (both public and 127.0.0.1 work); a specific IP = that address only.",
+      "vhost_http_port_hint": "Entry port for HTTP tunnels accessed by domain. Open TCP when using http tunnels; leave empty to disable.",
+      "subdomain_host_hint": "Root domain for HTTP tunnel subdomains, e.g. example.com; subdomain 'abc' then resolves to abc.example.com. Leave empty to use full domains in tunnels.",
+      "quic_bind_port_hint": "UDP port frps listens on for QUIC. Used when client protocol is quic; open UDP. Leave empty to disable.",
+      "kcp_bind_port_hint": "UDP port frps listens on for KCP. Used when client protocol is kcp; open UDP. Leave empty to disable.",
+      "sync_clients": "Auto-sync downstream tunnel configs",
+      "sync_clients_hint": "When the server IP/port changes, rebuild and hot-update connection settings of all tunnels on this server (clients with an frps_url are skipped); when off, re-save each tunnel manually"
     },
     "create": {
       "submitting": "Creating server...",

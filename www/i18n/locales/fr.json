@@ -807,7 +807,17 @@
       "vhost_http_port": "Port d'Écoute HTTP",
       "subdomain_host": "Hôte de Sous-domaine",
       "quic_bind_port": "Port de Liaison Quic",
-      "kcp_bind_port": "Port de Liaison KCP"
+      "kcp_bind_port": "Port de Liaison KCP",
+      "public_host_hint": "IP publique ou domaine utilisé par les clients pour se connecter au serveur (pas une adresse d'écoute). Doit être accessible depuis les clients.",
+      "bind_port_hint": "Port d'accès TCP de frps : connexions client et trafic des tunnels y transitent. Ouvrez le TCP (défaut 7000).",
+      "bind_addr_hint": "IP liée par frps pour la connexion de contrôle frpc (pas les ports de tunnels). 0.0.0.0 écoute sur toutes les interfaces ; précisez une IP sur une machine multi-NIC.",
+      "proxy_bind_addr_hint": "IP d'écoute des ports de tunnels (remotePort) côté serveur. Vide = suit l'adresse d'écoute principale ci-dessus (si c'est une IP publique, le reverse proxy local 127.0.0.1 ne fonctionnera pas) ; 0.0.0.0 = toutes les interfaces (public et 127.0.0.1 utilisables) ; une IP précise = cette adresse uniquement.",
+      "vhost_http_port_hint": "Port d'entrée des tunnels HTTP accessibles par domaine. Ouvrez le TCP si vous utilisez des tunnels http ; laissez vide pour désactiver.",
+      "subdomain_host_hint": "Domaine racine des sous-domaines HTTP, ex. example.com ; le subdomain 'abc' devient abc.example.com. Laissez vide pour utiliser des domaines complets.",
+      "quic_bind_port_hint": "Port UDP sur lequel frps écoute en QUIC. Utilisé quand le protocole client est quic ; ouvrez le UDP. Laissez vide pour désactiver.",
+      "kcp_bind_port_hint": "Port UDP sur lequel frps écoute en KCP. Utilisé quand le protocole client est kcp ; ouvrez le UDP. Laissez vide pour désactiver.",
+      "sync_clients": "Synchronisation automatique des tunnels en aval",
+      "sync_clients_hint": "Lorsque l'IP/le port du serveur change, reconstruit et met à jour à chaud la connexion de tous les tunnels de ce serveur (les clients avec frps_url sont ignorés) ; sinon, réenregistrez chaque tunnel manuellement"
     },
     "create": {
       "submitting": "Création du serveur en cours...",
