@@ -37,6 +37,29 @@ func rpcCallAddr(cfg Config) string {
 	return fmt.Sprintf("%s:%d", cfg.Master.RPCHost, cfg.Master.RPCPort)
 }
 
+// localDialHost 进程内回环拨号主机：监听 0.0.0.0/空 → 127.0.0.1（包不出网卡，
+// 不经过云 NAT/防火墙，规避自拨公网地址 hairpin 不通导致的超时）；
+// 配置了具体监听 IP 则直接使用它（该地址必然本机可达）
+func localDialHost(cfgIP string) string {
+	host := listenIP(cfgIP)
+	if host == "0.0.0.0" || host == "::" {
+		return "127.0.0.1"
+	}
+	return host
+}
+
+// LocalRPCDialURL 内置默认服务端（与 master 同进程）拨号用的回环地址。
+// CLIENT_RPC_URL 的语义是「外部节点视角访问 master 的地址」（CDN/反代域名或公网 IP），
+// 用作进程内拨号会因云 NAT 不支持 hairpin / CDN 未放行 9001 而超时，故强制回环。
+func LocalRPCDialURL(cfg Config) string {
+	return fmt.Sprintf("grpc://%s:%d", localDialHost(cfg.Master.RPCListenIP), cfg.Master.RPCPort)
+}
+
+// LocalAPIDialURL 内置服务端进程内调 master REST API 用的回环地址，理由同上
+func LocalAPIDialURL(cfg Config) string {
+	return fmt.Sprintf("http://%s:%d", localDialHost(cfg.Master.APIListenIP), cfg.Master.APIPort)
+}
+
 func JWTSecret(cfg Config) string {
 	return utils.SHA1(fmt.Sprintf("%s:%d:%s", cfg.Master.APIHost, cfg.Master.APIPort, cfg.App.GlobalSecret))
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/VaalaCat/frp-panel/biz/master/streamlog"
 	"github.com/VaalaCat/frp-panel/biz/master/user"
 	"github.com/VaalaCat/frp-panel/biz/master/worker"
+	"github.com/VaalaCat/frp-panel/conf"
 	"github.com/VaalaCat/frp-panel/middleware"
 	"github.com/VaalaCat/frp-panel/services/app"
 	"github.com/gin-gonic/gin"
@@ -20,14 +21,14 @@ import (
 	wgHandler "github.com/VaalaCat/frp-panel/biz/master/wg"
 )
 
-func NewRouter(fs embed.FS, appInstance app.Application) *gin.Engine {
+func NewRouter(fs embed.FS, appInstance app.Application, originCfg conf.Config) *gin.Engine {
 	router := gin.Default()
 	HandleStaticFile(fs, router)
-	ConfigureRouter(appInstance, router)
+	ConfigureRouter(appInstance, originCfg, router)
 	return router
 }
 
-func ConfigureRouter(appInstance app.Application, router *gin.Engine) {
+func ConfigureRouter(appInstance app.Application, originCfg conf.Config, router *gin.Engine) {
 	// 限流（安全审计 P1-5）：登录/注册/证书/认证插件端点此前零限流，可无限爆破
 	authLimiter := middleware.NewRateLimiter(15*time.Minute, 20, 15*time.Minute)
 
@@ -49,7 +50,7 @@ func ConfigureRouter(appInstance app.Application, router *gin.Engine) {
 		}
 		platformRouter := v1.Group("/platform")
 		{
-			platformRouter.GET("/baseinfo", platform.GetPlatformInfo(appInstance))
+			platformRouter.GET("/baseinfo", platform.GetPlatformInfo(appInstance, originCfg))
 			platformRouter.POST("/clientsstatus", app.Wrapper(appInstance, platform.GetClientsStatus))
 			platformRouter.POST("/smtp/get", platform.GetSMTPSettings(appInstance))
 			platformRouter.POST("/smtp/update", platform.UpdateSMTPSettings(appInstance))

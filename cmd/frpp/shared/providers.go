@@ -273,6 +273,12 @@ func NewDefaultServerConfig(ctx *app.Context) conf.Config {
 	tmpCfg := appInstance.GetConfig()
 	tmpCfg.Client.ID = defaultServer.ServerID
 	tmpCfg.Client.Secret = defaultServer.ConnectSecret
+	// 内置默认服务端与 master 同进程同容器，拨号强制走本机回环：
+	// CLIENT_* 的语义是「外部节点视角访问 master 的地址」（域名/公网 IP），用作进程内
+	// 拨号会因云 NAT 不支持 hairpin（自拨自超时）或 CDN 未放行对应端口而断链。
+	// 对外宣告不受影响：GetPlatformInfo 读取 originConfig（env 原值），见 platform 包。
+	tmpCfg.Client.RPCUrl = conf.LocalRPCDialURL(tmpCfg)
+	tmpCfg.Client.APIUrl = conf.LocalAPIDialURL(tmpCfg)
 	appInstance.SetConfig(tmpCfg)
 
 	return tmpCfg
