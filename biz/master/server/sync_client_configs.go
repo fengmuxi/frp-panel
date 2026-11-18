@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"strconv"
 	"sync"
 	"time"
 
@@ -53,7 +54,8 @@ func connFieldsChanged(oldServerIP string, oldCfg *v1.ServerConfig, newServerIP 
 // checkTCPReachable 预检新控制地址的 TCP 可达性（frpc 控制连接的入口）。
 // 防火墙/安全组未放行或 DNS 未生效时提前中止下发，避免下游批量连向死地址。
 func checkTCPReachable(ip string, port int) error {
-	addr := fmt.Sprintf("%s:%d", ip, port)
+	// JoinHostPort 保证 IPv6 地址带方括号（[::1]:7000），"%s:%d" 拼法对 IPv6 无效
+	addr := net.JoinHostPort(ip, strconv.Itoa(port))
 	conn, err := net.DialTimeout("tcp", addr, 5*time.Second)
 	if err != nil {
 		return err
