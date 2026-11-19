@@ -76,7 +76,10 @@ func GetProxyTrafficStats(c *app.Context, req *pb.GetProxyTrafficStatsRequest) (
 	todayDay := startOfDayUnix(now.Unix(), loc)
 	startDay := startOfDayUnix(start, loc)
 	endDay := startOfDayUnix(end, loc)
-	isHourRange := endDay == todayDay && (startDay == todayDay || startDay == todayDay-daySeconds)
+	// 分钟粒度时段（今日/昨日）：start、end 的切日都必须落在 {今天, 昨天} 内。
+	// 不能要求 endDay == todayDay —— 纯昨日区间 endDay 是昨天，会被误排除，
+	// 导致昨日永远回退为日粒度单点（下方 endDay != todayDay 的 tickTo 截断即为昨日准备）
+	isHourRange := startDay <= endDay && endDay <= todayDay && startDay >= todayDay-daySeconds
 	if req.GetWithSeries() && isHourRange {
 		tickTo := now.Unix()
 		if endDay != todayDay {
