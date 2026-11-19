@@ -3,7 +3,6 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/VaalaCat/frp-panel/common"
@@ -107,44 +106,42 @@ func UpdateFrpcHander(c *app.Context, req *pb.UpdateFRPCRequest) (*pb.UpdateFRPC
 		cliCfg.ServerPort = srvConf.BindPort
 	}
 
-	if len(req.GetFrpsUrl()) > 0 || len(cli.FrpsUrl) > 0 {
-		// 有一个有就需要覆盖，优先请求的url
-		var (
-			parsedFrpsUrl *url.URL
-			err           error
-			urlToParse    string
-		)
-		if len(req.GetFrpsUrl()) > 0 {
-			parsedFrpsUrl, err = ValidateFrpsUrl(req.GetFrpsUrl())
+	// 覆盖地址三态语义（proto3 optional 字段）：
+	//   - 未提供（req.FrpsUrl == nil）：不改动，沿用库中已有覆盖（追加隧道/配置同步场景）
+	//   - 显式非空：校验后覆盖 ServerAddr/ServerPort（协议选择器优先，见下）
+	//   - 显式清空（字段存在但值为空串）：移除覆盖，恢复上方服务端默认 IP + 协议端口
+	// 注意不能用 len(GetFrpsUrl())>0 判定——那会把"清空"当成"没带字段"退回旧值，
+	// 表现为界面清空覆盖地址后保存无效。
+	if req.FrpsUrl != nil || len(cli.FrpsUrl) > 0 {
+		urlToParse := ""
+		if req.FrpsUrl != nil {
+			urlToParse = strings.TrimSpace(req.GetFrpsUrl())
+			if len(urlToParse) == 0 {
+				cli.FrpsUrl = "" // 显式清空，ServerAddr/ServerPort 保持服务端默认
+			}
+		} else {
+			urlToParse = strings.TrimSpace(cli.FrpsUrl) // 未提供该字段：沿用旧覆盖
+		}
+
+		if len(urlToParse) > 0 {
+			parsedFrpsUrl, err := ValidateFrpsUrl(urlToParse)
 			if err != nil {
-				logger.Logger(c).WithError(err).Errorf("invalid frps url, url: [%s]", req.GetFrpsUrl())
+				logger.Logger(c).WithError(err).Errorf("invalid frps url, url: [%s]", urlToParse)
 				return &pb.UpdateFRPCResponse{
 					Status: &pb.Status{Code: pb.RespCode_RESP_CODE_INVALID, Message: err.Error()},
 				}, err
 			}
-			urlToParse = req.GetFrpsUrl()
-		}
 
-		if len(cli.FrpsUrl) > 0 && parsedFrpsUrl == nil {
-			parsedFrpsUrl, err = ValidateFrpsUrl(cli.FrpsUrl)
-			if err != nil {
-				logger.Logger(c).WithError(err).Errorf("invalid old frps url, url: [%s]", cli.FrpsUrl)
-				return &pb.UpdateFRPCResponse{
-					Status: &pb.Status{Code: pb.RespCode_RESP_CODE_INVALID, Message: err.Error()},
-				}, err
+			cliCfg.ServerAddr = parsedFrpsUrl.Hostname()
+			cliCfg.ServerPort = cast.ToInt(parsedFrpsUrl.Port())
+			// 协议以配置（界面协议选择器）优先：只有配置为默认 tcp、
+			// 而 URL 显式指定了其他协议时才用 scheme 覆盖，
+			// 否则填了 tcp:// 覆盖地址后，界面选 quic/kcp 保存会被静默改回 tcp
+			if cliCfg.Transport.Protocol == "tcp" && parsedFrpsUrl.Scheme != "tcp" {
+				cliCfg.Transport.Protocol = parsedFrpsUrl.Scheme
 			}
-			urlToParse = cli.FrpsUrl
+			cli.FrpsUrl = urlToParse
 		}
-
-		cliCfg.ServerAddr = parsedFrpsUrl.Hostname()
-		cliCfg.ServerPort = cast.ToInt(parsedFrpsUrl.Port())
-		// 协议以配置（界面协议选择器）优先：只有配置为默认 tcp、
-		// 而 URL 显式指定了其他协议时才用 scheme 覆盖，
-		// 否则填了 tcp:// 覆盖地址后，界面选 quic/kcp 保存会被静默改回 tcp
-		if cliCfg.Transport.Protocol == "tcp" && parsedFrpsUrl.Scheme != "tcp" {
-			cliCfg.Transport.Protocol = parsedFrpsUrl.Scheme
-		}
-		cli.FrpsUrl = urlToParse
 	}
 
 	cliCfg.User = userInfo.GetUserName()
