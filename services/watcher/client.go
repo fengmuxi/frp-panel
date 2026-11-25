@@ -21,9 +21,17 @@ type client struct {
 
 func NewClient() Client {
 	// 全项目统一北京时间：cron 调度不依赖部署机系统时区（裸机/容器默认 UTC 时，
-	// "0 0 3 * * *" 的每日快照会漂到北京 11:00）。中国固定 +8 无夏令时，
-	// 用 FixedZone 免对 tzdata 的依赖。
-	s, err := gocron.NewScheduler(gocron.WithLocation(time.FixedZone("CST", 8*3600)))
+	// "0 0 3 * * *" 的每日快照会漂到北京 11:00）。中国固定 +8 无夏令时。
+	// 注意 gocron 会把 location 名字拼成 CRON_TZ=<name> 交给 robfig/cron，
+	// 后者按名字 time.LoadLocation 重新加载——自定义名（如 "CST"、"+08:00"）
+	// 不在 zoneinfo 里会直接 fatal，必须用真实时区名 Asia/Shanghai；
+	// 极少数无 tzdata 的精简环境回退 time.Local（配合 TZ env 仍为北京时间）。
+	loc, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		logger.Logger(context.Background()).WithError(err).Warn("Asia/Shanghai zoneinfo unavailable, cron falls back to local timezone (set TZ to keep Beijing time)")
+		loc = time.Local
+	}
+	s, err := gocron.NewScheduler(gocron.WithLocation(loc))
 	if err != nil {
 		logger.Logger(context.Background()).WithError(err).Fatalf("create scheduler error")
 	}
