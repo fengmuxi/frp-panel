@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/VaalaCat/frp-panel/models"
-	"github.com/VaalaCat/frp-panel/utils"
+	"github.com/fengmuxi/frp-panel/models"
+	"github.com/fengmuxi/frp-panel/utils"
 	"github.com/samber/lo"
 )
 

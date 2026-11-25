@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VaalaCat/frp-panel/defs"
-	"github.com/VaalaCat/frp-panel/utils"
-	"github.com/VaalaCat/frp-panel/utils/logger"
+	"github.com/fengmuxi/frp-panel/defs"
+	"github.com/fengmuxi/frp-panel/utils"
+	"github.com/fengmuxi/frp-panel/utils/logger"
 	v1 "github.com/fatedier/frp/pkg/config/v1"
 	"gorm.io/gorm"
 )

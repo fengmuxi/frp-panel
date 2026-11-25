@@ -60,7 +60,7 @@
 
 ```bash
 # ko 构建镜像（与其他子命令共用同一二进制，无需改动 ko 配置）
-ko build github.com/VaalaCat/frp-panel/cmd/frpp
+ko build github.com/fengmuxi/frp-panel/cmd/frpp
 
 # Docker 内运行（挂载配置与数据，共享宿主网络以便探测真实端口）
 docker run --rm \

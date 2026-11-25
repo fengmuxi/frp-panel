@@ -4,9 +4,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/VaalaCat/frp-panel/models"
-	"github.com/VaalaCat/frp-panel/pb"
-	"github.com/VaalaCat/frp-panel/services/dao"
+	"github.com/fengmuxi/frp-panel/models"
+	"github.com/fengmuxi/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/services/dao"
 	"github.com/samber/lo"
 )
 

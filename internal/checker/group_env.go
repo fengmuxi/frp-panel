@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VaalaCat/frp-panel/biz/common/upgrade"
-	"github.com/VaalaCat/frp-panel/conf"
-	"github.com/VaalaCat/frp-panel/defs"
-	"github.com/VaalaCat/frp-panel/models"
+	"github.com/fengmuxi/frp-panel/biz/common/upgrade"
+	"github.com/fengmuxi/frp-panel/conf"
+	"github.com/fengmuxi/frp-panel/defs"
+	"github.com/fengmuxi/frp-panel/models"
 )
 
 func buildEnvGroup(env *Env) ([]Checker, error) {

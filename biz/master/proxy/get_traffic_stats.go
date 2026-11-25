@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/VaalaCat/frp-panel/common"
-	"github.com/VaalaCat/frp-panel/pb"
-	"github.com/VaalaCat/frp-panel/services/app"
-	"github.com/VaalaCat/frp-panel/services/dao"
-	"github.com/VaalaCat/frp-panel/utils/logger"
+	"github.com/fengmuxi/frp-panel/common"
+	"github.com/fengmuxi/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/services/app"
+	"github.com/fengmuxi/frp-panel/services/dao"
+	"github.com/fengmuxi/frp-panel/utils/logger"
 	"github.com/samber/lo"
 )
 

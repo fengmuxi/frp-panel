@@ -13,11 +13,11 @@ import (
 	"golang.zx2c4.com/wireguard/tun"
 	"golang.zx2c4.com/wireguard/tun/netstack"
 
-	"github.com/VaalaCat/frp-panel/defs"
-	"github.com/VaalaCat/frp-panel/pb"
-	"github.com/VaalaCat/frp-panel/services/app"
-	"github.com/VaalaCat/frp-panel/services/wg/multibind"
-	"github.com/VaalaCat/frp-panel/utils"
+	"github.com/fengmuxi/frp-panel/defs"
+	"github.com/fengmuxi/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/services/app"
+	"github.com/fengmuxi/frp-panel/services/wg/multibind"
+	"github.com/fengmuxi/frp-panel/utils"
 )
 
 var (

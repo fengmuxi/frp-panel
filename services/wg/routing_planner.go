@@ -10,8 +10,8 @@ import (
 
 	"github.com/samber/lo"
 
-	"github.com/VaalaCat/frp-panel/models"
-	"github.com/VaalaCat/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/models"
+	"github.com/fengmuxi/frp-panel/pb"
 )
 
 // WireGuard 的 AllowedIPs 同时承担两件事：

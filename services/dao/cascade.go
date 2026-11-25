@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/VaalaCat/frp-panel/models"
-	"github.com/VaalaCat/frp-panel/pb"
-	"github.com/VaalaCat/frp-panel/services/app"
-	"github.com/VaalaCat/frp-panel/services/rpc"
+	"github.com/fengmuxi/frp-panel/models"
+	"github.com/fengmuxi/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/services/app"
+	"github.com/fengmuxi/frp-panel/services/rpc"
 	"github.com/samber/lo"
 	"gorm.io/gorm"
 )

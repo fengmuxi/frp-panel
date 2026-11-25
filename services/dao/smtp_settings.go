@@ -3,7 +3,7 @@ package dao
 import (
 	"errors"
 
-	"github.com/VaalaCat/frp-panel/models"
+	"github.com/fengmuxi/frp-panel/models"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

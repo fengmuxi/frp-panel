@@ -1,13 +1,13 @@
 package shared
 
 import (
-	bizmaster "github.com/VaalaCat/frp-panel/biz/master"
-	"github.com/VaalaCat/frp-panel/biz/master/shell"
-	"github.com/VaalaCat/frp-panel/biz/master/streamlog"
-	bizserver "github.com/VaalaCat/frp-panel/biz/server"
-	"github.com/VaalaCat/frp-panel/conf"
-	"github.com/VaalaCat/frp-panel/services/rpc"
-	"github.com/VaalaCat/frp-panel/utils/logger"
+	bizmaster "github.com/fengmuxi/frp-panel/biz/master"
+	"github.com/fengmuxi/frp-panel/biz/master/shell"
+	"github.com/fengmuxi/frp-panel/biz/master/streamlog"
+	bizserver "github.com/fengmuxi/frp-panel/biz/server"
+	"github.com/fengmuxi/frp-panel/conf"
+	"github.com/fengmuxi/frp-panel/services/rpc"
+	"github.com/fengmuxi/frp-panel/utils/logger"
 	"go.uber.org/fx"
 )
 

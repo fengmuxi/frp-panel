@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VaalaCat/frp-panel/conf"
-	"github.com/VaalaCat/frp-panel/defs"
-	"github.com/VaalaCat/frp-panel/models"
-	"github.com/VaalaCat/frp-panel/pb"
-	"github.com/VaalaCat/frp-panel/utils"
+	"github.com/fengmuxi/frp-panel/conf"
+	"github.com/fengmuxi/frp-panel/defs"
+	"github.com/fengmuxi/frp-panel/models"
+	"github.com/fengmuxi/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/utils"
 	"github.com/samber/lo"
 	"google.golang.org/protobuf/proto"
 )

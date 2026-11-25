@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/VaalaCat/frp-panel/models"
+	"github.com/fengmuxi/frp-panel/models"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 

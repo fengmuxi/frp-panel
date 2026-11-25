@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VaalaCat/frp-panel/conf"
-	"github.com/VaalaCat/frp-panel/pb"
-	"github.com/VaalaCat/frp-panel/utils"
+	"github.com/fengmuxi/frp-panel/conf"
+	"github.com/fengmuxi/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/utils"
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 )

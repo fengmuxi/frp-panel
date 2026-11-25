@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VaalaCat/frp-panel/models"
-	"github.com/VaalaCat/frp-panel/services/mailer"
+	"github.com/fengmuxi/frp-panel/models"
+	"github.com/fengmuxi/frp-panel/services/mailer"
 )
 
 // notify.go `--notify-mail` 邮件告警：

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/VaalaCat/frp-panel/models"
+	"github.com/fengmuxi/frp-panel/models"
 	"gorm.io/gorm"
 )
 

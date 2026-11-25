@@ -3,9 +3,9 @@ package tunnel
 import (
 	"context"
 
-	"github.com/VaalaCat/frp-panel/services/app"
-	"github.com/VaalaCat/frp-panel/utils"
-	"github.com/VaalaCat/frp-panel/utils/logger"
+	"github.com/fengmuxi/frp-panel/services/app"
+	"github.com/fengmuxi/frp-panel/utils"
+	"github.com/fengmuxi/frp-panel/utils/logger"
 )
 
 type clientController struct {

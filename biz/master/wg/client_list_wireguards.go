@@ -3,11 +3,11 @@ package wg
 import (
 	"sort"
 
-	"github.com/VaalaCat/frp-panel/models"
-	"github.com/VaalaCat/frp-panel/pb"
-	"github.com/VaalaCat/frp-panel/services/app"
-	"github.com/VaalaCat/frp-panel/services/dao"
-	wgsvc "github.com/VaalaCat/frp-panel/services/wg"
+	"github.com/fengmuxi/frp-panel/models"
+	"github.com/fengmuxi/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/services/app"
+	"github.com/fengmuxi/frp-panel/services/dao"
+	wgsvc "github.com/fengmuxi/frp-panel/services/wg"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 )

@@ -8,9 +8,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/VaalaCat/frp-panel/services/app"
-	"github.com/VaalaCat/frp-panel/utils"
-	"github.com/VaalaCat/frp-panel/utils/logger"
+	"github.com/fengmuxi/frp-panel/services/app"
+	"github.com/fengmuxi/frp-panel/utils"
+	"github.com/fengmuxi/frp-panel/utils/logger"
 	"github.com/fatedier/frp/client"
 	"github.com/fatedier/frp/client/proxy"
 	v1 "github.com/fatedier/frp/pkg/config/v1"

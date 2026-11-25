@@ -4,13 +4,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/VaalaCat/frp-panel/defs"
-	"github.com/VaalaCat/frp-panel/models"
-	"github.com/VaalaCat/frp-panel/pb"
-	"github.com/VaalaCat/frp-panel/services/app"
-	"github.com/VaalaCat/frp-panel/services/dao"
-	"github.com/VaalaCat/frp-panel/services/mailer"
-	"github.com/VaalaCat/frp-panel/utils/logger"
+	"github.com/fengmuxi/frp-panel/defs"
+	"github.com/fengmuxi/frp-panel/models"
+	"github.com/fengmuxi/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/services/app"
+	"github.com/fengmuxi/frp-panel/services/dao"
+	"github.com/fengmuxi/frp-panel/services/mailer"
+	"github.com/fengmuxi/frp-panel/utils/logger"
 )
 
 // ReconcileTunnelRules 隧道自动规则对账任务（Master 每分钟执行一次）：

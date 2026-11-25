@@ -1,8 +1,8 @@
 package client
 
 import (
-	"github.com/VaalaCat/frp-panel/pb"
-	"github.com/VaalaCat/frp-panel/services/app"
+	"github.com/fengmuxi/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/services/app"
 )
 
 func DeleteWireGuard(ctx *app.Context, req *pb.DeleteWireGuardRequest) (*pb.DeleteWireGuardResponse, error) {

@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/VaalaCat/frp-panel/common"
-	"github.com/VaalaCat/frp-panel/pb"
-	"github.com/VaalaCat/frp-panel/utils/logger"
+	"github.com/fengmuxi/frp-panel/common"
+	"github.com/fengmuxi/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/utils/logger"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/protobuf/proto"
 )

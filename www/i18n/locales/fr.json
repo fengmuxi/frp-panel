@@ -5,7 +5,7 @@
     "description": "Une interface web frp multi-nœuds pour la gestion des serveurs et clients [FRP], ce qui fait de ce projet une alternative open source à [Cloudflare Tunnel] ou [Tailscale Funnel]",
     "github": {
       "navigate": "naviguer vers :",
-      "repo": "VaalaCat/frp-panel"
+      "repo": "fengmuxi/frp-panel"
     }
   },
   "selector": {

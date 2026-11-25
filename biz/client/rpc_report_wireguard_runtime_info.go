@@ -3,8 +3,8 @@ package client
 import (
 	"context"
 
-	"github.com/VaalaCat/frp-panel/pb"
-	"github.com/VaalaCat/frp-panel/services/app"
+	"github.com/fengmuxi/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/services/app"
 	"github.com/samber/lo"
 )
 

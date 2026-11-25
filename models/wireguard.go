@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/netip"
 
-	"github.com/VaalaCat/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/pb"
 	"github.com/samber/lo"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 	"gorm.io/gorm"

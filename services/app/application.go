@@ -3,8 +3,8 @@ package app
 import (
 	"context"
 
-	"github.com/VaalaCat/frp-panel/conf"
-	"github.com/VaalaCat/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/conf"
+	"github.com/fengmuxi/frp-panel/pb"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/credentials"

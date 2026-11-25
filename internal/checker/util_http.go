@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/VaalaCat/frp-panel/defs"
+	"github.com/fengmuxi/frp-panel/defs"
 	"google.golang.org/protobuf/proto"
 )
 

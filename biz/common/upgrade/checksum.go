@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/VaalaCat/frp-panel/utils"
+	"github.com/fengmuxi/frp-panel/utils"
 )
 
 // checksum.go 下载产物的完整性校验（安全审计 P1-11）：

@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/VaalaCat/frp-panel/defs"
+	"github.com/fengmuxi/frp-panel/defs"
 	"github.com/gin-gonic/gin"
 )
 

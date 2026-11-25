@@ -4,14 +4,14 @@ import (
 	"errors"
 	"net/netip"
 
-	"github.com/VaalaCat/frp-panel/common"
-	"github.com/VaalaCat/frp-panel/models"
-	"github.com/VaalaCat/frp-panel/pb"
-	"github.com/VaalaCat/frp-panel/services/app"
-	"github.com/VaalaCat/frp-panel/services/dao"
-	"github.com/VaalaCat/frp-panel/services/rpc"
-	wgsvc "github.com/VaalaCat/frp-panel/services/wg"
-	"github.com/VaalaCat/frp-panel/utils"
+	"github.com/fengmuxi/frp-panel/common"
+	"github.com/fengmuxi/frp-panel/models"
+	"github.com/fengmuxi/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/services/app"
+	"github.com/fengmuxi/frp-panel/services/dao"
+	"github.com/fengmuxi/frp-panel/services/rpc"
+	wgsvc "github.com/fengmuxi/frp-panel/services/wg"
+	"github.com/fengmuxi/frp-panel/utils"
 )
 
 // Create/Update/Get/List WireGuard 基于 pb.WireGuardConfig

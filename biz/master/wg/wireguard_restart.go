@@ -3,10 +3,10 @@ package wg
 import (
 	"errors"
 
-	"github.com/VaalaCat/frp-panel/common"
-	"github.com/VaalaCat/frp-panel/pb"
-	"github.com/VaalaCat/frp-panel/services/app"
-	"github.com/VaalaCat/frp-panel/services/dao"
+	"github.com/fengmuxi/frp-panel/common"
+	"github.com/fengmuxi/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/services/app"
+	"github.com/fengmuxi/frp-panel/services/dao"
 )
 
 // RestartWireGuard 重启指定 WireGuard 接口，通知对应客户端执行重启

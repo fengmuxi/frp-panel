@@ -5,7 +5,7 @@
     "description": "A multi node frp webui for [FRP] server and client management, which makes this project a [Cloudflare Tunnel] or [Tailscale Funnel] open source alternative",
     "github": {
       "navigate": "navigate to:",
-      "repo": "VaalaCat/frp-panel"
+      "repo": "fengmuxi/frp-panel"
     }
   },
   "selector": {

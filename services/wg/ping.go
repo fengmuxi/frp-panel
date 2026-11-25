@@ -17,8 +17,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sourcegraph/conc"
 
-	"github.com/VaalaCat/frp-panel/defs"
-	"github.com/VaalaCat/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/defs"
+	"github.com/fengmuxi/frp-panel/pb"
 )
 
 const (

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VaalaCat/frp-panel/conf"
+	"github.com/fengmuxi/frp-panel/conf"
 	"github.com/stretchr/testify/assert"
 )
 

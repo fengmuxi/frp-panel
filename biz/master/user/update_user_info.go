@@ -3,14 +3,14 @@ package user
 import (
 	"context"
 
-	"github.com/VaalaCat/frp-panel/biz/master/client"
-	"github.com/VaalaCat/frp-panel/common"
-	"github.com/VaalaCat/frp-panel/models"
-	"github.com/VaalaCat/frp-panel/pb"
-	"github.com/VaalaCat/frp-panel/services/app"
-	"github.com/VaalaCat/frp-panel/services/dao"
-	"github.com/VaalaCat/frp-panel/utils"
-	"github.com/VaalaCat/frp-panel/utils/logger"
+	"github.com/fengmuxi/frp-panel/biz/master/client"
+	"github.com/fengmuxi/frp-panel/common"
+	"github.com/fengmuxi/frp-panel/models"
+	"github.com/fengmuxi/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/services/app"
+	"github.com/fengmuxi/frp-panel/services/dao"
+	"github.com/fengmuxi/frp-panel/utils"
+	"github.com/fengmuxi/frp-panel/utils/logger"
 )
 
 func UpdateUserInfoHander(c *app.Context, req *pb.UpdateUserInfoRequest) (*pb.UpdateUserInfoResponse, error) {

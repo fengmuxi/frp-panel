@@ -3,9 +3,9 @@ package app
 import (
 	"context"
 
-	"github.com/VaalaCat/frp-panel/conf"
-	"github.com/VaalaCat/frp-panel/pb"
-	"github.com/VaalaCat/frp-panel/utils/logger"
+	"github.com/fengmuxi/frp-panel/conf"
+	"github.com/fengmuxi/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/utils/logger"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/credentials"
 )

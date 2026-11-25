@@ -3,11 +3,11 @@ package client
 import (
 	"context"
 
-	"github.com/VaalaCat/frp-panel/defs"
-	"github.com/VaalaCat/frp-panel/pb"
-	"github.com/VaalaCat/frp-panel/services/app"
-	"github.com/VaalaCat/frp-panel/services/workerd"
-	"github.com/VaalaCat/frp-panel/utils/logger"
+	"github.com/fengmuxi/frp-panel/defs"
+	"github.com/fengmuxi/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/services/app"
+	"github.com/fengmuxi/frp-panel/services/workerd"
+	"github.com/fengmuxi/frp-panel/utils/logger"
 )
 
 func PullWorkers(appInstance app.Application, clientID, clientSecret string) error {

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VaalaCat/frp-panel/biz/common/upgrade"
+	"github.com/fengmuxi/frp-panel/biz/common/upgrade"
 )
 
 func buildWebUIGroup(env *Env) ([]Checker, error) {

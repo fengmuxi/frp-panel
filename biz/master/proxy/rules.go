@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/VaalaCat/frp-panel/defs"
+	"github.com/fengmuxi/frp-panel/defs"
 )
 
 // ParseHHMM 解析 "HH:MM" 格式时间为自 00:00 起的分钟数（分钟精度）

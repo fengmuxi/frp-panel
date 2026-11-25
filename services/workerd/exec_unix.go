@@ -11,7 +11,7 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/VaalaCat/frp-panel/utils/logger"
+	"github.com/fengmuxi/frp-panel/utils/logger"
 	"golang.org/x/net/context"
 )
 

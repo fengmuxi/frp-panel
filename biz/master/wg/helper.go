@@ -1,8 +1,8 @@
 package wg
 
 import (
-	"github.com/VaalaCat/frp-panel/pb"
-	"github.com/VaalaCat/frp-panel/services/wg"
+	"github.com/fengmuxi/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/services/wg"
 	"github.com/samber/lo"
 )
 

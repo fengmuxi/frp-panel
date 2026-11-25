@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VaalaCat/frp-panel/conf"
-	"github.com/VaalaCat/frp-panel/internal/checker"
+	"github.com/fengmuxi/frp-panel/conf"
+	"github.com/fengmuxi/frp-panel/internal/checker"
 	"github.com/spf13/cobra"
 )
 

@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/VaalaCat/frp-panel/models"
+	"github.com/fengmuxi/frp-panel/models"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"

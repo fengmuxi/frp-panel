@@ -1,9 +1,9 @@
 package auth
 
 import (
-	"github.com/VaalaCat/frp-panel/pb"
-	"github.com/VaalaCat/frp-panel/services/app"
-	"github.com/VaalaCat/frp-panel/services/dao"
+	"github.com/fengmuxi/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/services/app"
+	"github.com/fengmuxi/frp-panel/services/dao"
 )
 
 func GetClientCert(ctx *app.Context, req *pb.GetClientCertRequest) (*pb.GetClientCertResponse, error) {

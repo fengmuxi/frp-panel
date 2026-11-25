@@ -4,8 +4,8 @@ import (
 	"crypto/subtle"
 	"fmt"
 
-	"github.com/VaalaCat/frp-panel/defs"
-	"github.com/VaalaCat/frp-panel/models"
+	"github.com/fengmuxi/frp-panel/defs"
+	"github.com/fengmuxi/frp-panel/models"
 	"github.com/google/uuid"
 	"github.com/samber/lo"
 	"gorm.io/gorm"

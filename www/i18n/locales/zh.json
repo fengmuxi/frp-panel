@@ -5,7 +5,7 @@
     "description": "一个多节点的 FRP WebUI，用于 [FRP] 服务端和客户端管理，是 [Cloudflare Tunnel] 和 [Tailscale Funnel] 的开源替代方案",
     "github": {
       "navigate": "项目地址：",
-      "repo": "VaalaCat/frp-panel"
+      "repo": "fengmuxi/frp-panel"
     }
   },
   "selector": {

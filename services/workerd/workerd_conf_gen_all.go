@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/VaalaCat/frp-panel/pb"
-	"github.com/VaalaCat/frp-panel/utils"
-	"github.com/VaalaCat/frp-panel/utils/logger"
+	"github.com/fengmuxi/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/utils"
+	"github.com/fengmuxi/frp-panel/utils/logger"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 )

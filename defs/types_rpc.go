@@ -3,7 +3,7 @@ package defs
 import (
 	"sync"
 
-	"github.com/VaalaCat/frp-panel/pb"
+	"github.com/fengmuxi/frp-panel/pb"
 )
 
 // Connector 是一条节点/客户端 gRPC 流的连接句柄。
