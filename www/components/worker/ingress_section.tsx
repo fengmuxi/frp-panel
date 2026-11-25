@@ -1,5 +1,6 @@
-import { parseJSONSafe } from '@/lib/safe-parse'
 'use client'
+
+import { parseJSONSafe } from '@/lib/safe-parse'
 
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
