@@ -53,6 +53,9 @@ EXPOSE 9001
 
 ENV DB_DSN=/data/data.db?_pragma=journal_mode(WAL)
 
+# 统一北京时间：容器日志、每日/每小时快照、cron 整点任务全部按 CST 走（tzdata 已装）
+ENV TZ=Asia/Shanghai
+
 # ---- 环境变量（镜像内不写死密钥，全部由 docker run -e / compose environment 注入）----
 # 必填：
 #   APP_GLOBAL_SECRET  >=16 位强随机串；为空或仍是默认值 frp-panel 时 master 拒绝启动。

@@ -122,16 +122,27 @@ func EncryptSecret(plain string) (string, error) {
 // DecryptSecret 解密敏感字段；无前缀（存量明文）原样透传；
 // 密文解密失败返回空串并需要调用方记录日志。
 func DecryptSecret(value string) string {
-	if value == "" || !strings.HasPrefix(value, secretPrefix) {
-		return value
-	}
-	if !secretKeySet {
-		// 密钥未初始化的进程（check/客户端等）无法解密，返回空串避免误用
-		return ""
-	}
-	plain, err := openSecretWithKey(value, secretAESKey)
+	plain, err := DecryptSecretVerbose(value)
 	if err != nil {
 		return ""
 	}
 	return plain
+}
+
+// DecryptSecretVerbose 解密敏感字段并保留错误信息（钩子/运维工具用）：
+// 解密失败（GLOBAL_SECRET 不匹配、密文损坏）时调用方应保留原密文——
+// 读-改-写路径若把空串回写会永久抹掉凭证。
+func DecryptSecretVerbose(value string) (string, error) {
+	if value == "" || !strings.HasPrefix(value, secretPrefix) {
+		return value, nil
+	}
+	if !secretKeySet {
+		// 密钥未初始化的进程（check/客户端等）无法解密，返回空串避免误用
+		return "", errSecretKeyNotSet
+	}
+	plain, err := openSecretWithKey(value, secretAESKey)
+	if err != nil {
+		return "", err
+	}
+	return plain, nil
 }

@@ -76,12 +76,12 @@ func (m *workersManager) GetWorkerStatus(ctx *app.Context, id string) (defs.Work
 
 func (m *workersManager) InstallWorkerd(ctx *app.Context, url string, installDir string) (string, error) {
 	arch := runtime.GOARCH
-	os := runtime.GOOS
+	goos := runtime.GOOS
 
 	workerDownloadCfg := ctx.GetApp().GetConfig().Client.Worker.WorkerdDownloadURL
 
-	if os != "linux" {
-		return "", fmt.Errorf("unsupported os: %s", os)
+	if goos != "linux" {
+		return "", fmt.Errorf("unsupported os: %s", goos)
 	}
 	if arch != "amd64" && arch != "arm64" {
 		return "", fmt.Errorf("unsupported arch: %s", arch)
@@ -118,6 +118,8 @@ func (m *workersManager) InstallWorkerd(ctx *app.Context, url string, installDir
 		logger.Logger(ctx).WithError(err).Errorf("failed to download workerd, url: %s", downloadUrl)
 		return "", err
 	}
+	// 下载产物（.gz）提取完成后即无用：清理临时目录，避免 /tmp/downloads 无限增长
+	defer os.RemoveAll(path)
 
 	if len(installDir) == 0 {
 		installDir = "/usr/local/bin"
@@ -155,7 +157,9 @@ func pinWorkerdChecksum(ctx *app.Context, downloadedPath, installDir string) err
 	pinPath := filepath.Join(installDir, "workerd.sha256.pin")
 	if existing, err := os.ReadFile(pinPath); err == nil {
 		if strings.TrimSpace(string(existing)) != hexSum {
-			return fmt.Errorf("workerd checksum mismatch: pinned=%s actual=%s, refusing install",
+			// 升级路径：确认要升级 workerd 时，删除 installDir 下的
+			// workerd.sha256.pin 文件后重新安装（重新 TOFU 固化新哈希）
+			return fmt.Errorf("workerd checksum mismatch: pinned=%s actual=%s, refusing install (to upgrade, delete the pin file and retry)",
 				strings.TrimSpace(string(existing)), hexSum)
 		}
 		return nil

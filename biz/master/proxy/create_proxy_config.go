@@ -142,7 +142,12 @@ func CreateProxyConfigWithTypedConfig(c *app.Context, param CreateProxyConfigWit
 		FrpsUrl:  &clientEntity.FrpsUrl,
 	})
 	if err != nil {
-		logger.Logger(c).WithError(err).Warnf("cannot update frpc failed, id: [%s]", clientID)
+		// 错误不能吞掉：UpdateFrpcHander 失败意味着 client 配置未持久化、
+		// proxy_config 行未创建（本函数自身不写 proxy_config，全靠该步骤的 rebuild）。
+		// 若此时继续走下方跨服务器清理分支，会删掉旧 server 的隧道而新隧道未建成——数据丢失。
+		// 前端此前会误显示创建成功，现在正确返回失败
+		logger.Logger(c).WithError(err).Errorf("cannot update frpc, id: [%s]", clientID)
+		return err
 	}
 
 	if existedProxyCfg != nil && existedProxyCfg.ServerID != serverID {

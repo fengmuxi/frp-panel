@@ -151,7 +151,7 @@ export const columns: ColumnDef<ServerTableSchema>[] = [
 export const ServerInfo = ({ server }: { server: ServerTableSchema }) => {
   const { t } = useTranslation()
   const { data: clientsStatus } = useQuery({
-    queryKey: ['clientsStatus', server.id],
+    queryKey: ['clientsStatus', 'frps', server.id],
     queryFn: async () => {
       return await getClientsStatus({
         clientIds: [server.id],

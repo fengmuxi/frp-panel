@@ -40,8 +40,11 @@ func (w *wireGuard) initTransports() error {
 	if listenPort == 0 {
 		listenPort = w.ifce.GetListenPort()
 	}
+	// http.Server 由 Stop 统一关闭：此前 go engine.Run 无人管理，
+	// Remove/Restart 后旧 listener 泄漏，重启传输必报端口占用
+	w.wsHTTPServer = &http.Server{Addr: fmt.Sprintf(":%d", listenPort), Handler: engine}
 	go func() {
-		if err := engine.Run(fmt.Sprintf(":%d", listenPort)); err != nil {
+		if err := w.wsHTTPServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			w.svcLogger.WithError(err).Errorf("failed to run gin engine for ws transport on port %d", listenPort)
 		}
 	}()

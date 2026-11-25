@@ -53,7 +53,7 @@ const WGNodeComponent: React.FC<NodeComponentProps> = ({
 
   // 获取客户端状态
   const { data: clientStatusData } = useQuery({
-    queryKey: ['clientStatus', clientId],
+    queryKey: ['clientStatus', 'frpc', clientId],
     queryFn: async () => {
       if (!clientId) return undefined
       return await getClientsStatus({
@@ -264,7 +264,7 @@ const WGNodeComponent: React.FC<NodeComponentProps> = ({
                 {stats.lastHandshake && (
                   <div className="flex items-center gap-0.5 text-muted-foreground text-[9px]">
                     <Clock className="h-2.5 w-2.5 shrink-0" />
-                    <span className="truncate">{new Date(stats.lastHandshake * 1000).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="truncate">{new Date(stats.lastHandshake * 1000).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Shanghai' })}</span>
                   </div>
                 )}
 

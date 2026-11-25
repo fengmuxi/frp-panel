@@ -214,6 +214,8 @@ func DownloadFile(ctx context.Context, url string, proxyUrl string) (string, err
 
 	if err := failsafe.With(retryPolicy).Run(runAttempt); err != nil {
 		logger.Logger(ctx).WithError(err).Error("download file from url error")
+		// 失败路径清理临时目录（成功路径由调用方提取后清理）
+		_ = os.RemoveAll(tmpPath)
 		return "", err
 	}
 	return fileFullPath, nil
@@ -335,7 +337,22 @@ func ExtractGZTo(srcGZ, newName, destDir string) (string, error) {
 	// 7. Move the file to the destination directory
 	finalPath := filepath.Join(destDir, newName)
 	if err := os.Rename(tmpFilePath, finalPath); err != nil {
-		return "", fmt.Errorf("failed to move file to %q: %w", finalPath, err)
+		// 跨文件系统（如 /tmp 为 tmpfs、目标在 /usr/local/bin）rename 会 EXDEV，
+		// 回退为拷贝 + 删除
+		in, openErr := os.Open(tmpFilePath)
+		if openErr != nil {
+			return "", fmt.Errorf("failed to move file to %q: %w", finalPath, err)
+		}
+		defer in.Close()
+		out, createErr := os.OpenFile(finalPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
+		if createErr != nil {
+			return "", fmt.Errorf("failed to move file to %q: %w", finalPath, createErr)
+		}
+		if _, copyErr := io.Copy(out, in); copyErr != nil {
+			out.Close()
+			return "", fmt.Errorf("failed to move file to %q: %w", finalPath, copyErr)
+		}
+		out.Close()
 	}
 
 	// 8. Set executable permission

@@ -24,7 +24,7 @@ export const ServerSelector: React.FC<ServerSelectorProps> = ({
   const [keyword, setKeyword] = React.useState('')
 
   const { data: serverList, refetch: refetchServers } = useQuery({
-    queryKey: ['listServer', keyword],
+    queryKey: ['listServer', keyword, 8],
     queryFn: () => {
       return listServer({ page: 1, pageSize: 8, keyword: keyword })
     },

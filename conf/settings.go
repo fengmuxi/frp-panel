@@ -179,16 +179,12 @@ func (cfg *Config) Complete() {
 		cfg.Client.ID = hostname
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		fmt.Println("failed to get current working directory:", err)
-		os.Exit(1)
-	}
-
 	if len(cfg.Client.Worker.WorkerdBinaryPath) == 0 {
+		// 发现顺序：/usr/local/bin（安装目标）优先于 cwd——cwd 下的同名可执行
+		// 会被优先执行，架空"安装到 /usr/local/bin 防劫持"的修复（审计 P2）
 		w, _ := utils.FindExecutableNames(func(name string) bool {
 			return strings.HasPrefix(name, "workerd")
-		}, cwd, "/")
+		}, "/usr/local/bin")
 		if len(w) > 0 {
 			cfg.Client.Worker.WorkerdBinaryPath = w[0]
 		}

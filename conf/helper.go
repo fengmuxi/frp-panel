@@ -15,7 +15,20 @@ import (
 	"github.com/VaalaCat/frp-panel/utils"
 	"github.com/VaalaCat/frp-panel/utils/logger"
 	v1 "github.com/fatedier/frp/pkg/config/v1"
+	"gorm.io/gorm"
 )
+
+// dbGormConfig 数据库连接的统一 gorm 配置（master 启动链使用）。
+// DisableForeignKeyConstraintWhenMigrating=true：AutoMigrate 不创建物理外键约束。
+// 原因（2026-11-20 实测）：gorm v1.25.11 对 "references 指向非主键唯一列" 的
+// belongs-to 声明（如 WireGuard.Client references:ClientID），会把物理 FK 约束
+// 建到父表（clients 表上出现指向 wireguards/endpoints 的反向约束，方向错乱、
+// 插入父表即失败）。级联删除语义改由服务端显式清理承担
+// （docs/audit-remediation-plan-2026-11-19.md P1-C），模型上的 constraint
+// 标签仅保留 ORM 关联语义。
+func DbGormConfig() *gorm.Config {
+	return &gorm.Config{DisableForeignKeyConstraintWhenMigrating: true}
+}
 
 // listenIP 兜底：监听 IP 未配置（空串）时按 0.0.0.0 监听所有网卡（与历史行为一致）；
 // 配置了具体 IP（如 127.0.0.1）则只绑定该地址

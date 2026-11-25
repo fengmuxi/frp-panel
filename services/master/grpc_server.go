@@ -2,6 +2,7 @@ package master
 
 import (
 	"context"
+	"crypto/subtle"
 	"fmt"
 	"io"
 	"net"
@@ -101,10 +102,22 @@ func (s *server) ListClientWorkers(ctx context.Context, req *pb.ListClientWorker
 	return worker.ListClientWorkers(appCtx, req)
 }
 
+// grpcRecoveryInterceptor panic 兜底：gRPC 默认不 recover handler panic，
+// 任何一条 handler 的 panic 都会直接终止 master 进程。
+// WG 组网的数据残留（如删除网络未级联）曾使 ListClientWireGuards 每 30s 必 panic
+func grpcRecoveryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Logger(ctx).Errorf("grpc handler panic recovered, method: [%s], panic: %v", info.FullMethod, r)
+		}
+	}()
+	return handler(ctx, req)
+}
+
 func newRpcServer(appInstance app.Application, creds credentials.TransportCredentials) *grpc.Server {
 	// s := grpc.NewServer(grpc.Creds(insecure.NewCredentials()))
 	// s := grpc.NewServer(grpc.Creds(creds))
-	s := grpc.NewServer(grpc.Creds(creds))
+	s := grpc.NewServer(grpc.Creds(creds), grpc.ChainUnaryInterceptor(grpcRecoveryInterceptor))
 	pb.RegisterMasterServer(s, &server{
 		appInstance: appInstance,
 	})
@@ -207,7 +220,8 @@ func (s *server) ServerSend(sender pb.Master_ServerSendServer) error {
 				cliType = defs.CliTypeServer
 			}
 
-			if secret != req.GetSecret() {
+			// 常量时间比较（与 dao 层 ValidateClientSecret/ValidateServerSecret 口径一致）
+			if subtle.ConstantTimeCompare([]byte(secret), []byte(req.GetSecret())) != 1 {
 				logger.Logger(ctx).Errorf("invalid secret, %s id: [%s]", req.GetEvent().String(), req.GetClientId())
 				sender.Send(&pb.ServerMessage{
 					Event: req.GetEvent(),
@@ -234,13 +248,15 @@ func (s *server) ServerSend(sender pb.Master_ServerSendServer) error {
 				SessionId: req.GetClientId(),
 			})
 			logger.Logger(ctx).Infof("register success, req: [%+v]", req)
+			// 节点注册成功：上线提醒（内部判断开关，60s 防抖避免闪断刷屏）。
+			// 必须在注册成功分支内触发——< -done 只在连接断开时返回，
+			// 原实现把上线提醒放在断开处，语义完全颠倒（掉线瞬间收到"已上线"）
+			go mailer.NotifyNodeOnline(ctx, registeredCliType, registeredClientID)
 			break
 		}
 	}
 	<-done
 	if registeredOK {
-		// 节点注册成功：上线提醒（内部判断开关，60s 防抖避免闪断刷屏）
-		go mailer.NotifyNodeOnline(ctx, registeredCliType, registeredClientID)
 		// 连接断开后延迟确认掉线并发送提醒邮件（内部防抖：期间重连则不通知）
 		go mailer.CheckNodeOffline(ctx, registeredCliType, registeredClientID, registeredConnectTime)
 	}

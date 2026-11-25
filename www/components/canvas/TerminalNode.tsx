@@ -40,7 +40,7 @@ const TerminalNodeComponent: React.FC<NodeProps<TerminalNode> & NodeOperations> 
 
   // 获取客户端状态
   const { data: clientStatusData } = useQuery({
-    queryKey: ['clientStatus', clientId, refetch],
+    queryKey: ['clientStatus', 'frpc', clientId, refetch],
     queryFn: async () => {
       if (!clientId) return undefined
       return await getClientsStatus({

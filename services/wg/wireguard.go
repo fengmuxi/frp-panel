@@ -125,6 +125,11 @@ func (w *wireGuard) Stop() error {
 
 	w.cleanupWGDevice()
 	w.cleanupNetwork()
+	// 关闭 ws 传输 HTTP server（尽力而为；已停止的服务器 Close 返回错误可忽略）
+	if w.wsHTTPServer != nil {
+		_ = w.wsHTTPServer.Close()
+		w.wsHTTPServer = nil
+	}
 	w.cancel()
 
 	w.running = false

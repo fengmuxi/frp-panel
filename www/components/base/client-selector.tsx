@@ -22,7 +22,7 @@ export const ClientSelector: React.FC<ClientSelectorProps> = ({ clientID, setCli
   const [keyword, setKeyword] = React.useState('')
 
   const { data: clientList, refetch: refetchClients } = useQuery({
-    queryKey: ['listClient', keyword],
+    queryKey: ['listClient', keyword, 8],
     queryFn: () => {
       return listClient({ page: 1, pageSize: 8, keyword: keyword })
     },

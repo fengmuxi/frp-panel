@@ -39,7 +39,11 @@ func (c *Client) BeforeSave(tx *gorm.DB) error {
 
 func (c *Client) AfterFind(tx *gorm.DB) error {
 	if c.ClientEntity != nil && strings.HasPrefix(c.ConnectSecret, secretPrefix) {
-		c.ConnectSecret = decryptSecretField(c.ConnectSecret)
+		if plain, err := DecryptSecretVerbose(c.ConnectSecret); err == nil {
+			c.ConnectSecret = plain
+		}
+		// 解密失败（GLOBAL_SECRET 不匹配等）：保留原密文——
+		// 若置空，读-改-写路径会把密文静默覆写为空串、永久抹掉凭证
 	}
 	return nil
 }
@@ -54,7 +58,10 @@ func (s *Server) BeforeSave(tx *gorm.DB) error {
 
 func (s *Server) AfterFind(tx *gorm.DB) error {
 	if s.ServerEntity != nil && strings.HasPrefix(s.ConnectSecret, secretPrefix) {
-		s.ConnectSecret = decryptSecretField(s.ConnectSecret)
+		if plain, err := DecryptSecretVerbose(s.ConnectSecret); err == nil {
+			s.ConnectSecret = plain
+		}
+		// 解密失败保留原密文，理由同 Client
 	}
 	return nil
 }
@@ -67,7 +74,10 @@ func (s *SMTPSettings) BeforeSave(tx *gorm.DB) error {
 
 func (s *SMTPSettings) AfterFind(tx *gorm.DB) error {
 	if strings.HasPrefix(s.Password, secretPrefix) {
-		s.Password = decryptSecretField(s.Password)
+		if plain, err := DecryptSecretVerbose(s.Password); err == nil {
+			s.Password = plain
+		}
+		// 解密失败保留原密文，理由同 Client
 	}
 	return nil
 }

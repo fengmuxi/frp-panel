@@ -30,6 +30,14 @@ func CreateWireGuard(ctx *app.Context, req *pb.CreateWireGuardRequest) (*pb.Crea
 	q := dao.NewQuery(ctx)
 	m := dao.NewMutation(ctx)
 
+	// 归属校验：ClientID 是 WireGuard 配置下发（RPC）的寻址目标，不校验归属的话，
+	// 知道其他租户 clientID 的用户可向受害者节点注入自己控制私钥的 WireGuard 接口
+	// （与已修的 shell/PTY 跨租户 P0 同类）。安全审计复查 2026-11-19 补此遗漏
+	if _, err := dao.NewQuery(ctx).GetClientByClientID(userInfo, cfg.GetClientId()); err != nil {
+		log.WithError(err).Errorf("client not found or not owned by user, client id: [%s]", cfg.GetClientId())
+		return nil, errors.New("client not found or not owned by user")
+	}
+
 	ips, err := q.GetWireGuardLocalAddressesByNetworkID(userInfo, uint(cfg.GetNetworkId()))
 	if err != nil {
 		log.WithError(err).Errorf("get wireguard local addresses by network id failed")

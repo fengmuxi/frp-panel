@@ -77,7 +77,6 @@ func checkTCPReachable(ip string, port int) error {
 func SyncDownstreamClientConfigs(ctx *app.Context, srv *models.ServerEntity, srvCfg *v1.ServerConfig) *downstreamSyncResult {
 	res := &downstreamSyncResult{}
 
-	userInfo := &models.UserEntity{UserID: srv.UserID, TenantID: srv.TenantID}
 	clients, err := dao.NewQuery(ctx).AdminGetClientsByServerID(srv.ServerID)
 	if err != nil {
 		logger.Logger(ctx).WithError(err).Errorf("downstream sync: cannot list clients, server id: [%s]", srv.ServerID)
@@ -182,7 +181,10 @@ func SyncDownstreamClientConfigs(ctx *app.Context, srv *models.ServerEntity, srv
 
 			oldAddr := fmt.Sprintf("%s:%d", cfg.ServerAddr, cfg.ServerPort)
 			child.ConfigContent = newContent
-			if err := dao.NewMutation(ctx).UpdateClient(userInfo, child.ClientEntity); err != nil {
+			// UpdateClient 的 WHERE 带归属过滤，多用户共享节点时必须用 child
+			// 自己的归属（而非节点 owner）构造 userInfo，否则更新 0 行且无报错
+			childUserInfo := &models.UserEntity{UserID: child.UserID, TenantID: child.TenantID}
+			if err := dao.NewMutation(ctx).UpdateClient(childUserInfo, child.ClientEntity); err != nil {
 				mu.Lock()
 				res.PushFailed++
 				mu.Unlock()

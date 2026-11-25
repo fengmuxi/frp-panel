@@ -361,7 +361,9 @@
       "wireguardsDesc": "已註冊的 WireGuard 介面",
       "linksTitle": "網路連線",
       "linksDesc": "WireGuard 之間的連線",
-      "topologyDesc": "網路拓撲視覺化"
+      "topologyDesc": "網路拓撲視覺化",
+      "updatedAt": "最近更新",
+      "noTime": "暫無更新記錄"
     },
     "topologySidebar": {
       "title": "連結詳情",
@@ -1087,7 +1089,10 @@
       "name_placeholder": "請輸入Worker名稱",
       "resources": "相關資源",
       "clients": "部署",
-      "ingresses": "入口"
+      "ingresses": "入口",
+      "description": "備註",
+      "description_placeholder": "暫無備註",
+      "unknown_version": "未知版本"
     },
     "ingress": {
       "create_success": "創建成功",
@@ -1178,7 +1183,7 @@
     "period": {
       "today": "今日",
       "yesterday": "昨日",
-      "week": "本週",
+      "week": "近七天",
       "month": "本月",
       "year": "本年",
       "custom": "自訂",

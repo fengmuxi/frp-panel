@@ -1,10 +1,9 @@
 import { Button } from './ui/button'
 import { useStore } from '@nanostores/react'
 import { useRouter } from 'next/router'
-import { $platformInfo, $userInfo, $statusOnline, $token } from '@/store/user'
-import { getUserInfo } from '@/api/user'
+import { $platformInfo, $userInfo, $token } from '@/store/user'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { getPlatformInfo } from '@/api/platform'
 import { useTranslation } from 'react-i18next'
 import { LanguageSwitcher } from './language-switcher'
@@ -13,7 +12,6 @@ import { NAV_TITLE_KEYS, PAGE_PARENTS } from '@/lib/routes'
 
 export const Header = ({ title }: { title?: string }) => {
   const router = useRouter()
-  const isOnline = useStore($statusOnline)
   const token = useStore($token)
   const currentPath = router.pathname
   const { t } = useTranslation()
@@ -22,23 +20,18 @@ export const Header = ({ title }: { title?: string }) => {
   const parentPath = PAGE_PARENTS[currentPath]
   const parentTitleKey = parentPath ? NAV_TITLE_KEYS[parentPath] : undefined
 
-  const { isPending } = useQuery({
-    queryKey: ['userInfo', currentPath],
-    queryFn: getUserInfo,
-    retry: false,
-  })
-
   useEffect(() => {
-    // 只有在初始化完成后才进行状态检查和跳转
-    if (!isPending) {
-      // console.log('isInitializing', isOnline, token, currentPath)
-      // 如果用户未登录且不在登录/注册页面，则跳转到登录页
-      const isAuthPage = ['/login', '/register'].includes(currentPath)
-      if ((!token || !isOnline) && !isAuthPage) {
-        router.push('/login')
-      }
+    // 本地守卫：localStorage 无 token（手动退出/从未登录）直接跳登录。
+    // "有 token 但服务端已失效"（JWT 过期 / jti 被吊销 / 用户被删）不再依赖
+    // 一次性的 getUserInfo 判定（此前 isOnline 一旦为 true 永不复核，SPA
+    // 挂着不动永不跳转），统一由 SessionGuard 的 60s 心跳 + api/http.ts 的
+    // 401 拦截器清态跳转。
+    const isAuthPage = ['/login', '/register'].includes(currentPath)
+    if (!token && !isAuthPage) {
+      // replace 而非 push：避免"登录后按回退又回到失效页"的死循环
+      router.replace(`/login?redirect=${encodeURIComponent(router.asPath)}`)
     }
-  }, [token, isOnline, router, isPending, currentPath])
+  }, [token, router, currentPath])
 
   return (
     <div className="flex w-full justify-between items-center gap-2">
@@ -76,15 +69,9 @@ export const RegisterAndLogin = () => {
     $platformInfo.set(platformInfo.data)
   }, [platformInfo])
 
-  const { data: userInfoQuery } = useQuery({
-    queryKey: ['userInfo'],
-    queryFn: getUserInfo,
-  })
-
-  useEffect(() => {
-    $userInfo.set(userInfoQuery?.userInfo)
-    $statusOnline.set(!!userInfoQuery?.userInfo)
-  }, [userInfoQuery])
+  // 用户信息查询统一由 SessionGuard 的 ['sessionGuard'] 心跳负责：
+  // 此前这里另发一次 ['userInfo'] 请求，两个 key 各自判断登录态，
+  // 会出现"header 认为已登录、侧边栏认为未登录"的竞态
 
   return (
     <>

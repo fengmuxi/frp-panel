@@ -148,7 +148,7 @@ func (w *WireGuard) ToPB() *pb.WireGuardConfig {
 		AdvertisedEndpoints: lo.Map(w.AdvertisedEndpoints, func(e *Endpoint, _ int) *pb.Endpoint {
 			return e.ToPB()
 		}),
-		WsListenPort: w.ListenPort,
+		WsListenPort: w.WsListenPort,
 		UseGvisorNet: w.UseGvisorNet,
 	}
 }

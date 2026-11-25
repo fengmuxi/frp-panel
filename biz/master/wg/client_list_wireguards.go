@@ -57,10 +57,18 @@ func ListClientWireGuards(ctx *app.Context, req *pb.ListClientWireGuardsRequest)
 	networkAllEdgesMap := make(map[uint]map[uint][]wgsvc.Edge)
 
 	for _, networkID := range networkIDs {
+		peers := networkPeers[networkID]
+		// nil 防御：network_id 悬挂的残留 WG（如删除网络未级联的历史数据）会让
+		// peers 为空或 Network 预加载为 nil——裸取 [0].Network.ACL 会 panic，
+		// 该 panic 经 gRPC 直接击穿 master 进程
+		if len(peers) == 0 || peers[0] == nil || peers[0].Network == nil || peers[0].Network.NetworkEntity == nil {
+			log.Errorf("skip network %d: no peers or network preload missing (dangling wireguard rows?)", networkID)
+			continue
+		}
 		peerConfigs, allEdges, err := wgsvc.PlanAllowedIPs(
-			networkPeers[networkID], networkLinksMap[networkID],
+			peers, networkLinksMap[networkID],
 			wgsvc.DefaultRoutingPolicy(
-				wgsvc.NewACL().LoadFromPB(networkPeers[networkID][0].Network.ACL.Data),
+				wgsvc.NewACL().LoadFromPB(peers[0].Network.ACL.Data),
 				ctx.GetApp().GetNetworkTopologyCache(),
 				ctx.GetApp().GetClientsManager(),
 			))

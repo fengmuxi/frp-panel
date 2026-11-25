@@ -53,6 +53,11 @@ func (m *wireGuardManager) CreateService(cfg *defs.WireGuardConfig) (app.WireGua
 		return nil, errors.Join(errors.New("wireguard manager create wireguard error"), err)
 	}
 
+	// 覆盖前先停旧实例：事件重试/与 pull 并发时重发 CREATE 会覆盖 map 条目，
+	// 旧实例的 TUN 设备与 goroutine 全部泄漏
+	if old, ok := m.services.Load(cfg.GetInterfaceName()); ok {
+		_ = old.Stop()
+	}
 	m.services.Store(cfg.GetInterfaceName(), wg)
 	return wg, nil
 }
@@ -105,11 +110,11 @@ func (m *wireGuardManager) RemoveService(interfaceName string) error {
 
 func (m *wireGuardManager) StopAllServices() map[string]error {
 	errMap := make(map[string]error)
+	// 首个失败不中断遍历：尽力停止全部服务并收集错误
 	m.services.Range(func(k string, v app.WireGuard) bool {
 		if err := v.Stop(); err != nil {
 			m.svcCtx.Logger().WithError(err).Errorf("wireguard manager stop all wireguard error, interfaceName: %s", k)
 			errMap[k] = err
-			return false
 		}
 		m.services.Delete(k)
 		return true

@@ -50,6 +50,10 @@ func UpdateWorker(ctx *app.Context, req *pb.UpdateWorkerRequest) (*pb.UpdateWork
 		updatedFields = append(updatedFields, "client_id")
 	} else {
 		oldClientIds = lo.Map(workerToUpdate.Clients, func(c models.Client, _ int) string { return c.ClientID })
+		// clientIds 为空 = 只更新代码/名称：保持原 client 集合并在现有节点上
+		// 重建（此前 clis 为空，全部节点先 remove 且不在任何节点重建——
+		// 全网停机 ~30s 直到 PullWorkers 兜底）
+		clis = lo.Map(workerToUpdate.Clients, func(c models.Client, _ int) *models.Client { return &c })
 	}
 
 	if len(wrokerReq.GetName()) != 0 {

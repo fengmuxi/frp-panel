@@ -1,3 +1,4 @@
+import { parseJSONSafe } from '@/lib/safe-parse'
 "use client"
 
 import React, { useEffect } from 'react'
@@ -65,7 +66,7 @@ export const FRPCFormCard: React.FC<FRPCFormCardProps> = ({
     if (!client || !client?.client) return
     if (client?.client?.config == undefined) return
 
-    const clientConf = JSON.parse(client?.client?.config || '{}') as ClientConfig
+    const clientConf = parseJSONSafe<ClientConfig>(client?.client?.config, {} as ClientConfig)
 
     const proxyConfs = clientConf.proxies
     if (proxyConfs) {
@@ -131,7 +132,7 @@ export const FRPCFormCard: React.FC<FRPCFormCardProps> = ({
           </p></div>}
         {clientID && serverID && !advanceMode && <FRPCForm
           client={client?.client}
-          clientConfig={JSON.parse(client?.client?.config || '{}') as ClientConfig} refetchClient={refetchClient}
+          clientConfig={parseJSONSafe<ClientConfig>(client?.client?.config, {} as ClientConfig)} refetchClient={refetchClient}
           clientID={clientID} serverID={serverID}
           clientProxyConfigs={clientProxyConfigs}
           setClientProxyConfigs={setClientProxyConfigs}
@@ -140,7 +141,7 @@ export const FRPCFormCard: React.FC<FRPCFormCardProps> = ({
         }
         {clientID && serverID && advanceMode && <FRPCEditor
           client={client?.client}
-          clientConfig={JSON.parse(client?.client?.config || '{}') as ClientConfig} refetchClient={refetchClient}
+          clientConfig={parseJSONSafe<ClientConfig>(client?.client?.config, {} as ClientConfig)} refetchClient={refetchClient}
           clientID={clientID} serverID={serverID}
           clientProxyConfigs={clientProxyConfigs}
           setClientProxyConfigs={setClientProxyConfigs}

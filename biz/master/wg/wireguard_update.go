@@ -8,6 +8,7 @@ import (
 	"github.com/VaalaCat/frp-panel/pb"
 	"github.com/VaalaCat/frp-panel/services/app"
 	"github.com/VaalaCat/frp-panel/services/dao"
+	"github.com/VaalaCat/frp-panel/utils"
 	"github.com/samber/lo"
 )
 
@@ -27,6 +28,22 @@ func UpdateWireGuard(ctx *app.Context, req *pb.UpdateWireGuardRequest) (*pb.Upda
 	model.FromPB(cfg)
 	model.UserId = uint32(userInfo.GetUserID())
 	model.TenantId = uint32(userInfo.GetTenantID())
+
+	// LocalAddress 合法性校验（与 Create 同口径）：必须在网络 CIDR 内且未被占用；
+	// 被占用时 AllocateIP 自动顺延——重复地址此前会让全网 30s pull 整体失败
+	ips, err := q.GetWireGuardLocalAddressesByNetworkID(userInfo, uint(cfg.GetNetworkId()))
+	if err != nil {
+		return nil, err
+	}
+	network, err := q.GetNetworkByID(userInfo, uint(cfg.GetNetworkId()))
+	if err != nil {
+		return nil, err
+	}
+	newAddr, err := utils.AllocateIP(network.CIDR, ips, model.LocalAddress)
+	if err != nil {
+		return nil, err
+	}
+	model.LocalAddress = newAddr
 
 	if err := m.UpdateWireGuard(userInfo, uint(cfg.GetId()), model); err != nil {
 		return nil, err

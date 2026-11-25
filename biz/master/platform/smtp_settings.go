@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/VaalaCat/frp-panel/common"
 	"github.com/VaalaCat/frp-panel/defs"
@@ -16,6 +17,14 @@ import (
 
 // maxOfflineDelaySeconds 下线通知防抖时长的上限（秒），0 表示使用内置默认 60s
 const maxOfflineDelaySeconds = 3600
+
+// maxSMTPPasswordLength SMTP 密码明文长度上限（字节）：静态加密后密文长度
+// = 64 + 2×len，超过 95 字节会超出 varchar(255) 列宽
+const maxSMTPPasswordLength = 95
+
+// smtpSaveMu 串行化 SMTP 设置的读-改-写保存：密码留空保留旧值的语义
+// 在并发保存交错下会把新密码回滚为旧值（丢失更新）
+var smtpSaveMu sync.Mutex
 
 // smtpSettingsDTO SMTP 服务器连接配置（仅管理员可改）。
 // 通知开关已拆分为按用户独立配置，见 notify_prefs.go；
@@ -78,6 +87,11 @@ func validateSMTPInput(req smtpSettingsDTO) string {
 	case mailer.EncryptionNone, mailer.EncryptionStartTLS, mailer.EncryptionSSL:
 	default:
 		return "invalid encryption type"
+	}
+	// 密码长度限制：静态加密后密文长度 = 64 + 2×len，超过 varchar(255) 会被
+	// MySQL 严格模式拒绝/非严格模式静默截断导致凭证损坏
+	if req.Password != "" && len(req.Password) > maxSMTPPasswordLength {
+		return "smtp password too long (max 95 bytes)"
 	}
 	return ""
 }
@@ -147,6 +161,8 @@ func UpdateSMTPSettings(appInstance app.Application) gin.HandlerFunc {
 			s.Password = req.Password
 		}
 
+		smtpSaveMu.Lock()
+		defer smtpSaveMu.Unlock()
 		if err := dao.NewMutation(ctx).SaveSMTPSettings(s); err != nil {
 			c.JSON(http.StatusOK, common.Err(err.Error()))
 			return

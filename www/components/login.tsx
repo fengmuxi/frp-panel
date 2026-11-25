@@ -30,6 +30,11 @@ export function LoginComponent() {
 
   const [loginAlert, setLoginAlert] = useState(false)
 
+  // 会话失效跳转过来时带回跳地址（/login?redirect=...），登录后原地返回；
+  // 只接受站内相对路径，避免被用作开放重定向
+  const redirectParam = typeof router.query.redirect === 'string' ? router.query.redirect : ''
+  const redirectTo = redirectParam.startsWith('/') && !redirectParam.startsWith('//') ? redirectParam : '/'
+
   const onSubmit = async (values: z.infer<typeof LoginSchema>) => {
     toast(t('auth.loggingIn'))
     try {
@@ -37,7 +42,7 @@ export function LoginComponent() {
       if (res.status?.code === RespCode.SUCCESS) {
         toast(t('auth.loginSuccess'))
         setTimeout(() => {
-          router.push('/')
+          router.replace(redirectTo)
         }, 3000)
         setLoginAlert(false)
       } else {

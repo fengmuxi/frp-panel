@@ -22,7 +22,14 @@ import (
 )
 
 func NewRouter(fs embed.FS, appInstance app.Application, originCfg conf.Config) *gin.Engine {
-	router := gin.Default()
+	router := gin.New()
+	// gin.Default = Logger + Recovery；此处用自定义 formatter 替换 Logger：
+	// WS 场景 JWT 经 ?token= query 传递，默认日志会把带 token 的 URI 全文
+	// 写入访问日志（日志持有者可窃取会话）
+	router.Use(gin.LoggerWithFormatter(middleware.GinAccessLogFormatter()), gin.Recovery())
+	// 默认信任所有代理会让 X-Forwarded-For 伪造 ClientIP——登录限流可被绕过；
+	// 部署在可信反代后时请改为显式 CIDR 白名单
+	_ = router.SetTrustedProxies(nil)
 	HandleStaticFile(fs, router)
 	ConfigureRouter(appInstance, originCfg, router)
 	return router
@@ -38,7 +45,8 @@ func ConfigureRouter(appInstance app.Application, originCfg conf.Config, router 
 	api.POST("/v1/auth/cert", authLimiter.Middleware(), app.Wrapper(appInstance, auth.GetClientCert))
 	api.POST("/v1/auth/login", authLimiter.Middleware(), app.Wrapper(appInstance, auth.LoginHandler))
 	api.POST("/v1/auth/register", authLimiter.Middleware(), app.Wrapper(appInstance, auth.RegisterHandler))
-	api.GET("/v1/auth/logout", auth.RemoveJWTHandler(appInstance))
+	// 登出用 POST：GET + cookie 自动携带可被跨站 <a> 触发强制登出（CSRF DoS）
+	api.POST("/v1/auth/logout", auth.RemoveJWTHandler(appInstance))
 
 	v1 := api.Group("/v1", middleware.JWTAuth(appInstance), middleware.AuthCtx(appInstance), middleware.RBAC(appInstance))
 	{

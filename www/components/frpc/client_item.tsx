@@ -145,7 +145,7 @@ export const columns: ColumnDef<ClientTableSchema>[] = [
 export const ClientInfo = ({ client }: { client: ClientTableSchema }) => {
   const { t } = useTranslation()
   const { data: clientsStatus } = useQuery({
-    queryKey: ['clientsStatus', client.id],
+    queryKey: ['clientsStatus', 'frpc', client.id],
     queryFn: async () => {
       return await getClientsStatus({
         clientIds: [client.id],

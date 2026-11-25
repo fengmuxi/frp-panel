@@ -154,6 +154,15 @@ func doSend(ctx context.Context, cfg *models.SMTPSettings, to []string, msg []by
 	}
 	defer client.Quit()
 
+	// 整个 SMTP 会话设 deadline：半开连接（NAT 超时/服务器假死）时
+	// NewClient/StartTLS/Auth/Mail/Rcpt/Data 任一读阻塞都会永久挂死
+	// goroutine 与连接（dialer 的 Timeout 只覆盖拨号阶段）
+	deadline := time.Now().Add(sendTimeout)
+	if err := conn.SetDeadline(deadline); err != nil {
+		conn.Close()
+		return fmt.Errorf("设置 SMTP 会话超时失败: %w", err)
+	}
+
 	if cfg.Encryption == EncryptionStartTLS {
 		if err := client.StartTLS(tlsCfg); err != nil {
 			return fmt.Errorf("STARTTLS 失败: %w", err)

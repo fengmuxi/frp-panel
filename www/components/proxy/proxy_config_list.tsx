@@ -1,6 +1,7 @@
 import { ProxyConfig } from '@/lib/pb/common'
 import { ProxyConfigTableSchema, columns as proxyConfigColumnsDef } from './proxy_config_item'
 import { DataTable } from '../base/data_table'
+import { parseJSONSafe } from '@/lib/safe-parse'
 
 import {
   getSortedRowModel,
@@ -129,5 +130,6 @@ export const ProxyConfigList: React.FC<ProxyConfigListProps> = ({
 }
 
 function ParseProxyConfig(cfg: string): TypedProxyConfig {
-  return JSON.parse(cfg)
+  // 容错解析（审计 P2-J）：单条脏配置不得打挂整表渲染
+  return parseJSONSafe<TypedProxyConfig>(cfg, {} as TypedProxyConfig)
 }

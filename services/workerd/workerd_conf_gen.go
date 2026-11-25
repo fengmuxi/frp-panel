@@ -2,17 +2,20 @@ package workerd
 
 import (
 	"bytes"
+	"context"
 	"errors"
-	"html/template"
 	"path/filepath"
+	"text/template"
 
 	"github.com/VaalaCat/frp-panel/defs"
 	"github.com/VaalaCat/frp-panel/pb"
 	"github.com/VaalaCat/frp-panel/utils"
+	"github.com/VaalaCat/frp-panel/utils/logger"
 	"github.com/samber/lo"
 )
 
 func BuildCapfile(workers []*pb.Worker) map[string]string {
+	log := logger.Logger(context.Background()).WithField("op", "BuildCapfile")
 	if len(workers) == 0 {
 		return map[string]string{}
 	}
@@ -39,7 +42,10 @@ func BuildCapfile(workers []*pb.Worker) map[string]string {
 
 		capTemplate, err := capTemplate.Parse(workerTemplate)
 		if err != nil {
-			panic(err)
+			// 模板解析失败不 panic：capnp 配置是非 HTML 文本，应用 text/template；
+			// 用户可控模板此前解析失败会每 30s 刷一次 panic 日志
+			log.Errorf("parse worker config template failed, worker id: [%s], err: %v", worker.GetWorkerId(), err)
+			continue
 		}
 		capTemplate.Execute(writer, tmpWorker)
 

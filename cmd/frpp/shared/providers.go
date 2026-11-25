@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"sync"
 
 	bizcommon "github.com/VaalaCat/frp-panel/biz/common"
 	"github.com/VaalaCat/frp-panel/conf"
@@ -61,7 +60,6 @@ func NewBaseApp(param struct {
 	appInstance.SetClientsManager(param.CliMgr)
 	appInstance.SetStreamLogHookMgr(param.HookMgr)
 	appInstance.SetShellPTYMgr(param.PtyMgr)
-	appInstance.SetClientRecvMap(&sync.Map{})
 	appInstance.SetNetworkTopologyCache(wg.NewNetworkTopologyCache())
 	return appInstance
 }
@@ -114,21 +112,21 @@ func NewDBManager(ctx *app.Context, appInstance app.Application) app.DBManager {
 			logger.Logger(ctx).Infof("new data location: [%s]", appInstance.GetConfig().DB.DSN)
 		}
 
-		if sqlitedb, err := gorm.Open(sqlite.Open(appInstance.GetConfig().DB.DSN), &gorm.Config{}); err != nil {
+		if sqlitedb, err := gorm.Open(sqlite.Open(appInstance.GetConfig().DB.DSN), conf.DbGormConfig()); err != nil {
 			logger.Logger(ctx).Panic(err)
 		} else {
 			appInstance.GetDBManager().SetDB(defs.DBTypeSQLite3, defs.DBRoleDefault, sqlitedb)
 			logger.Logger(ctx).Infof("init database success, data location: [%s]", appInstance.GetConfig().DB.DSN)
 		}
 	case defs.DBTypeMysql:
-		if mysqlDB, err := gorm.Open(mysql.Open(appInstance.GetConfig().DB.DSN), &gorm.Config{}); err != nil {
+		if mysqlDB, err := gorm.Open(mysql.Open(appInstance.GetConfig().DB.DSN), conf.DbGormConfig()); err != nil {
 			logger.Logger(ctx).Panic(err)
 		} else {
 			appInstance.GetDBManager().SetDB(defs.DBTypeMysql, defs.DBRoleDefault, mysqlDB)
 			logger.Logger(ctx).Infof("init database success, data type: [%s]", "mysql")
 		}
 	case defs.DBTypePostgres:
-		if postgresDB, err := gorm.Open(postgres.Open(appInstance.GetConfig().DB.DSN), &gorm.Config{}); err != nil {
+		if postgresDB, err := gorm.Open(postgres.Open(appInstance.GetConfig().DB.DSN), conf.DbGormConfig()); err != nil {
 			logger.Logger(ctx).Panic(err)
 		} else {
 			appInstance.GetDBManager().SetDB(defs.DBTypePostgres, defs.DBRoleDefault, postgresDB)

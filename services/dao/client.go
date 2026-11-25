@@ -13,7 +13,9 @@ import (
 type ClientQuery interface {
 	ValidateClientSecret(clientID, clientSecret string) (*models.ClientEntity, error)
 	AdminGetClientByClientID(clientID string) (*models.Client, error)
+	AdminGetAllClients() ([]*models.Client, error)
 	AdminGetClientsByServerID(serverID string) ([]*models.Client, error)
+	AdminGetClientsByOriginClientID(originClientID string) ([]*models.Client, error)
 	GetClientByClientID(userInfo models.UserInfo, clientID string) (*models.Client, error)
 	GetClientsByClientIDs(userInfo models.UserInfo, clientIDs []string) ([]*models.Client, error)
 	GetClientByFilter(userInfo models.UserInfo, client *models.ClientEntity, shadow *bool) (*models.ClientEntity, error)
@@ -85,6 +87,16 @@ func (q *clientQuery) AdminGetClientByClientID(clientID string) (*models.Client,
 
 // AdminGetClientsByServerID 返回连接指定节点的全部 client（不限归属用户），
 // 供推送处理等服务端内部逻辑使用。
+// AdminGetAllClients 返回全部客户端（不限归属用户），供周期对账等内部任务使用
+func (q *clientQuery) AdminGetAllClients() ([]*models.Client, error) {
+	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
+	clients := []*models.Client{}
+	if err := db.Find(&clients).Error; err != nil {
+		return nil, err
+	}
+	return clients, nil
+}
+
 func (q *clientQuery) AdminGetClientsByServerID(serverID string) ([]*models.Client, error) {
 	if serverID == "" {
 		return nil, fmt.Errorf("invalid server id")
@@ -94,6 +106,25 @@ func (q *clientQuery) AdminGetClientsByServerID(serverID string) ([]*models.Clie
 	err := db.
 		Where(&models.Client{ClientEntity: &models.ClientEntity{
 			ServerID: serverID,
+		}}).
+		Find(&clients).Error
+	if err != nil {
+		return nil, err
+	}
+	return clients, nil
+}
+
+// AdminGetClientsByOriginClientID 返回 origin client 的全部 child（含 Workers 关联预加载），
+// 不限归属用户——级联删除等 server 级清理使用
+func (q *clientQuery) AdminGetClientsByOriginClientID(originClientID string) ([]*models.Client, error) {
+	if originClientID == "" {
+		return nil, fmt.Errorf("invalid origin client id")
+	}
+	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
+	clients := []*models.Client{}
+	err := db.Preload("Workers").
+		Where(&models.Client{ClientEntity: &models.ClientEntity{
+			OriginClientID: originClientID,
 		}}).
 		Find(&clients).Error
 	if err != nil {

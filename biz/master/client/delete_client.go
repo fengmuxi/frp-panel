@@ -29,11 +29,10 @@ func DeleteClientHandler(ctx *app.Context, req *pb.DeleteClientRequest) (*pb.Del
 		}, nil
 	}
 
-	if err := dao.NewMutation(ctx).DeleteClient(userInfo, clientID); err != nil {
-		return nil, err
-	}
-
-	if err := dao.NewMutation(ctx).DeleteProxyConfigsByClientIDOrOriginClientID(userInfo, clientID); err != nil {
+	// 统一级联入口：clients 行（origin+child）、隧道 proxy_config 行与通知偏好、
+	// 流量统计/快照/流水、WG 接口与 endpoints/links、worker 关联，
+	// 以及节点侧清理事件（WG 删除/worker 进程删除/frpc 实例停止，尽力而为）
+	if err := dao.CascadeDeleteClient(ctx, userInfo, clientID); err != nil {
 		return nil, err
 	}
 
@@ -44,7 +43,7 @@ func DeleteClientHandler(ctx *app.Context, req *pb.DeleteClientRequest) (*pb.Del
 		}
 
 		if resp == nil {
-			logger.Logger(ctx).Errorf("cannot get response, client id: [%s]", req.GetClientId())
+			logger.Logger(context.Background()).Errorf("cannot get response, client id: [%s]", req.GetClientId())
 		}
 	}()
 

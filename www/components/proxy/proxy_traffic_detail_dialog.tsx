@@ -17,12 +17,12 @@ export interface ProxyTrafficDetailDialogProps {
   proxyType?: string
 }
 
-// 某日 00:00 的本地时区 unix 秒
+// 某日 00:00 的北京时间 unix 秒（统一北京时间，不依赖浏览器时区）
+const BJ_MS = 480 * 60_000
 function startOfDay(offsetDays = 0): number {
-  const d = new Date()
-  d.setHours(0, 0, 0, 0)
-  d.setDate(d.getDate() - offsetDays)
-  return Math.floor(d.getTime() / 1000)
+  const b = new Date(Date.now() + BJ_MS)
+  const dayUtc = Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate() - offsetDays)
+  return Math.floor((dayUtc - BJ_MS) / 1000)
 }
 
 export const ProxyTrafficDetailDialog: React.FC<ProxyTrafficDetailDialogProps> = ({
@@ -96,6 +96,8 @@ export const ProxyTrafficDetailDialog: React.FC<ProxyTrafficDetailDialogProps> =
             <ProxyRangeStats
               key={key}
               days={days}
+              clientID={clientID}
+              serverID={serverID}
               proxyName={proxyName}
               open={open}
             />
@@ -149,22 +151,29 @@ function StatPair({
 function ProxyRangeStats({
   days,
   proxyName,
+  clientID,
+  serverID,
   open,
 }: {
   days: number
   proxyName: string
+  clientID: string
+  serverID: string
   open: boolean
 }) {
   const { t } = useTranslation()
 
   const { data, isLoading } = useQuery({
-    queryKey: ['proxyTrafficRange', proxyName, days],
+    // key 带 clientID/serverID：不同客户端上的同名隧道不得共享缓存
+    //（审计 P2-J：此前同名隧道会取到别的隧道的区间流量）
+    queryKey: ['proxyTrafficRange', clientID, serverID, proxyName, days],
     queryFn: () =>
       getProxyTrafficStats({
         startTime: BigInt(startOfDay(days - 1)),
         endTime: BigInt(Math.floor(Date.now() / 1000)),
         withSeries: false,
-        tzOffsetMinutes: -new Date().getTimezoneOffset(),
+        // 统一北京时间（与上方 startOfDay 的 BJ_MS 口径一致）
+        tzOffsetMinutes: 480,
       }),
     enabled: open,
     // 与概览查询一致：每次打开重新拉取 + 打开期间 30s 轮询
@@ -172,6 +181,8 @@ function ProxyRangeStats({
     refetchInterval: open ? 30_000 : false,
   })
 
+  // traffic_stats 的 item 不含 serverId：同名隧道时以第一条近似（缓存 key 已按
+  // clientID/serverID 隔离，不会跨客户端串数据）
   const item = data?.items?.find((it) => it.name === proxyName)
   const inBytes = Number(item?.trafficIn ?? 0n)
   const outBytes = Number(item?.trafficOut ?? 0n)

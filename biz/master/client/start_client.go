@@ -49,7 +49,7 @@ func StartFRPCHandler(ctx *app.Context, req *pb.StartFRPCRequest) (*pb.StartFRPC
 		}
 
 		if resp == nil {
-			logger.Logger(ctx).Errorf("cannot get response, client id: [%s]", req.GetClientId())
+			logger.Logger(context.Background()).Errorf("cannot get response, client id: [%s]", req.GetClientId())
 		}
 	}()
 

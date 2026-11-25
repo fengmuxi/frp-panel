@@ -8,6 +8,7 @@ import (
 	"github.com/VaalaCat/frp-panel/conf"
 	"github.com/VaalaCat/frp-panel/services/app"
 	"github.com/VaalaCat/frp-panel/services/cache"
+	"github.com/VaalaCat/frp-panel/services/mailer"
 	"github.com/VaalaCat/frp-panel/services/master"
 	"github.com/VaalaCat/frp-panel/services/mux"
 	"github.com/VaalaCat/frp-panel/services/watcher"
@@ -56,9 +57,15 @@ func runMaster(param runMasterParam) {
 	param.TaskManager.AddCronTask("0 * * * * *", proxy.ReconcileTunnelRules, param.AppInstance)
 	// 每小时整点采集当日流量小时快照（首页"今日"小时粒度趋势的数据源）
 	param.TaskManager.AddCronTask("0 0 * * * *", proxy.CollectHourlyStats, param.AppInstance)
+	// 每分钟对账一次节点掉线：重启后内存掉线状态清零，靠此任务补发
+	// 重启期间已掉线且未重连节点的掉线通知（消除漏报窗口）
+	param.TaskManager.AddCronTask("0 * * * * *", mailer.ReconcileNodeOffline, param.AppInstance)
 	// master 启动时立即采集一次，保证部署后当天即可产生小时序列
 	proxy.CollectHourlyStats(param.Ctx)
-	defer param.TaskManager.Stop()
+	// 注意：不要在这里 defer TaskManager.Stop() —— runMaster 返回时 fx 尚未 Start，
+	// 提前 Shutdown 会永久取消 gocron 的 shutdownCtx，随后 OnStart 里 TaskManager.Run()
+	// 的 Start() 直接撞 <shutdownCtx.Done() 静默返回，所有 cron 任务永不触发
+	// （历史 bug：CollectDailyStats 等 4 个定时任务从部署起从未运行）。停止统一走下方 OnStop。
 
 	logger.Logger(param.Ctx).Infof("start to run master")
 	var wg conc.WaitGroup

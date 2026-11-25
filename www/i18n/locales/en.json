@@ -361,7 +361,9 @@
       "wireguardsDesc": "WireGuards registered to this network",
       "linksTitle": "Network links",
       "linksDesc": "Connections between WireGuard devices",
-      "topologyDesc": "Visual network topology"
+      "topologyDesc": "Visual network topology",
+      "updatedAt": "Last updated",
+      "noTime": "No updates yet"
     },
     "topologySidebar": {
       "title": "Link Details",
@@ -1116,7 +1118,10 @@
       "name_placeholder": "Enter worker name",
       "resources": "Resources",
       "clients": "Deployments",
-      "ingresses": "Ingresses"
+      "ingresses": "Ingresses",
+      "description": "Note",
+      "description_placeholder": "No note yet",
+      "unknown_version": "Unknown version"
     },
     "ingress": {
       "create_success": "Ingress created successfully",
@@ -1207,7 +1212,7 @@
     "period": {
       "today": "Today",
       "yesterday": "Yesterday",
-      "week": "This Week",
+      "week": "Last 7 Days",
       "month": "This Month",
       "year": "This Year",
       "custom": "Custom",

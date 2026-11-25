@@ -1,3 +1,4 @@
+import { parseJSONSafe } from '@/lib/safe-parse'
 'use client'
 
 import React, { useState } from 'react'
@@ -280,7 +281,7 @@ const IngressSectionInner = ({
                               <span className="font-mono text-xs items-center hide-scroll-bar">
                                 <WorkerIngressPreview
                                   serverId={ingress.serverId}
-                                  proxyCfg={JSON.parse(ingress.config || '{}') as TypedProxyConfig} />
+                                  proxyCfg={parseJSONSafe<TypedProxyConfig>(ingress.config, {} as TypedProxyConfig)} />
                               </span>
                             </div>
                           </TooltipTrigger>
@@ -393,7 +394,7 @@ const IngressEditDialog = ({
         </DialogHeader>
         <ProxyConfigMutateForm
           disableChangeProxyName
-          defaultProxyConfig={JSON.parse(ingress.config || '{}') as TypedProxyConfig}
+          defaultProxyConfig={parseJSONSafe<TypedProxyConfig>(ingress.config, {} as TypedProxyConfig)}
           overwrite={true}
           defaultOriginalProxyConfig={ingress}
           onSuccess={() => {

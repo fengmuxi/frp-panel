@@ -3,6 +3,7 @@ import { TypedClientPluginOptions } from "@/types/plugin";
 import { HTTPProxyConfig, TypedProxyConfig } from "@/types/proxy";
 import { ServerConfig } from "@/types/server";
 import { ArrowRight, Globe, Monitor } from 'lucide-react';
+import { parseJSONSafe } from '@/lib/safe-parse'
 
 export function VisitPreview({ server, typedProxyConfig, direction, withIcon = true }:
   {
@@ -23,7 +24,7 @@ export function VisitPreview({ server, typedProxyConfig, direction, withIcon = t
 }
 
 export function ServerSideVisitPreview({ server, typedProxyConfig, withIcon = true }: { server: Server; typedProxyConfig: TypedProxyConfig; withIcon?: boolean }) {
-  const serverCfg = JSON.parse(server?.config || '{}') as ServerConfig;
+  const serverCfg = parseJSONSafe<ServerConfig>(server?.config, {} as ServerConfig);
   const serverAddress = server.ip || serverCfg.bindAddr || 'Unknown';
   const serverPort = getServerPort(typedProxyConfig, serverCfg);
 

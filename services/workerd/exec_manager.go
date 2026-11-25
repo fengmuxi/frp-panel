@@ -44,13 +44,14 @@ func NewExecManager(binPath string, defaultArgs []string) app.WorkerExecManager 
 func (m *workerExecManager) RunCmd(uid string, cwd string, argv []string) {
 	ctx := context.Background()
 	logger.Logger(context.Background()).Infof("start to run command, command id: [%s], argv: %s", uid, utils.MarshalForJson(argv))
-	if _, ok := m.chanMap.Load(uid); ok {
+	// LoadOrStore 原子去重：此前 check-then-store 非原子，并发双启动会产生
+	// 两个 run loop + 两个 watcher，ExitCmd 只能唤醒其一——另一个 run loop
+	// 永远拿不到取消信号，且 uid 从此被当作 "already running" 无法再启动。
+	// 新建的取消信号 channel 由 watcher goroutine 自行从 chanMap 读取
+	if _, loaded := m.chanMap.LoadOrStore(uid, make(chan struct{})); loaded {
 		logger.Logger(ctx).Infof("command id: [%s] is already running, ignore", uid)
 		return
 	}
-
-	c := make(chan struct{})
-	m.chanMap.Store(uid, c)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -61,6 +62,9 @@ func (m *workerExecManager) RunCmd(uid string, cwd string, argv []string) {
 
 		logger.Logger(ctx).Infof("command id: [%s] is running!", uid)
 
+		// 指数退避：持续崩溃的 worker 此前每 3s 固定重启并刷错误日志
+		//（配置非法/二进制缺失/端口被占时永久循环）——3s→6s→…→60s 封顶
+		failures := 0
 		for {
 			args := []string{}
 
@@ -76,13 +80,21 @@ func (m *workerExecManager) RunCmd(uid string, cwd string, argv []string) {
 			cmd.Stdout = logger.LoggerWriter("workerd", logrus.InfoLevel)
 			cmd.Stderr = logger.LoggerWriter("workerd", logrus.ErrorLevel)
 			if err := cmd.Run(); err != nil {
-				logger.Logger(ctx).WithError(err).Errorf("command id: [%s] run failed, binary path: [%s], args: %s", uid, m.binaryPath, utils.MarshalForJson(args))
+				failures++
+				logger.Logger(ctx).WithError(err).Errorf("command id: [%s] run failed (consecutive: %d), binary path: [%s], args: %s", uid, failures, m.binaryPath, utils.MarshalForJson(args))
+			} else {
+				failures = 0
 			}
 
 			if exit, ok := m.signMap.Load(uid); ok && exit {
 				return
 			}
-			time.Sleep(3 * time.Second)
+
+			backoff := 3 * time.Second
+			for i := 1; i < failures && backoff < 60*time.Second; i++ {
+				backoff *= 2
+			}
+			time.Sleep(backoff)
 		}
 	}(ctx, uid, argv, m)
 

@@ -15,6 +15,6 @@ export const register = async (req: RegisterRequest) => {
 }
 
 export const logout = async () => {
-  const res = await http.get(API_PATH + '/auth/logout')
+  const res = await http.post(API_PATH + '/auth/logout')
   return CommonResponse.fromJson((res.data as BaseResponse).body)
 }

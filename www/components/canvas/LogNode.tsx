@@ -38,7 +38,7 @@ const LogNodeComponent: React.FC<NodeProps<LogNode> & NodeOperations> = ({ id, d
 
   // 获取客户端状态
   const { data: clientStatusData } = useQuery({
-    queryKey: ['clientStatus', clientId],
+    queryKey: ['clientStatus', data?.clientType, clientId],
     queryFn: async () => {
       if (!clientId) return undefined
       return await getClientsStatus({

@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { getProxyTrafficStats } from '@/api/stats'
-import { Period, TZ_OFFSET, getCustomRange, getPeriodRange, validateRange } from '@/lib/time-range'
+import { Period, TZ_OFFSET, getCustomRange, getPeriodRange, toDateInput, validateRange } from '@/lib/time-range'
 import { PeriodTabs } from '@/components/home/period-tabs'
 import { TrafficSummaryCard } from '@/components/home/traffic-summary-card'
 import { TrafficTrendChart, TrendGranularity, TrendPoint } from '@/components/home/traffic-trend-chart'
@@ -19,9 +19,10 @@ import { toast } from 'sonner'
 export function HomeTraffic() {
   const { t } = useTranslation()
   const [period, setPeriod] = useState<Period>('today')
+  // 默认自定义日期按北京时间生成（toISOString 是 UTC，凌晨 0-8 点会差一天）
   const [customRange, setCustomRange] = useState(() => getCustomRange(
-    new Date().toISOString().slice(0, 10),
-    new Date().toISOString().slice(0, 10),
+    toDateInput(new Date()),
+    toDateInput(new Date()),
   ))
 
   const range = useMemo(
@@ -82,7 +83,7 @@ export function HomeTraffic() {
   const totalIn = Number(query.data?.totalIn ?? 0n)
   const totalOut = Number(query.data?.totalOut ?? 0n)
 
-  // 趋势图粒度：今日/昨日 → 分钟（推送增量流水聚合，准实时），本年 → 月，其余（本周/本月/自定义）→ 日
+  // 趋势图粒度：今日/昨日 → 分钟（推送增量流水聚合，准实时），本年 → 月，其余（近七天/本月/自定义）→ 日
   const granularity: TrendGranularity =
     period === 'today' || period === 'yesterday'
       ? 'minute'

@@ -41,7 +41,7 @@ export const AgentSelector: React.FC<AgentSelectorProps> = ({ value, onChange, p
 
 	// 获取客户端列表
 	const { data: clientList, refetch: refetchClients } = useQuery({
-		queryKey: ['listClient', keyword],
+		queryKey: ['listClient', keyword, 20],
 		queryFn: () => {
 			return listClient({ page: 1, pageSize: 20, keyword: keyword })
 		},
@@ -50,7 +50,7 @@ export const AgentSelector: React.FC<AgentSelectorProps> = ({ value, onChange, p
 
 	// 获取服务器列表
 	const { data: serverList, refetch: refetchServers } = useQuery({
-		queryKey: ['listServer', keyword],
+		queryKey: ['listServer', keyword, 20],
 		queryFn: () => {
 			return listServer({ page: 1, pageSize: 20, keyword: keyword })
 		},

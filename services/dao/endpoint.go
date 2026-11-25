@@ -17,6 +17,7 @@ import (
 
 type EndpointQuery interface {
 	GetEndpointByID(userInfo models.UserInfo, id uint) (*models.Endpoint, error)
+	AdminGetEndpointsByClientIDs(clientIDs []string) ([]*models.Endpoint, error)
 	ListEndpoints(userInfo models.UserInfo, page, pageSize int) ([]*models.Endpoint, error)
 	CountEndpoints(userInfo models.UserInfo) (int64, error)
 	ListEndpointsWithFilters(userInfo models.UserInfo, page, pageSize int, clientID string, wireguardID uint, keyword string) ([]*models.Endpoint, error)
@@ -115,6 +116,20 @@ func (m *endpointMutation) DeleteEndpoint(userInfo models.UserInfo, id uint) err
 	db := m.ctx.GetApp().GetDBManager().GetDefaultDB()
 	return applyEndpointScope(db, userInfo).Where("id = ?", id).
 		Unscoped().Delete(&models.Endpoint{}).Error
+}
+
+// AdminGetEndpointsByClientIDs 返回挂载在给定 client 集合上的全部 Endpoint，
+// 不限归属用户——级联删除等 server 级清理使用
+func (q *endpointQuery) AdminGetEndpointsByClientIDs(clientIDs []string) ([]*models.Endpoint, error) {
+	if len(clientIDs) == 0 {
+		return []*models.Endpoint{}, nil
+	}
+	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
+	list := []*models.Endpoint{}
+	if err := db.Where("client_id IN ?", clientIDs).Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
 }
 
 func (q *endpointQuery) GetEndpointByID(userInfo models.UserInfo, id uint) (*models.Endpoint, error) {

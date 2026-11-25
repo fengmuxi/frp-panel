@@ -226,8 +226,10 @@ func UpdateFrpcHander(c *app.Context, req *pb.UpdateFRPCRequest) (*pb.UpdateFRPC
 	go func() {
 		childCtx := c.Background()
 		cliToUpdate, err := dao.NewQuery(childCtx).GetClientByFilter(userInfo, &models.ClientEntity{ClientID: cli.OriginClientID}, nil)
-		if err != nil {
-			logger.Logger(childCtx).WithError(err).Errorf("cannot get origin client, id: [%s]", cliToUpdate.OriginClientID)
+		if err != nil || cliToUpdate == nil {
+			// 注意：此处 cliToUpdate 可能为 nil（origin 被并发删除/DB 抖动），
+			// 不能解引用；goroutine 无 recover，panic 会击穿 master 进程
+			logger.Logger(childCtx).WithError(err).Errorf("cannot get origin client, id: [%s]", cli.OriginClientID)
 			return
 		}
 

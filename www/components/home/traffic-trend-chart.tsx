@@ -48,10 +48,10 @@ export function TrafficTrendChart({ series, granularity = 'day' }: TrafficTrendC
     return series.map((p) => ({
       date:
         effective === 'hour' || effective === 'minute'
-          ? new Date(p.ts * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          ? new Date(p.ts * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Shanghai' })
           : effective === 'month'
-            ? new Date(p.ts * 1000).toLocaleDateString([], { year: 'numeric', month: '2-digit' })
-            : new Date(p.ts * 1000).toLocaleDateString(),
+            ? new Date(p.ts * 1000).toLocaleDateString([], { year: 'numeric', month: '2-digit', timeZone: 'Asia/Shanghai' })
+            : new Date(p.ts * 1000).toLocaleDateString([], { timeZone: 'Asia/Shanghai' }),
       in: p.in,
       out: p.out,
     }))
@@ -70,8 +70,8 @@ export function TrafficTrendChart({ series, granularity = 'day' }: TrafficTrendC
     const only = series[0]
     const timeLabel =
       granularity === 'hour' || granularity === 'minute'
-        ? new Date(only.ts * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        : new Date(only.ts * 1000).toLocaleDateString()
+        ? new Date(only.ts * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Shanghai' })
+        : new Date(only.ts * 1000).toLocaleDateString([], { timeZone: 'Asia/Shanghai' })
     return (
       <Card>
         <CardHeader>

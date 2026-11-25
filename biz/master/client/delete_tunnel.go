@@ -38,7 +38,7 @@ func RemoveFrpcHandler(c *app.Context, req *pb.RemoveFRPCRequest) (*pb.RemoveFRP
 	}
 
 	go func() {
-		resp, err := rpc.CallClient(c, req.GetClientId(), pb.Event_EVENT_REMOVE_FRPC, req)
+		resp, err := rpc.CallClient(app.NewContext(context.Background(), c.GetApp()), req.GetClientId(), pb.Event_EVENT_REMOVE_FRPC, req)
 		if err != nil {
 			logger.Logger(context.Background()).WithError(err).Errorf("remove event send to client error, client id: [%s]", req.GetClientId())
 		}

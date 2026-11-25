@@ -56,6 +56,9 @@ func applyLowerPrivilege(cmd *exec.Cmd) {
 		cmd.SysProcAttr = &syscall.SysProcAttr{}
 	}
 	cmd.SysProcAttr.Credential = &syscall.Credential{Uid: uid, Gid: gid}
+	// Pdeathsig：frpp 被 SIGKILL/OOM 杀死时子进程随之终止，避免孤儿 workerd
+	// 占用抽象 unix socket 导致重启后新实例绑定失败进入崩溃循环
+	cmd.SysProcAttr.Pdeathsig = syscall.SIGKILL
 }
 
 // chownTree 把 worker 目录递归交给降权用户（workerd 需要在其中读写代码与配置）。

@@ -29,18 +29,20 @@ func (w *wireGuard) initWGDevice() error {
 			return errors.Join(fmt.Errorf("parse local addr '%s' for netip", w.ifce.GetLocalAddress()), err)
 		}
 
-		addrs := lo.Map(w.ifce.GetDnsServers(), func(s string, _ int) netip.Addr {
+		// DNS 解析失败的项跳过（此前会写入 netip.Addr{} 零值产生非法 DNS 配置）
+		addrs := lo.FilterMap(w.ifce.GetDnsServers(), func(s string, _ int) (netip.Addr, bool) {
 			addr, err := netip.ParseAddr(s)
 			if err != nil {
-				return netip.Addr{}
+				return netip.Addr{}, false
 			}
-			return addr
+			return addr, true
 		})
 		if len(addrs) == 0 {
 			addrs = []netip.Addr{netip.AddrFrom4([4]byte{1, 2, 4, 8})}
 		}
 		log.Debugf("create netstack TUN with addr '%s' and dns servers '%v'", prf.Addr().String(), addrs)
-		w.tunDevice, w.gvisorNet, err = netstack.CreateNetTUN([]netip.Addr{prf.Addr()}, addrs, 1200)
+		// MTU 用接口配置值（此前硬编码 1200 静默忽略配置）
+		w.tunDevice, w.gvisorNet, err = netstack.CreateNetTUN([]netip.Addr{prf.Addr()}, addrs, int(w.ifce.GetInterfaceMtu()))
 		if err != nil {
 			return errors.Join(fmt.Errorf("create netstack TUN device '%s' (MTU %d) failed", w.ifce.GetInterfaceName(), w.ifce.GetInterfaceMtu()), err)
 		}

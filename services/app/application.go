@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"sync"
 
 	"github.com/VaalaCat/frp-panel/conf"
 	"github.com/VaalaCat/frp-panel/pb"
@@ -20,8 +19,6 @@ type Application interface {
 	SetClientLogManager(ClientLogManager)
 	GetDBManager() DBManager
 	SetDBManager(DBManager)
-	GetClientRecvMap() *sync.Map
-	SetClientRecvMap(*sync.Map)
 	GetClientsManager() ClientsManager
 	SetClientsManager(ClientsManager)
 	GetMasterCli() MasterClient

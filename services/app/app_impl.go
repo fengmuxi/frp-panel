@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"sync"
 
 	"github.com/VaalaCat/frp-panel/conf"
 	"github.com/VaalaCat/frp-panel/pb"
@@ -20,7 +19,6 @@ type application struct {
 	clientRPCHandler     ClientRPCHandler
 	dbManager            DBManager
 	clientController     ClientController
-	clientRecvMap        *sync.Map
 	clientsManager       ClientsManager
 	serverHandler        ServerHandler
 	serverController     ServerController
@@ -168,16 +166,6 @@ func (a *application) GetClientsManager() ClientsManager {
 // SetClientsManager implements Application.
 func (a *application) SetClientsManager(clientsManager ClientsManager) {
 	a.clientsManager = clientsManager
-}
-
-// GetClientRecvMap implements Application.
-func (a *application) GetClientRecvMap() *sync.Map {
-	return a.clientRecvMap
-}
-
-// SetClientRecvMap implements Application.
-func (a *application) SetClientRecvMap(clientRecvMap *sync.Map) {
-	a.clientRecvMap = clientRecvMap
 }
 
 // GetDBManager implements Application.

@@ -88,6 +88,10 @@ export function TrafficRankingTable({ defaultPeriod = 'today' }: TrafficRankingT
           <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
             {t('home.loading')}
           </div>
+        ) : query.isError ? (
+          <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+            {t('home.errors.loadFailed')}
+          </div>
         ) : rows.length === 0 ? (
           <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
             {t('home.empty.stats')}

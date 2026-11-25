@@ -78,12 +78,22 @@ func (c *authTokenInURL) Run(ctx context.Context, env *Env) Result {
 	refs := []string{"middleware/jwt.go ?token= 查询参数通道", "defs.TokenKey"}
 	// 该通道当前被 ws-transport 节点与前端兼容依赖，无法直接从配置关闭；
 	// 观测项：提示其日志泄露面。用无效 token 探测仅验证中间件不崩。
-	probe := "/api/v1/user/info?token=invalid-probe-token"
-	code, _, _, err := env.Get(ctx, probe)
+	// 注意 JSON 分支的 401 在 body code 里（HTTP 200），protobuf 分支才是 HTTP 401
+	probe := "/api/v1/user/get?token=invalid-probe-token"
+	code, _, body, err := env.Get(ctx, probe)
 	if err != nil {
 		return Result{}.Skip(fmt.Sprintf("master API 不可达: %v", err)).ConfigRefs(refs...)
 	}
-	if code == http.StatusUnauthorized {
+	rejected := code == http.StatusUnauthorized
+	if !rejected {
+		var r struct {
+			Code int `json:"code"`
+		}
+		if json.Unmarshal(body, &r) == nil && r.Code == 401 {
+			rejected = true
+		}
+	}
+	if rejected {
 		return Result{}.Warn("?token= 查询参数认证通道处于启用状态（无效 token 已正确拒绝）").
 			WithDetails("URL 中的 token 会落入反代访问日志与 Referer 头；ws-transport 节点迁移到 Header/Cookie 后可移除该通道").ConfigRefs(refs...)
 	}

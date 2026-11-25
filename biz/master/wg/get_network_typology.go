@@ -41,6 +41,12 @@ func GetNetworkTopology(ctx *app.Context, req *pb.GetNetworkTopologyRequest) (*p
 		log.Errorf("no wireguard peers found")
 		return nil, fmt.Errorf("no wireguard peers found")
 	}
+	// nil 防御：peers[0].Network 预加载为 nil（network_id 悬挂的残留数据）时
+	// 裸取 ACL.Data 会 panic，该 gRPC 调用每 30s 一次、无 recovery 拦截器
+	if peers[0] == nil || peers[0].Network == nil || peers[0].Network.NetworkEntity == nil {
+		log.Errorf("network %d preload missing for first peer, dangling wireguard rows?", networkID)
+		return nil, fmt.Errorf("network %d data is incomplete (network preload missing)", networkID)
+	}
 
 	policy := wg.DefaultRoutingPolicy(
 		wg.NewACL().LoadFromPB(peers[0].Network.ACL.Data),

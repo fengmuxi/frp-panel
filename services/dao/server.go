@@ -13,6 +13,7 @@ import (
 
 type ServerQuery interface {
 	GetDefaultServer() (*models.ServerEntity, error)
+	AdminGetAllServers() ([]*models.Server, error)
 	ValidateServerSecret(serverID string, secret string) (*models.ServerEntity, error)
 	AdminGetServerByServerID(serverID string) (*models.ServerEntity, error)
 	GetServerByServerID(userInfo models.UserInfo, serverID string) (*models.ServerEntity, error)
@@ -101,6 +102,16 @@ func (m *serverMutation) UpdateDefaultServer(c *models.Server) error {
 		return err
 	}
 	return nil
+}
+
+// AdminGetAllServers 返回全部服务端节点（不限归属用户），供周期对账等内部任务使用
+func (q *serverQuery) AdminGetAllServers() ([]*models.Server, error) {
+	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
+	list := []*models.Server{}
+	if err := db.Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
 }
 
 func (q *serverQuery) ValidateServerSecret(serverID string, secret string) (*models.ServerEntity, error) {

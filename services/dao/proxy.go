@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -10,7 +9,6 @@ import (
 	"github.com/VaalaCat/frp-panel/models"
 	"github.com/VaalaCat/frp-panel/pb"
 	"github.com/VaalaCat/frp-panel/utils"
-	"github.com/VaalaCat/frp-panel/utils/logger"
 	"github.com/samber/lo"
 	"github.com/sourcegraph/conc/pool"
 	"gorm.io/gorm"
@@ -52,7 +50,7 @@ type ProxyMutation interface {
 	CreateProxyConfig(userInfo models.UserInfo, proxyCfg *models.ProxyConfigEntity) error
 	UpdateProxyConfig(userInfo models.UserInfo, proxyCfg *models.ProxyConfig) error
 	DeleteProxyConfig(userInfo models.UserInfo, clientID, name string) error
-	DeleteProxyConfigsByClientIDOrOriginClientID(userInfo models.UserInfo, clientID string) error
+	DeleteProxyConfigsByClientIDOrOriginClientID(userInfo models.UserInfo, clientID string, includeStopped bool) error
 	DeleteProxyConfigsByClientID(userInfo models.UserInfo, clientID string) error
 	AdminUpdateProxyConfigAutoStopped(id uint, autoStopped bool) error
 	SaveHourlySnapshots(snaps []*models.ProxyStatsHourly) error
@@ -467,49 +465,85 @@ func (m *proxyMutation) AdminCreateProxyConfig(proxyCfg *models.ProxyConfig) err
 	return db.Create(proxyCfg).Error
 }
 
-// RebuildProxyConfigFromClient rebuild proxy from client
-// skip stopped proxy
+// RebuildProxyConfigFromClient 以 client.ConfigContent 的隧道列表为准，重建该
+// child client 名下的 proxy_config 行（保留式 upsert，单事务）。
+//
+// 匹配键是 (ClientID, Name)：行由本函数或 UpdateProxyConfig 写入时都来自同一个
+// child client（FillClientConfig），因此该键在所有路径下稳定。历史上这里用
+// "OriginClientID = child.ClientID" 查旧行——行的 OriginClientID 存的是父 ID，
+// 永远查不中，导致每次配置下发都全量 INSERT（行 ID 漂移使按行 ID 关联的
+// 通知偏好变孤儿，且规则/停用字段被零值实体覆写，自动启停功能整体失效）。
+//
+// 保留语义：
+//   - 命中旧行：保留行 ID 与全部规则/停用字段（Stopped/AutoStopped/Schedule*/
+//     Quota*/WorkerID），只更新连接段 Content 与归属；
+//   - 旧行中本次不存在的名字：未手动停止的行删除（活跃隧道已从配置移除）；
+//     手动停止的行保留——它不在 ConfigContent 里是"停止"语义的正常表现。
 func (m *proxyMutation) RebuildProxyConfigFromClient(userInfo models.UserInfo, client *models.Client) error {
 	db := m.ctx.GetApp().GetDBManager().GetDefaultDB()
-	query := NewQuery(m.ctx)
 
 	pxyCfgs, err := utils.LoadProxiesFromContent(client.ConfigContent)
 	if err != nil {
 		return err
 	}
 
-	proxyConfigEntities := []*models.ProxyConfig{}
-
-	for _, pxyCfg := range pxyCfgs {
-		proxyCfg := &models.ProxyConfig{
-			ProxyConfigEntity: &models.ProxyConfigEntity{},
-		}
-		if oldProxyCfg, err := query.GetProxyConfigByOriginClientIDAndName(userInfo, client.ClientID, pxyCfg.GetBaseConfig().Name); err == nil {
-			logger.Logger(context.Background()).WithError(err).Warnf("proxy config already exist, will be override, clientID: [%s], name: [%s]",
-				client.ClientID, pxyCfg.GetBaseConfig().Name)
-			proxyCfg.Model = oldProxyCfg.Model
-		}
-
-		if err := proxyCfg.FillClientConfig(client.ClientEntity); err != nil {
+	return db.Transaction(func(tx *gorm.DB) error {
+		existing := []*models.ProxyConfig{}
+		if err := tx.Where(&models.ProxyConfig{ProxyConfigEntity: &models.ProxyConfigEntity{
+			UserID:   userInfo.GetUserID(),
+			TenantID: userInfo.GetTenantID(),
+			ClientID: client.ClientID,
+		}}).Find(&existing).Error; err != nil {
 			return err
 		}
-
-		if err := proxyCfg.FillTypedProxyConfig(pxyCfg); err != nil {
-			return err
+		existingByName := map[string]*models.ProxyConfig{}
+		for _, row := range existing {
+			existingByName[row.Name] = row
 		}
 
-		proxyConfigEntities = append(proxyConfigEntities, proxyCfg)
-	}
+		seen := map[string]bool{}
+		for _, pxyCfg := range pxyCfgs {
+			name := pxyCfg.GetBaseConfig().Name
+			seen[name] = true
 
-	if err := m.DeleteProxyConfigsByClientIDOrOriginClientID(userInfo, client.ClientID); err != nil {
-		return err
-	}
+			proxyCfg := &models.ProxyConfig{ProxyConfigEntity: &models.ProxyConfigEntity{}}
+			if oldRow, ok := existingByName[name]; ok {
+				// 命中旧行：保留行 ID、归属与规则/停用字段，只更新连接段
+				proxyCfg.Model = oldRow.Model
+				proxyCfg.Stopped = oldRow.Stopped
+				proxyCfg.AutoStopped = oldRow.AutoStopped
+				proxyCfg.ScheduleEnabled = oldRow.ScheduleEnabled
+				proxyCfg.ScheduleStart = oldRow.ScheduleStart
+				proxyCfg.ScheduleEnd = oldRow.ScheduleEnd
+				proxyCfg.ScheduleDays = oldRow.ScheduleDays
+				proxyCfg.QuotaType = oldRow.QuotaType
+				proxyCfg.QuotaLimit = oldRow.QuotaLimit
+				proxyCfg.QuotaDirection = oldRow.QuotaDirection
+				proxyCfg.WorkerID = oldRow.WorkerID
+			}
+			if err := proxyCfg.FillClientConfig(client.ClientEntity); err != nil {
+				return err
+			}
+			if err := proxyCfg.FillTypedProxyConfig(pxyCfg); err != nil {
+				return err
+			}
+			if err := tx.Save(proxyCfg).Error; err != nil {
+				return err
+			}
+		}
 
-	if len(proxyConfigEntities) == 0 {
+		// 旧行中本次不存在的名字：未手动停止的行删除（硬删，与历史行为一致）；
+		// 手动停止的行保留——不在配置里是"已暂停"的正常表现，非孤儿
+		for name, row := range existingByName {
+			if seen[name] || row.Stopped {
+				continue
+			}
+			if err := tx.Unscoped().Delete(row).Error; err != nil {
+				return err
+			}
+		}
 		return nil
-	}
-
-	return db.Save(proxyConfigEntities).Error
+	})
 }
 
 func (q *proxyQuery) AdminGetProxyConfigByClientIDAndName(clientID string, name string) (*models.ProxyConfig, error) {
@@ -758,12 +792,16 @@ func (m *proxyMutation) DeleteProxyConfig(userInfo models.UserInfo, clientID, na
 	return nil
 }
 
-func (m *proxyMutation) DeleteProxyConfigsByClientIDOrOriginClientID(userInfo models.UserInfo, clientID string) error {
+// DeleteProxyConfigsByClientIDOrOriginClientID 按 client/origin 删除隧道配置。
+// includeStopped=false 时保留已手动停止的行（RebuildProxyConfigFromClient 重建
+// 活跃隧道时依赖该语义保留暂停态）；删除客户端等销毁场景必须传 true，
+// 否则已停止的隧道会以"引用不存在 client 的幽灵行"形式永久残留。
+func (m *proxyMutation) DeleteProxyConfigsByClientIDOrOriginClientID(userInfo models.UserInfo, clientID string, includeStopped bool) error {
 	if clientID == "" {
 		return fmt.Errorf("invalid client id")
 	}
 	db := m.ctx.GetApp().GetDBManager().GetDefaultDB()
-	return db.Unscoped().
+	del := db.Unscoped().
 		Where(
 			db.Where(&models.ProxyConfig{ProxyConfigEntity: &models.ProxyConfigEntity{
 				UserID:   userInfo.GetUserID(),
@@ -774,10 +812,12 @@ func (m *proxyMutation) DeleteProxyConfigsByClientIDOrOriginClientID(userInfo mo
 					UserID:         userInfo.GetUserID(),
 					TenantID:       userInfo.GetTenantID(),
 					OriginClientID: clientID,
-				}})).
-		Where(db.Where("stopped is NULL").
-			Or("stopped = ?", false)).
-		Delete(&models.ProxyConfig{}).Error
+				}}))
+	if !includeStopped {
+		del = del.Where(db.Where("stopped is NULL").
+			Or("stopped = ?", false))
+	}
+	return del.Delete(&models.ProxyConfig{}).Error
 }
 
 func (m *proxyMutation) DeleteProxyConfigsByClientID(userInfo models.UserInfo, clientID string) error {

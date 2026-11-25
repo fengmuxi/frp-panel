@@ -65,7 +65,9 @@ func ErrUnAuthorized(c *gin.Context, err string) {
 		c.ProtoBuf(http.StatusUnauthorized,
 			&pb.CommonResponse{Status: &pb.Status{Code: pb.RespCode_RESP_CODE_UNAUTHORIZED, Message: err}})
 	} else {
-		c.JSON(http.StatusOK, Err(err))
+		// 必须回 code 401：原实现走 Err() 回 500，前端无法区分"服务内部错误"与
+		// "会话失效"，导致 JWT 过期时页面只显示请求失败、不跳登录页
+		c.JSON(http.StatusOK, UnAuth(err))
 	}
 }
 

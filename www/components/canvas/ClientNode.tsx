@@ -57,7 +57,7 @@ const ClientNodeComponent: React.FC<NodeProps<ClientNode> & NodeOperations> = ({
 
   // 获取客户端状态
   const { data: clientStatusData } = useQuery({
-    queryKey: ['clientStatus', clientId],
+    queryKey: ['clientStatus', 'frpc', clientId],
     queryFn: async () => {
       if (!clientId) return undefined
       return await getClientsStatus({

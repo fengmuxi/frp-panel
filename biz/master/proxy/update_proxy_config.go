@@ -92,9 +92,24 @@ func UpdateProxyConfig(c *app.Context, req *pb.UpdateProxyConfigRequest) (*pb.Up
 		return nil, err
 	}
 
+	// 编辑隧道只应更新连接配置本身。proxyCfg 是全新实体，直接 Save 会全量覆写所有列，
+	// 静默清空定时/限额规则、限额方向、手动暂停（Stopped）与自动停用标记，
+	// 并把手动暂停的隧道隐式重新拉起——这些字段必须从旧行继承；
+	// WorkerID 挂在包装结构体上（worker 关联同样不能丢）
+	proxyCfg.Stopped = oldProxyCfg.Stopped
+	proxyCfg.AutoStopped = oldProxyCfg.AutoStopped
+	proxyCfg.ScheduleEnabled = oldProxyCfg.ScheduleEnabled
+	proxyCfg.ScheduleStart = oldProxyCfg.ScheduleStart
+	proxyCfg.ScheduleEnd = oldProxyCfg.ScheduleEnd
+	proxyCfg.ScheduleDays = oldProxyCfg.ScheduleDays
+	proxyCfg.QuotaType = oldProxyCfg.QuotaType
+	proxyCfg.QuotaLimit = oldProxyCfg.QuotaLimit
+	proxyCfg.QuotaDirection = oldProxyCfg.QuotaDirection
+
 	if m.UpdateProxyConfig(userInfo, &models.ProxyConfig{
 		Model:             oldProxyCfg.Model,
 		ProxyConfigEntity: proxyCfg,
+		WorkerID:          oldProxyCfg.WorkerID,
 	}) != nil {
 		logger.Logger(c).Errorf("update proxy config failed, cfg: [%+v]", proxyCfg)
 		return nil, fmt.Errorf("update proxy config failed")

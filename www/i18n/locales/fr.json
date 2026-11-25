@@ -361,7 +361,9 @@
       "wireguardsDesc": "Interfaces WireGuard liées",
       "linksTitle": "Liens réseau",
       "linksDesc": "Connexions entre interfaces",
-      "topologyDesc": "Topologie réseau"
+      "topologyDesc": "Topologie réseau",
+      "updatedAt": "Dernière mise à jour",
+      "noTime": "Aucune mise à jour"
     },
     "topologySidebar": {
       "title": "Détails du lien",
@@ -1097,7 +1099,10 @@
       "name_placeholder": "Entrez le nom de la fonction",
       "resources": "Ressources",
       "clients": "Déploiements",
-      "ingresses": "Entrées"
+      "ingresses": "Entrées",
+      "description": "Note",
+      "description_placeholder": "Aucune note",
+      "unknown_version": "Version inconnue"
     },
     "ingress": {
       "create_success": "Entrée créée avec succès",
@@ -1188,7 +1193,7 @@
     "period": {
       "today": "Aujourd'hui",
       "yesterday": "Hier",
-      "week": "Cette semaine",
+      "week": "7 derniers jours",
       "month": "Ce mois",
       "year": "Cette année",
       "custom": "Personnalisé",

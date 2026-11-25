@@ -14,6 +14,7 @@ import { Badge } from '../ui/badge'
 import { useStore } from '@nanostores/react'
 import { $proxyTableRefetchTrigger } from '@/store/refetch-trigger'
 import { formatBytes } from '@/lib/utils'
+import { parseJSONSafe } from '@/lib/safe-parse'
 
 export type ProxyConfigTableSchema = {
   serverID: string
@@ -149,7 +150,7 @@ function VisitPreviewField({ row }: { row: Row<ProxyConfigTableSchema> }) {
     },
   })
 
-  const typedProxyConfig = JSON.parse(row.original.config || '{}') as TypedProxyConfig
+  const typedProxyConfig = parseJSONSafe<TypedProxyConfig>(row.original.config, {} as TypedProxyConfig)
 
   return <VisitPreview server={server?.server || { frpsUrls: [] }} typedProxyConfig={typedProxyConfig} />
 }

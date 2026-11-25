@@ -5,12 +5,14 @@ import (
 
 	"github.com/VaalaCat/frp-panel/models"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type WireGuardQuery interface {
 	GetWireGuardByID(userInfo models.UserInfo, id uint) (*models.WireGuard, error)
 	AdminGetWireGuardByClientIDAndInterfaceName(clientID, interfaceName string) (*models.WireGuard, error)
 	GetWireGuardsByNetworkID(userInfo models.UserInfo, networkID uint) ([]*models.WireGuard, error)
+	AdminGetWireGuardsByClientIDs(clientIDs []string) ([]*models.WireGuard, error)
 	GetWireGuardLocalAddressesByNetworkID(userInfo models.UserInfo, networkID uint) ([]string, error)
 	ListWireGuardsWithFilters(userInfo models.UserInfo, page, pageSize int, filter *models.WireGuardEntity, keyword string) ([]*models.WireGuard, error)
 	AdminListWireGuardsWithClientID(clientID string) ([]*models.WireGuard, error)
@@ -42,7 +44,8 @@ func (m *wireGuardMutation) CreateWireGuard(userInfo models.UserInfo, wg *models
 	wg.TenantId = uint32(userInfo.GetTenantID())
 
 	db := m.ctx.GetApp().GetDBManager().GetDefaultDB()
-	return db.Create(wg).Error
+	// Omit 关联：advertised endpoints 由 handler 统一创建（此前双创建撞唯一索引）
+	return db.Omit(clause.Associations).Create(wg).Error
 }
 
 func (m *wireGuardMutation) UpdateWireGuard(userInfo models.UserInfo, id uint, wg *models.WireGuard) error {
@@ -55,21 +58,15 @@ func (m *wireGuardMutation) UpdateWireGuard(userInfo models.UserInfo, id uint, w
 
 	db := m.ctx.GetApp().GetDBManager().GetDefaultDB()
 
-	// clear endpoints and resave if provided
-	if wg.AdvertisedEndpoints != nil {
-		if err := db.Unscoped().Model(&models.WireGuard{Model: gorm.Model{ID: id}, WireGuardEntity: &models.WireGuardEntity{
+	// 不触碰 endpoints 关联：端点绑定由 handler 的 bind/unbind 逻辑按 WireGuardID
+	// 管理（此前 Unscoped().Clear() 会硬删 endpoint 行，FK 生效的库还会级联摧毁
+	// wireguard_links）；Omit 关联避免 Save 顺带覆写端点
+	wg.Model = gorm.Model{ID: id}
+	return db.Omit(clause.Associations).
+		Where(&models.WireGuard{Model: gorm.Model{ID: id}, WireGuardEntity: &models.WireGuardEntity{
 			UserId:   uint32(userInfo.GetUserID()),
 			TenantId: uint32(userInfo.GetTenantID()),
-		}}).Association("AdvertisedEndpoints").Unscoped().Clear(); err != nil {
-			return err
-		}
-	}
-
-	wg.Model = gorm.Model{ID: id}
-	return db.Where(&models.WireGuard{Model: gorm.Model{ID: id}, WireGuardEntity: &models.WireGuardEntity{
-		UserId:   uint32(userInfo.GetUserID()),
-		TenantId: uint32(userInfo.GetTenantID()),
-	}}).Save(wg).Error
+		}}).Save(wg).Error
 }
 
 func (m *wireGuardMutation) DeleteWireGuard(userInfo models.UserInfo, id uint) error {
@@ -137,6 +134,20 @@ func (q *wireGuardQuery) GetWireGuardsByNetworkID(userInfo models.UserInfo, netw
 			NetworkID: networkID,
 		}}).
 		Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+// AdminGetWireGuardsByClientIDs 返回挂载在给定 client 集合上的全部 WireGuard，
+// 不限归属用户——级联删除等 server 级清理使用
+func (q *wireGuardQuery) AdminGetWireGuardsByClientIDs(clientIDs []string) ([]*models.WireGuard, error) {
+	if len(clientIDs) == 0 {
+		return []*models.WireGuard{}, nil
+	}
+	db := q.ctx.GetApp().GetDBManager().GetDefaultDB()
+	list := []*models.WireGuard{}
+	if err := db.Where("client_id IN ?", clientIDs).Find(&list).Error; err != nil {
 		return nil, err
 	}
 	return list, nil

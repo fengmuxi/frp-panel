@@ -1,6 +1,7 @@
 package mailer
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -130,9 +131,223 @@ func offlineDelay(prefs *models.UserNotifySettings, kind string) time.Duration {
 	return time.Duration(delaySec) * time.Second
 }
 
+// ---- 节点掉线统一状态（断开事件与周期对账共用）----
+//
+// 背景：掉线检测全在内存，master 重启会清空 ClientsManager 与防抖状态——
+// 重启前已掉线且未重连的节点永远不会再产生掉线通知（漏报窗口=重启周期）。
+// 周期对账任务（ReconcileNodeOffline）与断开事件共用本状态机消除漏报与双重通知：
+//   - 断开事件（CheckNodeOffline）：断开后满防抖时长仍未重连 → 发送并标记 notified；
+//   - 周期对账（ReconcileNodeOffline）：以 ClientsManager 实际在线为准，
+//     未连接满防抖时长且未通知 → 发送并标记；重连则清状态。
+type nodeOfflineState struct {
+	since    time.Time // 首次观察到离线的时刻（防抖起点）
+	notified bool      // 本轮掉线是否已发送通知
+}
+
+var (
+	nodeOfflineMu     sync.Mutex
+	nodeOfflineStates = map[string]*nodeOfflineState{} // key: nodeOfflineKey(cliType, clientID)
+)
+
+func nodeOfflineKey(cliType, clientID string) string {
+	return cliType + "\x00" + clientID
+}
+
+// markNodeOffline 确保节点处于"离线观察中"状态；首次观察以 now 为防抖起点。
+func markNodeOffline(cliType, clientID string, now time.Time) *nodeOfflineState {
+	key := nodeOfflineKey(cliType, clientID)
+	nodeOfflineMu.Lock()
+	defer nodeOfflineMu.Unlock()
+	st, ok := nodeOfflineStates[key]
+	if !ok {
+		st = &nodeOfflineState{since: now}
+		nodeOfflineStates[key] = st
+	}
+	return st
+}
+
+func nodeOfflineNotified(cliType, clientID string) bool {
+	key := nodeOfflineKey(cliType, clientID)
+	nodeOfflineMu.Lock()
+	defer nodeOfflineMu.Unlock()
+	st, ok := nodeOfflineStates[key]
+	return ok && st.notified
+}
+
+func markNodeOfflineNotified(cliType, clientID string) {
+	key := nodeOfflineKey(cliType, clientID)
+	nodeOfflineMu.Lock()
+	defer nodeOfflineMu.Unlock()
+	if st, ok := nodeOfflineStates[key]; ok {
+		st.notified = true
+	}
+}
+
+// clearNodeOfflineState 节点重连时清除掉线状态（下一轮掉线重新计数）
+func clearNodeOfflineState(cliType, clientID string) {
+	key := nodeOfflineKey(cliType, clientID)
+	nodeOfflineMu.Lock()
+	defer nodeOfflineMu.Unlock()
+	delete(nodeOfflineStates, key)
+}
+
+// notifyResTypeFor 由节点类型映射通知资源类型（服务端/客户端）
+func notifyResTypeFor(cliType string) string {
+	switch cliType {
+	case defs.CliTypeServer:
+		return models.NotifyResTypeServer
+	case defs.CliTypeClient:
+		return models.NotifyResTypeClient
+	}
+	return ""
+}
+
+// notifyOfflineEnabled 读取指定类型节点掉线提醒的生效开关（资源级 > 用户级）
+func notifyOfflineEnabled(prefs *models.UserNotifySettings, cliType string) bool {
+	if prefs == nil {
+		return false
+	}
+	switch cliType {
+	case defs.CliTypeServer:
+		return prefs.EnableServerOffline
+	case defs.CliTypeClient:
+		return prefs.EnableClientOffline
+	}
+	return false
+}
+
+// notifyNodeDisplayName 解析节点展示名（备注优先，回退 ID/原值）
+func notifyNodeDisplayName(ctx *app.Context, resType, resID, fallback string) string {
+	switch resType {
+	case models.NotifyResTypeServer:
+		if srv, err := dao.NewQuery(ctx).AdminGetServerByServerID(resID); err == nil && srv != nil && strings.TrimSpace(srv.Comment) != "" {
+			return srv.Comment
+		}
+	case models.NotifyResTypeClient:
+		if cli, err := dao.NewQuery(ctx).AdminGetClientByClientID(resID); err == nil && cli != nil && strings.TrimSpace(cli.Comment) != "" {
+			return cli.Comment
+		}
+	}
+	if strings.TrimSpace(fallback) != "" {
+		return fallback
+	}
+	return resID
+}
+
+// reconcileNodeOnce 对单个节点执行一轮掉线对账：
+// 在线 → 清除离线状态；离线 → 未观察过则记账，满防抖时长且未通知则发送。
+// 返回本轮是否发送了通知。
+func reconcileNodeOnce(ctx *app.Context, cfg *models.SMTPSettings, cliType, clientID string, connected bool, now time.Time) bool {
+	userID, displayName := 0, ""
+	var prefs *models.UserNotifySettings
+	resType := notifyResTypeFor(cliType)
+	switch cliType {
+	case defs.CliTypeServer:
+		srv, err := dao.NewQuery(ctx).AdminGetServerByServerID(clientID)
+		if err != nil || srv == nil {
+			// 节点已从面板删除：清状态并跳过
+			clearNodeOfflineState(cliType, clientID)
+			return false
+		}
+		userID = srv.UserID
+		displayName = srv.Comment
+		prefs = resolvePrefs(ctx, resType, clientID, userID)
+	case defs.CliTypeClient:
+		cli, err := dao.NewQuery(ctx).AdminGetClientByClientID(clientID)
+		if err != nil || cli == nil || cli.ClientEntity == nil {
+			clearNodeOfflineState(cliType, clientID)
+			return false
+		}
+		userID = cli.UserID
+		displayName = cli.Comment
+		prefs = resolvePrefs(ctx, resType, clientID, userID)
+	default:
+		return false
+	}
+
+	st := markNodeOffline(cliType, clientID, now)
+	if connected {
+		clearNodeOfflineState(cliType, clientID)
+		return false
+	}
+	if !notifyOfflineEnabled(prefs, cliType) {
+		// 通知关闭：保持观察但不发送（开关打开后从观察起点重新计数）
+		return false
+	}
+	if now.Sub(st.since) < offlineDelay(prefs, cliType) || st.notified {
+		return false
+	}
+
+	if strings.TrimSpace(displayName) == "" {
+		displayName = clientID
+	}
+	displayName = notifyNodeDisplayName(ctx, resType, clientID, displayName)
+	email := resolveEmail(ctx, userID)
+	if email == "" {
+		return false
+	}
+
+	kind := "服务端"
+	if cliType == defs.CliTypeClient {
+		kind = "客户端"
+	}
+	SendAsync(ctx, cfg, []string{email}, NodeOfflineContent(kind, displayName, clientID, now))
+	markNodeOfflineNotified(cliType, clientID)
+	return true
+}
+
+// ReconcileNodeOffline 节点掉线的周期对账（每分钟）：以 ClientsManager 实际在线为准
+// 对全部未停止的服务端/客户端做一轮离线判定。
+//
+// 背景：掉线检测状态全在内存，master 重启会清空——重启前已掉线且未重连的节点
+// 在旧实现中永远不会产生掉线通知（漏报窗口=重启周期）。本任务消除该漏报，
+// 同时在 CheckNodeOffline goroutine 因任意原因丢失时兜底。
+func ReconcileNodeOffline(appInstance app.Application) error {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Logger(context.Background()).Errorf("reconcile node offline panic: %v", r)
+		}
+	}()
+
+	ctx := app.NewContext(context.Background(), appInstance)
+	cfg := loadSettings(ctx)
+	if cfg == nil || cfg.Host == "" {
+		return nil
+	}
+	now := time.Now()
+
+	servers, err := dao.NewQuery(ctx).AdminGetAllServers()
+	if err != nil {
+		logger.Logger(ctx).WithError(err).Errorf("reconcile node offline: cannot list servers")
+		return nil
+	}
+	for _, srv := range servers {
+		if srv == nil || srv.ServerEntity == nil {
+			continue
+		}
+		_, connected := appInstance.GetClientsManager().ConnectTime(srv.ServerID)
+		reconcileNodeOnce(ctx, cfg, defs.CliTypeServer, srv.ServerID, connected, now)
+	}
+
+	clients, err := dao.NewQuery(ctx).AdminGetAllClients()
+	if err != nil {
+		logger.Logger(ctx).WithError(err).Errorf("reconcile node offline: cannot list clients")
+		return nil
+	}
+	for _, cli := range clients {
+		if cli == nil || cli.ClientEntity == nil || cli.Stopped {
+			continue
+		}
+		_, connected := appInstance.GetClientsManager().ConnectTime(cli.ClientID)
+		reconcileNodeOnce(ctx, cfg, defs.CliTypeClient, cli.ClientID, connected, now)
+	}
+	return nil
+}
+
 // CheckNodeOffline 节点 gRPC 连接断开后的掉线确认（阻塞，调用方需用 go 启动）。
 // 防抖：断开后等待该类型的防抖时长（可在通知设置里按类型配置），若期间节点
 // 重连（ConnectTime 更新）则不发通知。
+// 与周期对账任务（ReconcileNodeOffline）共用同一掉线状态机，互相消除漏报与双重通知。
 // 注意：连接断开不会从 ClientsManager 中 Remove，因此不能用 Get() 判在线，必须比较 ConnectTime。
 func CheckNodeOffline(ctx *app.Context, cliType, clientID string, connTime time.Time) {
 	defer func() {
@@ -180,16 +395,19 @@ func CheckNodeOffline(ctx *app.Context, cliType, clientID string, connTime time.
 		return
 	}
 
+	// 断开事件写入共享掉线状态（对账任务据此继续计数）
+	markNodeOffline(cliType, clientID, time.Now())
+
 	// 用户配置的该类型防抖时长
 	time.Sleep(offlineDelay(prefs, cliType))
 
 	cur, ok := ctx.GetApp().GetClientsManager().ConnectTime(clientID)
 	if !ok {
-		// 连接记录已被清理（非本进程注册或期间被移除），不判定
-		return
-	}
-	if cur.After(connTime) {
+		// 连接记录已被清理（非本进程注册或期间被移除）——按掉线处理，
+		// 未通知过则发送（与周期对账口径一致）
+	} else if cur.After(connTime) {
 		// 断开期间已重连，不算掉线
+		clearNodeOfflineState(cliType, clientID)
 		return
 	}
 
@@ -202,12 +420,18 @@ func CheckNodeOffline(ctx *app.Context, cliType, clientID string, connTime time.
 		name = clientID
 	}
 
+	if nodeOfflineNotified(cliType, clientID) {
+		// 周期对账已发送过本轮掉线通知，不重复发送
+		return
+	}
+
 	email := resolveEmail(ctx, userID)
 	if email == "" {
 		return
 	}
 
 	SendAsync(ctx, cfg, []string{email}, NodeOfflineContent(kind, name, clientID, time.Now()))
+	markNodeOfflineNotified(cliType, clientID)
 }
 
 // nodeOnlineNotified 节点上线提醒防抖：同节点 60s 内只通知一次
@@ -228,6 +452,9 @@ func NotifyNodeOnline(ctx *app.Context, cliType, clientID string) {
 			logger.Logger(ctx).Errorf("notify node online panic: %v", r)
 		}
 	}()
+
+	// 重连即复位该节点的掉线状态：下一轮掉线重新计数（与断开事件/对账任务联动）
+	clearNodeOfflineState(cliType, clientID)
 
 	// 先定位节点与所属用户，用该用户自己的通知开关判断
 	var (
@@ -367,6 +594,8 @@ func TrackProxyOffline(ctx *app.Context, srv *models.ServerEntity, activeNames m
 		return p
 	}
 
+	cfg := loadSettings(ctx)
+
 	proxyMu.Lock()
 
 	// frps 首次同步或无活跃隧道（推送盲区）时不判定，仅重置该 server 状态
@@ -378,9 +607,10 @@ func TrackProxyOffline(ctx *app.Context, srv *models.ServerEntity, activeNames m
 
 	now := time.Now()
 	disappearedSet := map[string]bool{}
-	var toSend []ProxyOfflineItem
-	// 隧道重现且此前通知过掉线时的上线提醒队列
 	var toOnlineSend []ProxyOfflineItem
+	// 待判定候选（首次消失已记账、尚未通知）：锁内只做收集，
+	// 通知开关/防抖时长的解析（DB 查询）移到锁外，避免全局锁内做 DB I/O
+	var due []*proxyPendingState
 
 	for _, item := range disappeared {
 		if item.ServerID != srv.ServerID || item.ProxyName == "" {
@@ -397,14 +627,13 @@ func TrackProxyOffline(ctx *app.Context, srv *models.ServerEntity, activeNames m
 		if st.notified {
 			continue
 		}
-		// 持续消失满该资源配置的防抖时长才发送
-		if now.Sub(st.firstSeen) >= offlineDelay(prefsOf(st.item), notifyKindProxy) {
-			st.notified = true
-			toSend = append(toSend, st.item)
-		}
+		due = append(due, st)
 	}
 
-	// 隧道重新出现：复位防抖状态；若此前已通知过掉线，补发一条上线提醒（与掉线配对）
+	// 隧道重新出现：复位防抖状态；若此前已通知过掉线，补发一条上线提醒（与掉线配对）。
+	// 上线补发必须以 activeNames 真实命中为准：disappearedSet 只含"配置存在且未停止"的
+	// 隧道，用户手动停用隧道/停用客户端后该隧道不在 disappeared 里、但也不在
+	// activeNames 里——那是人为关闭，不能补发"隧道已上线"的假通知
 	prefix := srv.ServerID + "\x00"
 	for key := range proxyPending {
 		if !strings.HasPrefix(key, prefix) {
@@ -413,7 +642,7 @@ func TrackProxyOffline(ctx *app.Context, srv *models.ServerEntity, activeNames m
 		name := strings.SplitN(key, prefix, 2)[1]
 		if !disappearedSet[name] {
 			st := proxyPending[key]
-			if st.notified {
+			if st.notified && activeNames[name] {
 				toOnlineSend = append(toOnlineSend, st.item)
 			}
 			delete(proxyPending, key)
@@ -422,27 +651,35 @@ func TrackProxyOffline(ctx *app.Context, srv *models.ServerEntity, activeNames m
 
 	proxyMu.Unlock()
 
-	if len(toSend) == 0 && len(toOnlineSend) == 0 {
+	if len(toOnlineSend) == 0 {
 		return
 	}
 
-	cfg := loadSettings(ctx)
 	if cfg == nil || cfg.Host == "" {
 		return
 	}
 
-	if len(toSend) > 0 {
-		for _, item := range toSend {
-			// 逐条按「资源级 > 用户级」开关判断
-			if !prefsOf(item).EnableProxyOffline {
-				continue
-			}
-			email := resolveEmail(ctx, item.UserID)
-			if email == "" {
-				continue
-			}
-			SendAsync(ctx, cfg, []string{email}, TunnelOfflineContent(item.ProxyName, item.ServerID, time.Now()))
+	// 逐候选在锁外判定：开关/防抖时长/收件人全部通过才标记 notified 并发送。
+	// 标记后置就是为了"同步失败点（配置/收件人缺失）不吞通知"——
+	// 这些失败点发生在标记之前，下一轮推送会重试；SMTP 投递失败仍为 fire-and-forget
+	for _, st := range due {
+		prefs := prefsOf(st.item)
+		if now.Sub(st.firstSeen) < offlineDelay(prefs, notifyKindProxy) {
+			continue
 		}
+		if !prefs.EnableProxyOffline {
+			continue
+		}
+		email := resolveEmail(ctx, st.item.UserID)
+		if email == "" {
+			continue
+		}
+
+		proxyMu.Lock()
+		st.notified = true
+		proxyMu.Unlock()
+
+		SendAsync(ctx, cfg, []string{email}, TunnelOfflineContent(st.item.ProxyName, st.item.ServerID, time.Now()))
 	}
 
 	// 隧道上线提醒：重现且此前通知过掉线时补发，与掉线提醒配对

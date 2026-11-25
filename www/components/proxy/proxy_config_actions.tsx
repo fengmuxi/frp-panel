@@ -1,3 +1,4 @@
+import { parseJSONSafe } from '@/lib/safe-parse'
 import { ProxyType, TypedProxyConfig } from '@/types/proxy'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../ui/button'
@@ -168,7 +169,7 @@ export function ProxyConfigActions({ serverID, clientID, name, row }: ProxyConfi
         <DialogContent className="max-h-[90vh] overflow-auto">
           <ProxyConfigMutateForm
             disableChangeProxyName
-            defaultProxyConfig={JSON.parse(row.original.config || '{}') as TypedProxyConfig}
+            defaultProxyConfig={parseJSONSafe<TypedProxyConfig>(row.original.config, {} as TypedProxyConfig)}
             overwrite={true}
             defaultOriginalProxyConfig={row.original.originalProxyConfig}
             onSuccess={() => setProxyMutateFormOpen(false)}

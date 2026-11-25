@@ -49,7 +49,7 @@ func StopFRPCHandler(ctx *app.Context, req *pb.StopFRPCRequest) (*pb.StopFRPCRes
 		}
 
 		if resp == nil {
-			logger.Logger(ctx).Errorf("cannot get response, client id: [%s]", req.GetClientId())
+			logger.Logger(context.Background()).Errorf("cannot get response, client id: [%s]", req.GetClientId())
 		}
 	}()
 

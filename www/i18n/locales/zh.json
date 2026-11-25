@@ -361,7 +361,9 @@
       "wireguardsDesc": "已注册的 WireGuard 接口",
       "linksTitle": "网络连接",
       "linksDesc": "WireGuard 设备之间的连接",
-      "topologyDesc": "网络拓扑可视化"
+      "topologyDesc": "网络拓扑可视化",
+      "updatedAt": "最近更新",
+      "noTime": "暂无更新记录"
     },
     "topologySidebar": {
       "title": "链路详情",
@@ -1111,7 +1113,10 @@
       "name_placeholder": "请输入Worker名称",
       "resources": "相关资源",
       "clients": "部署",
-      "ingresses": "入口"
+      "ingresses": "入口",
+      "description": "备注",
+      "description_placeholder": "暂无备注",
+      "unknown_version": "未知版本"
     },
     "ingress": {
       "create_success": "创建成功",
@@ -1202,7 +1207,7 @@
     "period": {
       "today": "今日",
       "yesterday": "昨日",
-      "week": "本周",
+      "week": "近七天",
       "month": "本月",
       "year": "本年",
       "custom": "自定义",
